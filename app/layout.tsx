@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const imageUrl = host ? `${protocol}://${host}/og.png` : undefined;
   const title = "EGEGE — база заданий ЕГЭ по информатике";
   const description =
-    "Открытая база авторских заданий для подготовки к ЕГЭ по информатике.";
+    "Задания, тренировочные варианты и локальный прогресс для подготовки к ЕГЭ по информатике.";
 
   return {
     title,

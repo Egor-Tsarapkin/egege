@@ -2,8 +2,9 @@
 
 import { useMemo, useRef, useState } from "react";
 
-type Section = "home" | "tasks";
+type Section = "home" | "tasks" | "variants" | "dashboard";
 type Difficulty = "Базовый" | "Средний" | "Высокий";
+type Activity = Record<string, number>;
 
 type Task = {
   id: string;
@@ -17,9 +18,25 @@ type Task = {
   file?: { name: string; href: string; meta: string };
 };
 
+type Variant = {
+  id: string;
+  title: string;
+  description: string;
+  taskIds: string[];
+};
+
+type Burst = {
+  id: number;
+  x: number;
+  y: number;
+};
+
+const STORAGE_KEY = "egege-activity-v1";
+const XP_PER_ANSWER = 10;
+
 const tasks: Task[] = [
   {
-    id: "TS-1042",
+    id: "1042",
     number: 1,
     difficulty: "Базовый",
     source: "Tsarapkin",
@@ -34,7 +51,7 @@ const tasks: Task[] = [
     answer: "1001110101",
   },
   {
-    id: "TS-2187",
+    id: "2187",
     number: 4,
     difficulty: "Средний",
     source: "Авторская",
@@ -50,7 +67,7 @@ const tasks: Task[] = [
     figure: "network",
   },
   {
-    id: "TS-3315",
+    id: "3315",
     number: 8,
     difficulty: "Средний",
     source: "Тренировочная",
@@ -65,7 +82,7 @@ const tasks: Task[] = [
     answer: "197",
   },
   {
-    id: "TS-4720",
+    id: "4720",
     number: 17,
     difficulty: "Высокий",
     source: "Авторская",
@@ -85,7 +102,7 @@ const tasks: Task[] = [
     },
   },
   {
-    id: "TS-5926",
+    id: "5926",
     number: 23,
     difficulty: "Высокий",
     source: "Тренировочная",
@@ -100,6 +117,41 @@ const tasks: Task[] = [
     answer: "4",
   },
 ];
+
+const variants: Variant[] = [
+  {
+    id: "01",
+    title: "Разминка",
+    description: "Три коротких задания из разных тем.",
+    taskIds: ["1042", "2187", "3315"],
+  },
+  {
+    id: "02",
+    title: "Практика с файлами",
+    description: "Два задания повышенной сложности.",
+    taskIds: ["4720", "5926"],
+  },
+];
+
+const burstParticles = [
+  { x: -92, y: -104, r: -18, label: "XP" },
+  { x: -55, y: -145, r: 12, label: "+10" },
+  { x: -20, y: -112, r: -7, label: "•" },
+  { x: 20, y: -160, r: 9, label: "XP" },
+  { x: 54, y: -118, r: 18, label: "+10" },
+  { x: 92, y: -88, r: -13, label: "•" },
+  { x: -112, y: -58, r: 22, label: "•" },
+  { x: 112, y: -45, r: -20, label: "XP" },
+  { x: -70, y: -38, r: -10, label: "+10" },
+  { x: 72, y: -24, r: 12, label: "•" },
+];
+
+function dateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 function DatabaseIcon() {
   return (
@@ -131,13 +183,7 @@ function DashboardIcon() {
   );
 }
 
-function Dock({
-  openTasks,
-  notify,
-}: {
-  openTasks: () => void;
-  notify: () => void;
-}) {
+function Dock({ navigate }: { navigate: (section: Section) => void }) {
   const dockRef = useRef<HTMLDivElement>(null);
   const dockFrame = useRef<number | null>(null);
   const [scales, setScales] = useState([1, 1, 1]);
@@ -158,6 +204,16 @@ function Dock({
     });
   };
 
+  const items: Array<{
+    section: Section;
+    label: string;
+    icon: React.ReactNode;
+  }> = [
+    { section: "tasks", label: "База заданий", icon: <DatabaseIcon /> },
+    { section: "variants", label: "Варианты", icon: <VariantsIcon /> },
+    { section: "dashboard", label: "Дашборд", icon: <DashboardIcon /> },
+  ];
+
   return (
     <div
       className="dock"
@@ -166,33 +222,56 @@ function Dock({
       onPointerLeave={() => setScales([1, 1, 1])}
       aria-label="Основная навигация"
     >
-      <button
-        className="dock-item"
-        style={{ "--dock-scale": scales[0] } as React.CSSProperties}
-        onClick={openTasks}
-      >
-        <DatabaseIcon />
-        <span>База заданий</span>
-      </button>
-      <button
-        className="dock-item"
-        style={{ "--dock-scale": scales[1] } as React.CSSProperties}
-        onClick={notify}
-      >
-        <VariantsIcon />
-        <span>Варианты</span>
-        <small>Скоро</small>
-      </button>
-      <button
-        className="dock-item"
-        style={{ "--dock-scale": scales[2] } as React.CSSProperties}
-        onClick={notify}
-      >
-        <DashboardIcon />
-        <span>Дашборд</span>
-        <small>Скоро</small>
-      </button>
+      {items.map((item, index) => (
+        <button
+          className="dock-item"
+          style={{ "--dock-scale": scales[index] } as React.CSSProperties}
+          onClick={() => navigate(item.section)}
+          key={item.section}
+        >
+          {item.icon}
+          <span>{item.label}</span>
+        </button>
+      ))}
     </div>
+  );
+}
+
+function AppHeader({
+  section,
+  navigate,
+}: {
+  section: Section;
+  navigate: (section: Section) => void;
+}) {
+  return (
+    <header className="topbar">
+      <button className="wordmark" onClick={() => navigate("home")}>
+        <span className="mini-mark">Е</span>
+        <span className="wordmark-name"><b>EGE</b>GE</span>
+        <small className="wordmark-by">by Tsarapkin</small>
+      </button>
+      <nav aria-label="Разделы">
+        <button
+          className={section === "tasks" ? "nav-active" : ""}
+          onClick={() => navigate("tasks")}
+        >
+          База
+        </button>
+        <button
+          className={section === "variants" ? "nav-active" : ""}
+          onClick={() => navigate("variants")}
+        >
+          Варианты
+        </button>
+        <button
+          className={section === "dashboard" ? "nav-active" : ""}
+          onClick={() => navigate("dashboard")}
+        >
+          Дашборд
+        </button>
+      </nav>
+    </header>
   );
 }
 
@@ -215,10 +294,12 @@ function NetworkFigure() {
 
 function TaskItem({
   task,
-  notify,
+  onCorrect,
+  onIncorrect,
 }: {
   task: Task;
-  notify: () => void;
+  onCorrect: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onIncorrect: () => void;
 }) {
   const [answerOpen, setAnswerOpen] = useState(false);
 
@@ -248,7 +329,6 @@ function TaskItem({
         aria-expanded={answerOpen}
       >
         {answerOpen ? "Скрыть ответ" : "Показать ответ"}
-        <span aria-hidden="true">↗</span>
       </button>
       <div className={`answer-reveal ${answerOpen ? "is-open" : ""}`}>
         <div>
@@ -257,13 +337,125 @@ function TaskItem({
             <p className="answer-value">{task.answer}</p>
             <div className="match-row">
               <span>Ваш ответ совпал?</span>
-              <button onClick={notify}>Да</button>
-              <button onClick={notify}>Нет</button>
+              <button className="match-yes" onClick={onCorrect}>Да</button>
+              <button onClick={onIncorrect}>Нет</button>
             </div>
           </div>
         </div>
       </div>
     </article>
+  );
+}
+
+function PageHeading({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <section className="tasks-heading">
+      <p className="eyebrow">{eyebrow}</p>
+      <h1>{title}</h1>
+      <p>{description}</p>
+    </section>
+  );
+}
+
+function Dashboard({ activity }: { activity: Activity }) {
+  const calendar = useMemo(() => {
+    const today = new Date();
+    const start = new Date(today);
+    start.setHours(12, 0, 0, 0);
+    start.setDate(start.getDate() - 111);
+    const padding = (start.getDay() + 6) % 7;
+    const days = Array.from({ length: 112 }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      const key = dateKey(date);
+      return { key, count: activity[key] ?? 0 };
+    });
+    return { days, padding };
+  }, [activity]);
+
+  const total = Object.values(activity).reduce((sum, count) => sum + count, 0);
+  const activeDays = Object.values(activity).filter((count) => count > 0).length;
+  let streak = 0;
+  const cursor = new Date();
+  cursor.setHours(12, 0, 0, 0);
+  while ((activity[dateKey(cursor)] ?? 0) > 0) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return (
+    <div className="dashboard-content">
+      <section className="stats-grid" aria-label="Статистика">
+        <article>
+          <span>Правильных ответов</span>
+          <strong>{total}</strong>
+        </article>
+        <article>
+          <span>Накоплено</span>
+          <strong>{total * XP_PER_ANSWER}<small> XP</small></strong>
+        </article>
+        <article>
+          <span>Активных дней</span>
+          <strong>{activeDays}</strong>
+        </article>
+        <article>
+          <span>Серия</span>
+          <strong>{streak}<small> дн.</small></strong>
+        </article>
+      </section>
+
+      <section className="activity-card">
+        <div className="activity-heading">
+          <div>
+            <h2>Активность</h2>
+            <p>Каждая отметка «Да» добавляет один правильный ответ.</p>
+          </div>
+          <span>Последние 16 недель</span>
+        </div>
+        <div className="calendar-scroll">
+          <div className="activity-grid" aria-label="Календарь активности">
+            {Array.from({ length: calendar.padding }, (_, index) => (
+              <i className="activity-day is-empty" key={`empty-${index}`} />
+            ))}
+            {calendar.days.map((day) => {
+              const level =
+                day.count === 0 ? 0 : day.count === 1 ? 1 : day.count < 4 ? 2 : day.count < 7 ? 3 : 4;
+              return (
+                <i
+                  className={`activity-day level-${level}`}
+                  title={`${day.key}: ${day.count}`}
+                  aria-label={`${day.key}: ${day.count} правильных ответов`}
+                  key={day.key}
+                />
+              );
+            })}
+          </div>
+        </div>
+        <div className="activity-legend" aria-hidden="true">
+          <span>Меньше</span>
+          {[0, 1, 2, 3, 4].map((level) => <i className={`level-${level}`} key={level} />)}
+          <span>Больше</span>
+        </div>
+      </section>
+
+      {total === 0 && (
+        <section className="dashboard-note">
+          <span>0 XP</span>
+          <div>
+            <h2>Начните с любого задания</h2>
+            <p>Откройте ответ и нажмите «Да» — активность сразу появится здесь.</p>
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -273,22 +465,63 @@ export default function Home() {
   const [type, setType] = useState("all");
   const [difficulty, setDifficulty] = useState("all");
   const [source, setSource] = useState("all");
+  const [openVariant, setOpenVariant] = useState<string | null>(null);
+  const [activity, setActivity] = useState<Activity>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      return saved ? (JSON.parse(saved) as Activity) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [bursts, setBursts] = useState<Burst[]>([]);
   const [toast, setToast] = useState("");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const burstId = useRef(0);
+
+  const navigate = (nextSection: Section) => {
+    setSection(nextSection);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const notify = (message: string) => {
     setToast("");
     if (toastTimer.current) clearTimeout(toastTimer.current);
     requestAnimationFrame(() => setToast(message));
-    toastTimer.current = setTimeout(() => setToast(""), 3000);
+    toastTimer.current = setTimeout(() => setToast(""), 2500);
+  };
+
+  const addCorrectAnswer = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const nextBurst = {
+      id: ++burstId.current,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    setBursts((current) => [...current, nextBurst]);
+    window.setTimeout(() => {
+      setBursts((current) => current.filter((burst) => burst.id !== nextBurst.id));
+    }, 900);
+
+    const key = dateKey(new Date());
+    setActivity((current) => {
+      const next = { ...current, [key]: (current[key] ?? 0) + 1 };
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Keep the in-memory dashboard working if storage is unavailable.
+      }
+      return next;
+    });
+    notify(`+${XP_PER_ANSWER} XP · записано в дашборд`);
   };
 
   const filteredTasks = useMemo(
     () =>
       tasks.filter((task) => {
-        const normalizedSearch = search.trim().toLowerCase();
+        const normalizedSearch = search.trim();
         return (
-          (!normalizedSearch || task.id.toLowerCase().includes(normalizedSearch)) &&
+          (!normalizedSearch || task.id.includes(normalizedSearch)) &&
           (type === "all" || task.number === Number(type)) &&
           (difficulty === "all" || task.difficulty === difficulty) &&
           (source === "all" || task.source === source)
@@ -304,6 +537,11 @@ export default function Home() {
     setSource("all");
   };
 
+  const taskProps = {
+    onCorrect: addCorrectAnswer,
+    onIncorrect: () => notify("Ответ отмечен — попробуйте ещё одно задание"),
+  };
+
   if (section === "home") {
     return (
       <main className="home">
@@ -312,126 +550,195 @@ export default function Home() {
           <h1><span className="ege-part">EGE</span><span className="ge-part">GE</span></h1>
           <p className="brand-by">by Tsarapkin</p>
           <p className="eyebrow">ЕГЭ по информатике</p>
-          <Dock
-            openTasks={() => setSection("tasks")}
-            notify={() => notify("Раздел скоро появится")}
-          />
+          <Dock navigate={navigate} />
         </div>
         <p className="home-note">Открытая база · без регистрации</p>
-        <div className={`toast ${toast ? "is-visible" : ""}`} role="status">
-          <span className="toast-dot" />
-          {toast}
-        </div>
+        <Toast message={toast} />
       </main>
     );
   }
 
   return (
     <main className="tasks-page">
-      <header className="topbar">
-        <button className="wordmark" onClick={() => setSection("home")}>
-          <span className="mini-mark">Е</span>
-          <span className="wordmark-name"><b>EGE</b>GE</span>
-          <small className="wordmark-by">by Tsarapkin</small>
-        </button>
-        <nav aria-label="Разделы">
-          <button className="nav-active">База заданий</button>
-          <button aria-label="Варианты" onClick={() => notify("Раздел скоро появится")}>Варианты <small>Скоро</small></button>
-          <button aria-label="Дашборд" onClick={() => notify("Раздел скоро появится")}>Дашборд <small>Скоро</small></button>
-        </nav>
-      </header>
+      <AppHeader section={section} navigate={navigate} />
 
       <div className="tasks-shell">
-        <section className="tasks-heading">
-          <p className="eyebrow">Подготовка к ЕГЭ</p>
-          <h1>База заданий</h1>
-          <p>Выберите тему — все подходящие задания появятся ниже.</p>
-        </section>
+        {section === "tasks" && (
+          <>
+            <PageHeading
+              eyebrow="Подготовка к ЕГЭ"
+              title="База заданий"
+              description="Выберите тему — все подходящие задания появятся ниже."
+            />
 
-        <section className="filter-panel" aria-label="Фильтры заданий">
-          <label className="search-field">
-            <span>Поиск по ID</span>
-            <div>
-              <i aria-hidden="true" />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Например, TS-1042"
-              />
-              {search && (
-                <button aria-label="Очистить поиск" onClick={() => setSearch("")}>×</button>
+            <section className="filter-panel" aria-label="Фильтры заданий">
+              <label className="search-field">
+                <span>Поиск по ID</span>
+                <div>
+                  <i aria-hidden="true" />
+                  <input
+                    inputMode="numeric"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value.replace(/\D/g, ""))}
+                    placeholder="Например, 1042"
+                  />
+                  {search && (
+                    <button aria-label="Очистить поиск" onClick={() => setSearch("")}>×</button>
+                  )}
+                </div>
+              </label>
+              <label>
+                <span>Номер задания</span>
+                <select value={type} onChange={(event) => setType(event.target.value)}>
+                  <option value="all">Все номера</option>
+                  {Array.from({ length: 27 }, (_, index) => index + 1).map((number) => (
+                    <option value={number} key={number}>№{number}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Сложность</span>
+                <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
+                  <option value="all">Любая</option>
+                  <option>Базовый</option>
+                  <option>Средний</option>
+                  <option>Высокий</option>
+                </select>
+              </label>
+              <label>
+                <span>Источник</span>
+                <select value={source} onChange={(event) => setSource(event.target.value)}>
+                  <option value="all">Все источники</option>
+                  <option>Tsarapkin</option>
+                  <option>Авторская</option>
+                  <option>Тренировочная</option>
+                </select>
+              </label>
+              <button className="reset-button" onClick={resetFilters}>
+                <span aria-hidden="true">↺</span> Сбросить
+              </button>
+            </section>
+
+            <div className="results-bar">
+              <span>Найдено: <b>{filteredTasks.length}</b></span>
+              <i />
+              <span>Показаны все задания</span>
+            </div>
+
+            <section className="task-list" aria-live="polite">
+              {filteredTasks.length ? (
+                filteredTasks.map((task) => (
+                  <TaskItem task={task} key={task.id} {...taskProps} />
+                ))
+              ) : (
+                <div className="empty-state">
+                  <span>∅</span>
+                  <h2>Ничего не найдено</h2>
+                  <p>Попробуйте изменить фильтры или проверить ID.</p>
+                  <button onClick={resetFilters}>Сбросить фильтры</button>
+                </div>
               )}
-            </div>
-          </label>
-          <label>
-            <span>Номер задания</span>
-            <select value={type} onChange={(event) => setType(event.target.value)}>
-              <option value="all">Все номера</option>
-              {Array.from({ length: 27 }, (_, index) => index + 1).map((number) => (
-                <option value={number} key={number}>№{number}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Сложность</span>
-            <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
-              <option value="all">Любая</option>
-              <option>Базовый</option>
-              <option>Средний</option>
-              <option>Высокий</option>
-            </select>
-          </label>
-          <label>
-            <span>Источник</span>
-            <select value={source} onChange={(event) => setSource(event.target.value)}>
-              <option value="all">Все источники</option>
-              <option>Tsarapkin</option>
-              <option>Авторская</option>
-              <option>Тренировочная</option>
-            </select>
-          </label>
-          <button className="reset-button" onClick={resetFilters}>
-            <span aria-hidden="true">↺</span> Сбросить
-          </button>
-        </section>
+            </section>
+          </>
+        )}
 
-        <div className="results-bar">
-          <span>Найдено: <b>{filteredTasks.length}</b></span>
-          <i />
-          <span>Показаны все задания</span>
-        </div>
+        {section === "variants" && (
+          <>
+            <PageHeading
+              eyebrow="Тестовый режим"
+              title="Варианты"
+              description="Небольшие подборки заданий для быстрой тренировки."
+            />
+            <section className="variant-list" aria-label="Доступные варианты">
+              {variants.map((variant) => {
+                const isOpen = openVariant === variant.id;
+                return (
+                  <article className={`variant-card ${isOpen ? "is-open" : ""}`} key={variant.id}>
+                    <div className="variant-number">{variant.id}</div>
+                    <div className="variant-copy">
+                      <h2>{variant.title}</h2>
+                      <p>{variant.description}</p>
+                    </div>
+                    <span className="variant-count">{variant.taskIds.length} задания</span>
+                    <button onClick={() => setOpenVariant(isOpen ? null : variant.id)}>
+                      {isOpen ? "Свернуть" : "Открыть"}
+                    </button>
+                  </article>
+                );
+              })}
+            </section>
 
-        <section className="task-list" aria-live="polite">
-          {filteredTasks.length ? (
-            filteredTasks.map((task) => (
-              <TaskItem
-                task={task}
-                key={task.id}
-                notify={() => notify("Статистика появится после запуска дашборда")}
-              />
-            ))
-          ) : (
-            <div className="empty-state">
-              <span>∅</span>
-              <h2>Ничего не найдено</h2>
-              <p>Попробуйте изменить фильтры или проверить ID.</p>
-              <button onClick={resetFilters}>Сбросить фильтры</button>
-            </div>
-          )}
-        </section>
+            {openVariant && (
+              <section className="variant-run">
+                <div className="variant-run-heading">
+                  <span>Вариант {openVariant}</span>
+                  <p>Ответы можно смотреть в любом порядке.</p>
+                </div>
+                {variants
+                  .find((variant) => variant.id === openVariant)
+                  ?.taskIds.map((taskId) => {
+                    const task = tasks.find((item) => item.id === taskId);
+                    return task ? <TaskItem task={task} key={task.id} {...taskProps} /> : null;
+                  })}
+              </section>
+            )}
+          </>
+        )}
+
+        {section === "dashboard" && (
+          <>
+            <PageHeading
+              eyebrow="Прогресс на этом устройстве"
+              title="Дашборд"
+              description="Пока без аккаунта: статистика хранится только в этом браузере."
+            />
+            <Dashboard activity={activity} />
+          </>
+        )}
       </div>
 
       <footer>
-        <button className="wordmark footer-wordmark" onClick={() => setSection("home")}>
+        <button className="wordmark footer-wordmark" onClick={() => navigate("home")}>
           <span className="wordmark-name"><b>EGE</b>GE</span>
         </button>
         <span>by Tsarapkin · открытая база заданий</span>
       </footer>
 
-      <div className={`toast ${toast ? "is-visible" : ""}`} role="status">
-        <span className="toast-dot" />
-        {toast}
+      <Toast message={toast} />
+      <div className="xp-layer" aria-hidden="true">
+        {bursts.map((burst) => (
+          <div
+            className="xp-burst"
+            style={{ left: burst.x, top: burst.y }}
+            key={burst.id}
+          >
+            <strong>+{XP_PER_ANSWER} XP</strong>
+            {burstParticles.map((particle, index) => (
+              <i
+                className={particle.label === "•" ? "xp-spark" : "xp-token"}
+                style={{
+                  "--xp-x": `${particle.x}px`,
+                  "--xp-y": `${particle.y}px`,
+                  "--xp-r": `${particle.r}deg`,
+                  "--xp-delay": `${index * 12}ms`,
+                } as React.CSSProperties}
+                key={index}
+              >
+                {particle.label}
+              </i>
+            ))}
+          </div>
+        ))}
       </div>
     </main>
+  );
+}
+
+function Toast({ message }: { message: string }) {
+  return (
+    <div className={`toast ${message ? "is-visible" : ""}`} role="status">
+      <span className="toast-dot" />
+      {message}
+    </div>
   );
 }
