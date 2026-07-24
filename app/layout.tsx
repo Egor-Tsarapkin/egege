@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
   const imageUrl = host ? `${protocol}://${host}/og.png` : undefined;
-  const title = "Tsarapkin — база заданий ЕГЭ по информатике";
+  const title = "EGEGE — база заданий ЕГЭ по информатике";
   const description =
     "Открытая база авторских заданий для подготовки к ЕГЭ по информатике.";
 
@@ -35,7 +35,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       locale: "ru_RU",
       images: imageUrl
-        ? [{ url: imageUrl, width: 1731, height: 909, alt: "Tsarapkin" }]
+        ? [{ url: imageUrl, width: 1731, height: 909, alt: "EGEGE by Tsarapkin" }]
         : undefined,
     },
     twitter: {

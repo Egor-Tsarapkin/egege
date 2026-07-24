@@ -139,18 +139,23 @@ function Dock({
   notify: () => void;
 }) {
   const dockRef = useRef<HTMLDivElement>(null);
+  const dockFrame = useRef<number | null>(null);
   const [scales, setScales] = useState([1, 1, 1]);
 
   const reactToPointer = (clientX: number) => {
-    const buttons = dockRef.current?.querySelectorAll<HTMLButtonElement>(".dock-item");
-    if (!buttons) return;
-    setScales(
-      Array.from(buttons).map((button) => {
-        const box = button.getBoundingClientRect();
-        const distance = Math.abs(clientX - (box.left + box.width / 2));
-        return 1 + Math.max(0, 1 - distance / 130) * 0.22;
-      }),
-    );
+    if (dockFrame.current !== null || window.matchMedia("(hover: none)").matches) return;
+    dockFrame.current = requestAnimationFrame(() => {
+      dockFrame.current = null;
+      const buttons = dockRef.current?.querySelectorAll<HTMLButtonElement>(".dock-item");
+      if (!buttons) return;
+      setScales(
+        Array.from(buttons).map((button) => {
+          const box = button.getBoundingClientRect();
+          const distance = Math.abs(clientX - (box.left + box.width / 2));
+          return 1 + Math.max(0, 1 - distance / 140) * 0.18;
+        }),
+      );
+    });
   };
 
   return (
@@ -303,8 +308,9 @@ export default function Home() {
     return (
       <main className="home">
         <div className="home-content">
-          <div className="brand-mark" aria-hidden="true">T</div>
-          <h1>Tsarapkin<span>.</span></h1>
+          <div className="brand-mark" aria-hidden="true">Е</div>
+          <h1><span className="ege-part">EGE</span><span className="ge-part">GE</span></h1>
+          <p className="brand-by">by Tsarapkin</p>
           <p className="eyebrow">ЕГЭ по информатике</p>
           <Dock
             openTasks={() => setSection("tasks")}
@@ -324,8 +330,9 @@ export default function Home() {
     <main className="tasks-page">
       <header className="topbar">
         <button className="wordmark" onClick={() => setSection("home")}>
-          <span className="mini-mark">T</span>
-          Tsarapkin<span>.</span>
+          <span className="mini-mark">Е</span>
+          <span className="wordmark-name"><b>EGE</b>GE</span>
+          <small className="wordmark-by">by Tsarapkin</small>
         </button>
         <nav aria-label="Разделы">
           <button className="nav-active">База заданий</button>
@@ -416,9 +423,9 @@ export default function Home() {
 
       <footer>
         <button className="wordmark footer-wordmark" onClick={() => setSection("home")}>
-          Tsarapkin<span>.</span>
+          <span className="wordmark-name"><b>EGE</b>GE</span>
         </button>
-        <span>Открытая база заданий</span>
+        <span>by Tsarapkin · открытая база заданий</span>
       </footer>
 
       <div className={`toast ${toast ? "is-visible" : ""}`} role="status">
