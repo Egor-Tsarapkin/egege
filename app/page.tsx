@@ -5,6 +5,10 @@ import { useMemo, useRef, useState } from "react";
 type Section = "home" | "tasks" | "variants" | "dashboard";
 type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
+type Theme = "dark" | "light";
+type Accent = "lime" | "blue" | "red" | "pink" | "beige";
+type Reaction = "xp" | "hearts" | "letters";
+type Preferences = { theme: Theme; accent: Accent; reaction: Reaction };
 
 type Task = {
   id: string;
@@ -29,10 +33,18 @@ type Burst = {
   id: number;
   x: number;
   y: number;
+  reaction: Reaction;
 };
 
 const STORAGE_KEY = "egege-activity-v1";
+const PREFERENCES_KEY = "egege-preferences-v1";
+const USER_KEY = "egege-demo-user-v1";
 const XP_PER_ANSWER = 10;
+const defaultPreferences: Preferences = {
+  theme: "dark",
+  accent: "lime",
+  reaction: "xp",
+};
 
 const tasks: Task[] = [
   {
@@ -146,6 +158,16 @@ const burstParticles = [
   { x: 72, y: -24, r: 12, label: "•" },
 ];
 
+const heartParticles = burstParticles.map((particle, index) => ({
+  ...particle,
+  label: index % 3 === 0 ? "♡" : "♥",
+}));
+
+const letterParticles = burstParticles.map((particle, index) => ({
+  ...particle,
+  label: ["А", "Q", "Ж", "E", "Ю", "Z", "Б", "G", "Я", "R"][index],
+}));
+
 function dateKey(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -183,7 +205,13 @@ function DashboardIcon() {
   );
 }
 
-function Dock({ navigate }: { navigate: (section: Section) => void }) {
+function Dock({
+  navigate,
+  isRegistered,
+}: {
+  navigate: (section: Section) => void;
+  isRegistered: boolean;
+}) {
   const dockRef = useRef<HTMLDivElement>(null);
   const dockFrame = useRef<number | null>(null);
   const [scales, setScales] = useState([1, 1, 1]);
@@ -211,15 +239,17 @@ function Dock({ navigate }: { navigate: (section: Section) => void }) {
   }> = [
     { section: "tasks", label: "База заданий", icon: <DatabaseIcon /> },
     { section: "variants", label: "Варианты", icon: <VariantsIcon /> },
-    { section: "dashboard", label: "Дашборд", icon: <DashboardIcon /> },
   ];
+  if (isRegistered) {
+    items.push({ section: "dashboard", label: "Дашборд", icon: <DashboardIcon /> });
+  }
 
   return (
     <div
       className="dock"
       ref={dockRef}
       onPointerMove={(event) => reactToPointer(event.clientX)}
-      onPointerLeave={() => setScales([1, 1, 1])}
+      onPointerLeave={() => setScales(items.map(() => 1))}
       aria-label="Основная навигация"
     >
       {items.map((item, index) => (
@@ -240,9 +270,13 @@ function Dock({ navigate }: { navigate: (section: Section) => void }) {
 function AppHeader({
   section,
   navigate,
+  isRegistered,
+  profile,
 }: {
   section: Section;
   navigate: (section: Section) => void;
+  isRegistered: boolean;
+  profile: React.ReactNode;
 }) {
   return (
     <header className="topbar">
@@ -251,27 +285,155 @@ function AppHeader({
         <span className="wordmark-name"><b>EGE</b>GE</span>
         <small className="wordmark-by">by Tsarapkin</small>
       </button>
-      <nav aria-label="Разделы">
-        <button
-          className={section === "tasks" ? "nav-active" : ""}
-          onClick={() => navigate("tasks")}
-        >
-          База
-        </button>
-        <button
-          className={section === "variants" ? "nav-active" : ""}
-          onClick={() => navigate("variants")}
-        >
-          Варианты
-        </button>
-        <button
-          className={section === "dashboard" ? "nav-active" : ""}
-          onClick={() => navigate("dashboard")}
-        >
-          Дашборд
-        </button>
-      </nav>
+      <div className="topbar-actions">
+        <nav aria-label="Разделы">
+          <button
+            className={section === "tasks" ? "nav-active" : ""}
+            onClick={() => navigate("tasks")}
+          >
+            База
+          </button>
+          <button
+            className={section === "variants" ? "nav-active" : ""}
+            onClick={() => navigate("variants")}
+          >
+            Варианты
+          </button>
+          {isRegistered && (
+            <button
+              className={section === "dashboard" ? "nav-active" : ""}
+              onClick={() => navigate("dashboard")}
+            >
+              Дашборд
+            </button>
+          )}
+        </nav>
+        {profile}
+      </div>
     </header>
+  );
+}
+
+function ProfileMenu({
+  open,
+  isRegistered,
+  preferences,
+  onToggle,
+  onPreference,
+  onLogin,
+  onLogout,
+  home = false,
+}: {
+  open: boolean;
+  isRegistered: boolean;
+  preferences: Preferences;
+  onToggle: () => void;
+  onPreference: (next: Partial<Preferences>) => void;
+  onLogin: () => void;
+  onLogout: () => void;
+  home?: boolean;
+}) {
+  const accents: Array<{ value: Accent; label: string }> = [
+    { value: "lime", label: "Лайм" },
+    { value: "blue", label: "Синий" },
+    { value: "red", label: "Красный" },
+    { value: "pink", label: "Розовый" },
+    { value: "beige", label: "Бежевый" },
+  ];
+  const reactions: Array<{ value: Reaction; label: string; icon: string }> = [
+    { value: "xp", label: "XP", icon: "+10" },
+    { value: "hearts", label: "Сердца", icon: "♥" },
+    { value: "letters", label: "Буквы", icon: "ЯA" },
+  ];
+
+  return (
+    <div className={`profile ${home ? "profile-home" : ""}`}>
+      <button
+        className={`profile-trigger ${isRegistered ? "is-user" : "is-guest"}`}
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-label={isRegistered ? "Открыть профиль" : "Войти"}
+      >
+        {isRegistered ? <span>Е</span> : "Войти"}
+      </button>
+      <section className={`profile-panel ${open ? "is-open" : ""}`} aria-hidden={!open}>
+        <div className="profile-panel-heading">
+          <div>
+            <strong>{isRegistered ? "Профиль ученика" : "Настройте под себя"}</strong>
+            <span>{isRegistered ? "Демо-режим на этом устройстве" : "Настройки сохранятся в браузере"}</span>
+          </div>
+          <button onClick={onToggle} aria-label="Закрыть профиль">×</button>
+        </div>
+
+        <fieldset className="settings-block">
+          <legend>Тема</legend>
+          <div className="segmented-control">
+            <button
+              className={preferences.theme === "dark" ? "is-selected" : ""}
+              onClick={() => onPreference({ theme: "dark" })}
+            >
+              Тёмная
+            </button>
+            <button
+              className={preferences.theme === "light" ? "is-selected" : ""}
+              onClick={() => onPreference({ theme: "light" })}
+            >
+              Светлая
+            </button>
+          </div>
+        </fieldset>
+
+        <fieldset className="settings-block">
+          <legend>Акцент</legend>
+          <div className="accent-options">
+            {accents.map((accent) => (
+              <button
+                className={`accent-swatch accent-${accent.value} ${
+                  preferences.accent === accent.value ? "is-selected" : ""
+                }`}
+                onClick={() => onPreference({ accent: accent.value })}
+                aria-label={accent.label}
+                title={accent.label}
+                key={accent.value}
+              />
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="settings-block">
+          <legend>Анимация ответа</legend>
+          <div className="reaction-options">
+            {reactions.map((reaction) => (
+              <button
+                className={preferences.reaction === reaction.value ? "is-selected" : ""}
+                onClick={() => onPreference({ reaction: reaction.value })}
+                key={reaction.value}
+              >
+                <i>{reaction.icon}</i>
+                <span>{reaction.label}</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="profile-auth">
+          {isRegistered ? (
+            <>
+              <div className="profile-person">
+                <span>Е</span>
+                <div><strong>Ученик EGEGE</strong><small>Дашборд открыт</small></div>
+              </div>
+              <button className="secondary-auth" onClick={onLogout}>Выйти из демо</button>
+            </>
+          ) : (
+            <>
+              <p>В демо-входе откроется Дашборд. Настоящую регистрацию подключим следующим этапом.</p>
+              <button className="primary-auth" onClick={onLogin}>Попробовать профиль</button>
+            </>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -477,11 +639,33 @@ export default function Home() {
   });
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [toast, setToast] = useState("");
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(USER_KEY) === "true";
+  });
+  const [preferences, setPreferences] = useState<Preferences>(() => {
+    if (typeof window === "undefined") return defaultPreferences;
+    try {
+      const saved = window.localStorage.getItem(PREFERENCES_KEY);
+      return saved
+        ? { ...defaultPreferences, ...(JSON.parse(saved) as Partial<Preferences>) }
+        : defaultPreferences;
+    } catch {
+      return defaultPreferences;
+    }
+  });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstId = useRef(0);
 
   const navigate = (nextSection: Section) => {
+    if (nextSection === "dashboard" && !isRegistered) {
+      setProfileOpen(true);
+      notify("Дашборд откроется после демо-входа");
+      return;
+    }
     setSection(nextSection);
+    setProfileOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -497,6 +681,7 @@ export default function Home() {
       id: ++burstId.current,
       x: event.clientX,
       y: event.clientY,
+      reaction: preferences.reaction,
     };
     setBursts((current) => [...current, nextBurst]);
     window.setTimeout(() => {
@@ -514,6 +699,58 @@ export default function Home() {
       return next;
     });
     notify(`+${XP_PER_ANSWER} XP · записано в дашборд`);
+  };
+
+  const updatePreferences = (next: Partial<Preferences>) => {
+    setPreferences((current) => {
+      const updated = { ...current, ...next };
+      try {
+        window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
+      } catch {
+        // The settings still work for the current session.
+      }
+      return updated;
+    });
+  };
+
+  const loginDemo = () => {
+    setIsRegistered(true);
+    try {
+      window.localStorage.setItem(USER_KEY, "true");
+    } catch {
+      // Keep the demo session in memory.
+    }
+    setProfileOpen(false);
+    notify("Профиль готов — Дашборд открыт");
+  };
+
+  const logoutDemo = () => {
+    setIsRegistered(false);
+    try {
+      window.localStorage.removeItem(USER_KEY);
+    } catch {
+      // Keep the demo session in memory.
+    }
+    if (section === "dashboard") setSection("tasks");
+    setProfileOpen(false);
+    notify("Вы вышли из демо-профиля");
+  };
+
+  const profile = (
+    <ProfileMenu
+      open={profileOpen}
+      isRegistered={isRegistered}
+      preferences={preferences}
+      onToggle={() => setProfileOpen((current) => !current)}
+      onPreference={updatePreferences}
+      onLogin={loginDemo}
+      onLogout={logoutDemo}
+    />
+  );
+
+  const appearance = {
+    "data-theme": preferences.theme,
+    "data-accent": preferences.accent,
   };
 
   const filteredTasks = useMemo(
@@ -544,23 +781,40 @@ export default function Home() {
 
   if (section === "home") {
     return (
-      <main className="home">
+      <main className="home" {...appearance}>
+        <ProfileMenu
+          open={profileOpen}
+          isRegistered={isRegistered}
+          preferences={preferences}
+          onToggle={() => setProfileOpen((current) => !current)}
+          onPreference={updatePreferences}
+          onLogin={loginDemo}
+          onLogout={logoutDemo}
+          home
+        />
         <div className="home-content">
           <div className="brand-mark" aria-hidden="true">Е</div>
           <h1><span className="ege-part">EGE</span><span className="ge-part">GE</span></h1>
           <p className="brand-by">by Tsarapkin</p>
           <p className="eyebrow">ЕГЭ по информатике</p>
-          <Dock navigate={navigate} />
+          <Dock navigate={navigate} isRegistered={isRegistered} />
         </div>
-        <p className="home-note">Открытая база · без регистрации</p>
+        <p className="home-note">
+          {isRegistered ? "Профиль активен · прогресс на этом устройстве" : "Открытая база · без регистрации"}
+        </p>
         <Toast message={toast} />
       </main>
     );
   }
 
   return (
-    <main className="tasks-page">
-      <AppHeader section={section} navigate={navigate} />
+    <main className="tasks-page" {...appearance}>
+      <AppHeader
+        section={section}
+        navigate={navigate}
+        isRegistered={isRegistered}
+        profile={profile}
+      />
 
       <div className="tasks-shell">
         {section === "tasks" && (
@@ -688,9 +942,9 @@ export default function Home() {
         {section === "dashboard" && (
           <>
             <PageHeading
-              eyebrow="Прогресс на этом устройстве"
+              eyebrow="Ваш профиль"
               title="Дашборд"
-              description="Пока без аккаунта: статистика хранится только в этом браузере."
+              description="В демо-версии статистика хранится только в этом браузере."
             />
             <Dashboard activity={activity} />
           </>
@@ -708,14 +962,31 @@ export default function Home() {
       <div className="xp-layer" aria-hidden="true">
         {bursts.map((burst) => (
           <div
-            className="xp-burst"
+            className={`xp-burst reaction-${burst.reaction}`}
             style={{ left: burst.x, top: burst.y }}
             key={burst.id}
           >
-            <strong>+{XP_PER_ANSWER} XP</strong>
-            {burstParticles.map((particle, index) => (
+            <strong>
+              {burst.reaction === "xp" && `+${XP_PER_ANSWER} XP`}
+              {burst.reaction === "hearts" && "♥"}
+              {burst.reaction === "letters" && "ЕГЭ"}
+            </strong>
+            {(burst.reaction === "xp"
+              ? burstParticles
+              : burst.reaction === "hearts"
+                ? heartParticles
+                : letterParticles
+            ).map((particle, index) => (
               <i
-                className={particle.label === "•" ? "xp-spark" : "xp-token"}
+                className={
+                  particle.label === "•"
+                    ? "xp-spark"
+                    : burst.reaction === "hearts"
+                      ? "heart-token"
+                      : burst.reaction === "letters"
+                        ? "letter-token"
+                        : "xp-token"
+                }
                 style={{
                   "--xp-x": `${particle.x}px`,
                   "--xp-y": `${particle.y}px`,
