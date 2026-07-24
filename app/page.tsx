@@ -7,8 +7,15 @@ type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
 type Theme = "dark" | "light";
 type Accent = "lime" | "blue" | "red" | "pink" | "beige";
-type Reaction = "xp" | "hearts" | "letters";
-type Preferences = { theme: Theme; accent: Accent; reaction: Reaction };
+type Reaction = "xp" | "hearts" | "letters" | "fire" | "fireworks" | "random";
+type BurstReaction = Exclude<Reaction, "random">;
+type BackgroundTheme = "kind" | "tech";
+type Preferences = {
+  theme: Theme;
+  accent: Accent;
+  reaction: Reaction;
+  background: BackgroundTheme;
+};
 
 type Task = {
   id: string;
@@ -33,7 +40,7 @@ type Burst = {
   id: number;
   x: number;
   y: number;
-  reaction: Reaction;
+  reaction: BurstReaction;
 };
 
 const STORAGE_KEY = "egege-activity-v1";
@@ -44,6 +51,7 @@ const defaultPreferences: Preferences = {
   theme: "dark",
   accent: "lime",
   reaction: "xp",
+  background: "kind",
 };
 
 const tasks: Task[] = [
@@ -167,6 +175,18 @@ const letterParticles = burstParticles.map((particle, index) => ({
   ...particle,
   label: ["А", "Q", "Ж", "E", "Ю", "Z", "Б", "G", "Я", "R"][index],
 }));
+
+const fireParticles = burstParticles.map((particle, index) => ({
+  ...particle,
+  label: index % 4 === 0 ? "·" : "🔥",
+}));
+
+const fireworkParticles = burstParticles.map((particle, index) => ({
+  ...particle,
+  label: index % 3 === 0 ? "✦" : "•",
+}));
+
+const randomReactions: BurstReaction[] = ["xp", "hearts", "letters", "fire", "fireworks"];
 
 function dateKey(date: Date) {
   const year = date.getFullYear();
@@ -344,6 +364,9 @@ function ProfileMenu({
     { value: "xp", label: "XP", icon: "+10" },
     { value: "hearts", label: "Сердца", icon: "♥" },
     { value: "letters", label: "Буквы", icon: "ЯA" },
+    { value: "fire", label: "Огоньки", icon: "🔥" },
+    { value: "fireworks", label: "Салют", icon: "✦" },
+    { value: "random", label: "Случайно", icon: "?" },
   ];
 
   return (
@@ -397,6 +420,26 @@ function ProfileMenu({
                 key={accent.value}
               />
             ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="settings-block">
+          <legend>Фон главной</legend>
+          <div className="background-options">
+            <button
+              className={preferences.background === "kind" ? "is-selected" : ""}
+              onClick={() => onPreference({ background: "kind" })}
+            >
+              <i className="background-preview kind-preview"><span /><span /></i>
+              <span>Добрый</span>
+            </button>
+            <button
+              className={preferences.background === "tech" ? "is-selected" : ""}
+              onClick={() => onPreference({ background: "tech" })}
+            >
+              <i className="background-preview tech-preview"><span /><b /></i>
+              <span>Техно</span>
+            </button>
           </div>
         </fieldset>
 
@@ -677,11 +720,15 @@ export default function Home() {
   };
 
   const addCorrectAnswer = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const selectedReaction =
+      preferences.reaction === "random"
+        ? randomReactions[Math.floor(Math.random() * randomReactions.length)]
+        : preferences.reaction;
     const nextBurst = {
       id: ++burstId.current,
       x: event.clientX,
       y: event.clientY,
-      reaction: preferences.reaction,
+      reaction: selectedReaction,
     };
     setBursts((current) => [...current, nextBurst]);
     window.setTimeout(() => {
@@ -751,6 +798,7 @@ export default function Home() {
   const appearance = {
     "data-theme": preferences.theme,
     "data-accent": preferences.accent,
+    "data-background": preferences.background,
   };
 
   const filteredTasks = useMemo(
@@ -782,6 +830,11 @@ export default function Home() {
   if (section === "home") {
     return (
       <main className="home" {...appearance}>
+        <div className="tech-backdrop" aria-hidden="true">
+          <div className="tech-device tech-laptop"><i /><b /></div>
+          <div className="tech-device tech-phone"><i /></div>
+          <div className="tech-device tech-headphones"><i /><b /><span /></div>
+        </div>
         <ProfileMenu
           open={profileOpen}
           isRegistered={isRegistered}
@@ -970,22 +1023,34 @@ export default function Home() {
               {burst.reaction === "xp" && `+${XP_PER_ANSWER} XP`}
               {burst.reaction === "hearts" && "♥"}
               {burst.reaction === "letters" && "ЕГЭ"}
+              {burst.reaction === "fire" && "🔥"}
+              {burst.reaction === "fireworks" && "✦"}
             </strong>
             {(burst.reaction === "xp"
               ? burstParticles
               : burst.reaction === "hearts"
                 ? heartParticles
-                : letterParticles
+                : burst.reaction === "letters"
+                  ? letterParticles
+                  : burst.reaction === "fire"
+                    ? fireParticles
+                    : fireworkParticles
             ).map((particle, index) => (
               <i
                 className={
                   particle.label === "•"
-                    ? "xp-spark"
+                    ? burst.reaction === "fireworks"
+                      ? `firework-spark firework-color-${index % 5}`
+                      : "xp-spark"
                     : burst.reaction === "hearts"
                       ? "heart-token"
                       : burst.reaction === "letters"
                         ? "letter-token"
-                        : "xp-token"
+                        : burst.reaction === "fire"
+                          ? particle.label === "·" ? "fire-ember" : "fire-token"
+                          : burst.reaction === "fireworks"
+                            ? `firework-star firework-color-${index % 5}`
+                            : "xp-token"
                 }
                 style={{
                   "--xp-x": `${particle.x}px`,
