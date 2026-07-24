@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 type Section = "home" | "tasks" | "variants" | "dashboard";
 type Difficulty = "Базовый" | "Средний" | "Высокий";
@@ -9,12 +11,10 @@ type Theme = "dark" | "light";
 type Accent = "lime" | "blue" | "red" | "pink" | "beige";
 type Reaction = "xp" | "hearts" | "letters" | "fire" | "fireworks" | "random";
 type BurstReaction = Exclude<Reaction, "random">;
-type BackgroundTheme = "kind" | "tech";
 type Preferences = {
   theme: Theme;
   accent: Accent;
   reaction: Reaction;
-  background: BackgroundTheme;
 };
 
 type Task = {
@@ -45,13 +45,11 @@ type Burst = {
 
 const STORAGE_KEY = "egege-activity-v1";
 const PREFERENCES_KEY = "egege-preferences-v1";
-const USER_KEY = "egege-demo-user-v1";
 const XP_PER_ANSWER = 10;
 const defaultPreferences: Preferences = {
   theme: "dark",
   accent: "lime",
   reaction: "xp",
-  background: "kind",
 };
 
 const tasks: Task[] = [
@@ -336,23 +334,31 @@ function AppHeader({
 
 function ProfileMenu({
   open,
-  isRegistered,
+  user,
+  authConfigured,
   preferences,
   onToggle,
   onPreference,
-  onLogin,
+  onEmailLogin,
+  onGoogleLogin,
   onLogout,
   home = false,
 }: {
   open: boolean;
-  isRegistered: boolean;
+  user: User | null;
+  authConfigured: boolean | null;
   preferences: Preferences;
   onToggle: () => void;
   onPreference: (next: Partial<Preferences>) => void;
-  onLogin: () => void;
-  onLogout: () => void;
+  onEmailLogin: (email: string) => Promise<string>;
+  onGoogleLogin: () => Promise<string>;
+  onLogout: () => Promise<void>;
   home?: boolean;
 }) {
+  const [email, setEmail] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authMessage, setAuthMessage] = useState("");
+  const isRegistered = Boolean(user);
   const accents: Array<{ value: Accent; label: string }> = [
     { value: "lime", label: "Лайм" },
     { value: "blue", label: "Синий" },
@@ -368,6 +374,13 @@ function ProfileMenu({
     { value: "fireworks", label: "Салют", icon: "✦" },
     { value: "random", label: "Случайно", icon: "?" },
   ];
+  const runAuth = async (action: () => Promise<string>) => {
+    setAuthBusy(true);
+    setAuthMessage("");
+    const message = await action();
+    setAuthMessage(message);
+    setAuthBusy(false);
+  };
 
   return (
     <div className={`profile ${home ? "profile-home" : ""}`}>
@@ -383,7 +396,11 @@ function ProfileMenu({
         <div className="profile-panel-heading">
           <div>
             <strong>{isRegistered ? "Профиль ученика" : "Настройте под себя"}</strong>
-            <span>{isRegistered ? "Демо-режим на этом устройстве" : "Настройки сохранятся в браузере"}</span>
+            <span>
+              {isRegistered
+                ? user?.email
+                : "Оформление сохраняется на этом устройстве"}
+            </span>
           </div>
           <button onClick={onToggle} aria-label="Закрыть профиль">×</button>
         </div>
@@ -424,26 +441,6 @@ function ProfileMenu({
         </fieldset>
 
         <fieldset className="settings-block">
-          <legend>Фон главной</legend>
-          <div className="background-options">
-            <button
-              className={preferences.background === "kind" ? "is-selected" : ""}
-              onClick={() => onPreference({ background: "kind" })}
-            >
-              <i className="background-preview kind-preview"><span /><span /></i>
-              <span>Добрый</span>
-            </button>
-            <button
-              className={preferences.background === "tech" ? "is-selected" : ""}
-              onClick={() => onPreference({ background: "tech" })}
-            >
-              <i className="background-preview tech-preview"><span /><b /></i>
-              <span>Техно</span>
-            </button>
-          </div>
-        </fieldset>
-
-        <fieldset className="settings-block">
           <legend>Анимация ответа</legend>
           <div className="reaction-options">
             {reactions.map((reaction) => (
@@ -464,14 +461,59 @@ function ProfileMenu({
             <>
               <div className="profile-person">
                 <span>Е</span>
-                <div><strong>Ученик EGEGE</strong><small>Дашборд открыт</small></div>
+                <div><strong>{user?.email}</strong><small>Дашборд открыт</small></div>
               </div>
-              <button className="secondary-auth" onClick={onLogout}>Выйти из демо</button>
+              <button className="secondary-auth" onClick={() => void onLogout()}>
+                Выйти
+              </button>
             </>
           ) : (
             <>
-              <p>В демо-входе откроется Дашборд. Настоящую регистрацию подключим следующим этапом.</p>
-              <button className="primary-auth" onClick={onLogin}>Попробовать профиль</button>
+              <p>Войдите без пароля — пришлём безопасную ссылку на почту.</p>
+              <form
+                className="auth-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void runAuth(() => onEmailLogin(email));
+                }}
+              >
+                <label>
+                  <span>Электронная почта</span>
+                  <input
+                    autoComplete="email"
+                    inputMode="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="name@example.ru"
+                    required
+                    disabled={!authConfigured || authBusy}
+                  />
+                </label>
+                <button
+                  className="primary-auth"
+                  type="submit"
+                  disabled={!authConfigured || authBusy}
+                >
+                  {authBusy ? "Отправляем…" : "Получить ссылку"}
+                </button>
+              </form>
+              <div className="auth-divider"><span>или</span></div>
+              <button
+                className="google-auth"
+                onClick={() => void runAuth(onGoogleLogin)}
+                disabled={!authConfigured || authBusy}
+              >
+                <b aria-hidden="true">G</b>
+                Продолжить с Google
+              </button>
+              {authConfigured === null && <p className="auth-status">Проверяем подключение…</p>}
+              {authConfigured === false && (
+                <p className="auth-status is-warning">
+                  Авторизация подготовлена. Осталось подключить проект Supabase.
+                </p>
+              )}
+              {authMessage && <p className="auth-status">{authMessage}</p>}
             </>
           )}
         </div>
@@ -683,10 +725,8 @@ export default function Home() {
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [toast, setToast] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
-  const [isRegistered, setIsRegistered] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(USER_KEY) === "true";
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [authConfigured, setAuthConfigured] = useState<boolean | null>(null);
   const [preferences, setPreferences] = useState<Preferences>(() => {
     if (typeof window === "undefined") return defaultPreferences;
     try {
@@ -700,11 +740,39 @@ export default function Home() {
   });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstId = useRef(0);
+  const isRegistered = Boolean(user);
+
+  useEffect(() => {
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+
+    void getSupabaseBrowserClient().then(async (client) => {
+      if (!active) return;
+      if (!client) {
+        setAuthConfigured(false);
+        return;
+      }
+
+      setAuthConfigured(true);
+      const { data } = await client.auth.getSession();
+      if (active) setUser(data.session?.user ?? null);
+
+      const listener = client.auth.onAuthStateChange((_event, session) => {
+        if (active) setUser(session?.user ?? null);
+      });
+      unsubscribe = () => listener.data.subscription.unsubscribe();
+    });
+
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, []);
 
   const navigate = (nextSection: Section) => {
     if (nextSection === "dashboard" && !isRegistered) {
       setProfileOpen(true);
-      notify("Дашборд откроется после демо-входа");
+      notify("Дашборд откроется после входа");
       return;
     }
     setSection(nextSection);
@@ -760,45 +828,55 @@ export default function Home() {
     });
   };
 
-  const loginDemo = () => {
-    setIsRegistered(true);
-    try {
-      window.localStorage.setItem(USER_KEY, "true");
-    } catch {
-      // Keep the demo session in memory.
-    }
-    setProfileOpen(false);
-    notify("Профиль готов — Дашборд открыт");
+  const sendMagicLink = async (email: string) => {
+    const client = await getSupabaseBrowserClient();
+    if (!client) return "Нужно подключить Supabase — инструкция уже подготовлена.";
+
+    const { error } = await client.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    if (error) return `Не удалось отправить письмо: ${error.message}`;
+    return "Ссылка отправлена. Проверьте почту.";
   };
 
-  const logoutDemo = () => {
-    setIsRegistered(false);
-    try {
-      window.localStorage.removeItem(USER_KEY);
-    } catch {
-      // Keep the demo session in memory.
-    }
+  const loginWithGoogle = async () => {
+    const client = await getSupabaseBrowserClient();
+    if (!client) return "Нужно подключить Supabase — инструкция уже подготовлена.";
+
+    const { error } = await client.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    return error ? `Не удалось войти: ${error.message}` : "Открываем Google…";
+  };
+
+  const logout = async () => {
+    const client = await getSupabaseBrowserClient();
+    if (client) await client.auth.signOut();
+    setUser(null);
     if (section === "dashboard") setSection("tasks");
     setProfileOpen(false);
-    notify("Вы вышли из демо-профиля");
+    notify("Вы вышли из профиля");
   };
 
   const profile = (
     <ProfileMenu
       open={profileOpen}
-      isRegistered={isRegistered}
+      user={user}
+      authConfigured={authConfigured}
       preferences={preferences}
       onToggle={() => setProfileOpen((current) => !current)}
       onPreference={updatePreferences}
-      onLogin={loginDemo}
-      onLogout={logoutDemo}
+      onEmailLogin={sendMagicLink}
+      onGoogleLogin={loginWithGoogle}
+      onLogout={logout}
     />
   );
 
   const appearance = {
     "data-theme": preferences.theme,
     "data-accent": preferences.accent,
-    "data-background": preferences.background,
   };
 
   const filteredTasks = useMemo(
@@ -830,19 +908,16 @@ export default function Home() {
   if (section === "home") {
     return (
       <main className="home" {...appearance}>
-        <div className="tech-backdrop" aria-hidden="true">
-          <div className="tech-device tech-laptop"><i /><b /></div>
-          <div className="tech-device tech-phone"><i /></div>
-          <div className="tech-device tech-headphones"><i /><b /><span /></div>
-        </div>
         <ProfileMenu
           open={profileOpen}
-          isRegistered={isRegistered}
+          user={user}
+          authConfigured={authConfigured}
           preferences={preferences}
           onToggle={() => setProfileOpen((current) => !current)}
           onPreference={updatePreferences}
-          onLogin={loginDemo}
-          onLogout={logoutDemo}
+          onEmailLogin={sendMagicLink}
+          onGoogleLogin={loginWithGoogle}
+          onLogout={logout}
           home
         />
         <div className="home-content">
@@ -997,7 +1072,7 @@ export default function Home() {
             <PageHeading
               eyebrow="Ваш профиль"
               title="Дашборд"
-              description="В демо-версии статистика хранится только в этом браузере."
+              description="Пока прогресс хранится в этом браузере; синхронизацию подключим после базы пользователей."
             />
             <Dashboard activity={activity} />
           </>
