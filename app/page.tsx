@@ -834,7 +834,9 @@ export default function Home() {
 
     const { error } = await client.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin },
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
+      },
     });
     if (error) return `Не удалось отправить письмо: ${error.message}`;
     return "Ссылка отправлена. Проверьте почту.";
@@ -846,7 +848,9 @@ export default function Home() {
 
     const { error } = await client.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/`,
+      },
     });
     return error ? `Не удалось войти: ${error.message}` : "Открываем Google…";
   };
