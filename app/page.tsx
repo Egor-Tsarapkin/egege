@@ -787,6 +787,29 @@ export default function Home() {
     toastTimer.current = setTimeout(() => setToast(""), 2500);
   };
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const authResult = url.searchParams.get("auth");
+    if (!authResult) return;
+
+    url.searchParams.delete("auth");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    let timer = 0;
+    const frame = window.requestAnimationFrame(() => {
+      setToast(
+        authResult === "confirmed"
+          ? "Почта подтверждена — профиль открыт"
+          : "Ссылка не сработала или уже была использована",
+      );
+      if (authResult !== "confirmed") setProfileOpen(true);
+      timer = window.setTimeout(() => setToast(""), 3600);
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
+
   const addCorrectAnswer = (event: React.MouseEvent<HTMLButtonElement>) => {
     const selectedReaction =
       preferences.reaction === "random"
