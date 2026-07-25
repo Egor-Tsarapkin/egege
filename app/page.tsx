@@ -23,10 +23,10 @@ type Task = {
   difficulty: Difficulty;
   source: string;
   title: string;
-  body: React.ReactNode;
+  note?: string;
+  html: string;
   answer: string;
-  figure?: "network";
-  file?: { name: string; href: string; meta: string };
+  files: Array<{ name: string; href: string; meta: string }>;
 };
 
 type Variant = {
@@ -51,105 +51,6 @@ const defaultPreferences: Preferences = {
   accent: "lime",
   reaction: "xp",
 };
-
-const tasks: Task[] = [
-  {
-    id: "1042",
-    number: 1,
-    difficulty: "Базовый",
-    source: "Tsarapkin",
-    title: "Кодирование сообщения",
-    body: (
-      <>
-        Для букв <b>А, Б, В, Г</b> используется неравномерный двоичный код:
-        А — 0, Б — 10, В — 110, Г — 111. Закодируйте слово <b>БАГАЖ</b>,
-        если буква Ж передаётся кодом 101.
-      </>
-    ),
-    answer: "1001110101",
-  },
-  {
-    id: "2187",
-    number: 4,
-    difficulty: "Средний",
-    source: "Авторская",
-    title: "Кратчайший путь в сети",
-    body: (
-      <>
-        Между пунктами проложены дороги с указанными длинами. Найдите длину
-        кратчайшего пути из пункта <b>А</b> в пункт <b>Д</b>. Передвигаться
-        можно только по показанным дорогам.
-      </>
-    ),
-    answer: "9",
-    figure: "network",
-  },
-  {
-    id: "3315",
-    number: 8,
-    difficulty: "Средний",
-    source: "Тренировочная",
-    title: "Слова по алфавиту",
-    body: (
-      <>
-        Все пятибуквенные слова, составленные из букв <b>К, О, Т</b>, записали
-        в алфавитном порядке. Буквы в слове могут повторяться. Под каким номером
-        находится слово <b>ТОКТО</b>? Нумерация начинается с единицы.
-      </>
-    ),
-    answer: "197",
-  },
-  {
-    id: "4720",
-    number: 17,
-    difficulty: "Высокий",
-    source: "Авторская",
-    title: "Пары чисел в последовательности",
-    body: (
-      <>
-        В файле дана последовательность целых чисел. Определите количество пар
-        соседних элементов, в которых ровно одно число двузначное, а сумма пары
-        делится на 7. В ответе запишите найденное количество.
-      </>
-    ),
-    answer: "8",
-    file: {
-      name: "17_sequence.txt",
-      href: "/materials/17_sequence.txt",
-      meta: "TXT · 55 Б",
-    },
-  },
-  {
-    id: "5926",
-    number: 23,
-    difficulty: "Высокий",
-    source: "Тренировочная",
-    title: "Исполнитель преобразует число",
-    body: (
-      <>
-        Исполнитель умеет прибавлять 2 и умножать число на 3. Сколько существует
-        программ, которые преобразуют число 1 в число 29, при этом траектория
-        вычислений обязательно содержит число 9 и не содержит число 15?
-      </>
-    ),
-    answer: "4",
-  },
-];
-
-const variants: Variant[] = [
-  {
-    id: "01",
-    title: "Разминка",
-    description: "Три коротких задания из разных тем.",
-    taskIds: ["1042", "2187", "3315"],
-  },
-  {
-    id: "02",
-    title: "Практика с файлами",
-    description: "Два задания повышенной сложности.",
-    taskIds: ["4720", "5926"],
-  },
-];
 
 const burstParticles = [
   { x: -92, y: -104, r: -18, label: "XP" },
@@ -530,23 +431,6 @@ function ProfileMenu({
   );
 }
 
-function NetworkFigure() {
-  return (
-    <figure className="network-figure" aria-label="Схема дорог между пунктами">
-      <div className="road r-ab"><span>4</span></div>
-      <div className="road r-ac"><span>7</span></div>
-      <div className="road r-bc"><span>2</span></div>
-      <div className="road r-bd"><span>5</span></div>
-      <div className="road r-cd"><span>4</span></div>
-      <div className="point p-a">А</div>
-      <div className="point p-b">Б</div>
-      <div className="point p-c">В</div>
-      <div className="point p-d">Д</div>
-      <figcaption>Схема дорог</figcaption>
-    </figure>
-  );
-}
-
 function TaskItem({
   task,
   onCorrect,
@@ -567,16 +451,23 @@ function TaskItem({
         <span>{task.source}</span>
       </div>
       <h2>{task.title}</h2>
-      <div className="task-body">{task.body}</div>
-      {task.figure === "network" && <NetworkFigure />}
-      {task.file && (
-        <a className="file-link" href={task.file.href} download>
-          <span className="file-icon" aria-hidden="true">↓</span>
-          <span>
-            <b>{task.file.name}</b>
-            <small>{task.file.meta}</small>
-          </span>
-        </a>
+      {task.note && <p className="task-note">{task.note}</p>}
+      <div
+        className="task-body task-html"
+        dangerouslySetInnerHTML={{ __html: task.html }}
+      />
+      {task.files.length > 0 && (
+        <div className="task-files">
+          {task.files.map((file) => (
+            <a className="file-link" href={file.href} download key={file.href}>
+              <span className="file-icon" aria-hidden="true">↓</span>
+              <span>
+                <b>{file.name}</b>
+                <small>{file.meta}</small>
+              </span>
+            </a>
+          ))}
+        </div>
       )}
       <button
         className={`answer-toggle ${answerOpen ? "is-open" : ""}`}
@@ -716,6 +607,8 @@ function Dashboard({ activity }: { activity: Activity }) {
 
 export default function Home() {
   const [section, setSection] = useState<Section>("home");
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [type, setType] = useState("all");
   const [difficulty, setDifficulty] = useState("all");
@@ -749,6 +642,27 @@ export default function Home() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstId = useRef(0);
   const isRegistered = Boolean(user);
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/data/kompege-tasks.json")
+      .then((response) => {
+        if (!response.ok) throw new Error("Не удалось загрузить задания");
+        return response.json() as Promise<Task[]>;
+      })
+      .then((data) => {
+        if (active) setTasks(data);
+      })
+      .catch(() => {
+        if (active) notify("Не удалось загрузить базу заданий");
+      })
+      .finally(() => {
+        if (active) setTasksLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -927,7 +841,25 @@ export default function Home() {
           (source === "all" || task.source === source)
         );
       }),
-    [search, type, difficulty, source],
+    [tasks, search, type, difficulty, source],
+  );
+
+  const variants = useMemo<Variant[]>(
+    () => [
+      {
+        id: "01",
+        title: "Разминка",
+        description: "Три коротких задания из разных тем.",
+        taskIds: [tasks[0]?.id, tasks[9]?.id, tasks[21]?.id].filter(Boolean) as string[],
+      },
+      {
+        id: "02",
+        title: "Практика с файлами",
+        description: "Два задания повышенной сложности.",
+        taskIds: [tasks[48]?.id, tasks[75]?.id].filter(Boolean) as string[],
+      },
+    ],
+    [tasks],
   );
 
   const resetFilters = () => {
@@ -1028,9 +960,7 @@ export default function Home() {
                 <span>Источник</span>
                 <select value={source} onChange={(event) => setSource(event.target.value)}>
                   <option value="all">Все источники</option>
-                  <option>Tsarapkin</option>
-                  <option>Авторская</option>
-                  <option>Тренировочная</option>
+                  <option>КЕГЭ</option>
                 </select>
               </label>
               <button className="reset-button" onClick={resetFilters}>
@@ -1045,7 +975,13 @@ export default function Home() {
             </div>
 
             <section className="task-list" aria-live="polite">
-              {filteredTasks.length ? (
+              {tasksLoading ? (
+                <div className="empty-state is-loading">
+                  <span>•••</span>
+                  <h2>Загружаем задания</h2>
+                  <p>База откроется через несколько секунд.</p>
+                </div>
+              ) : filteredTasks.length ? (
                 filteredTasks.map((task) => (
                   <TaskItem task={task} key={task.id} {...taskProps} />
                 ))

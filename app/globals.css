@@ -1,6 +1,6 @@
-@import "tailwindcss";
-
 :root {
+  --font-geist-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-geist-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --bg: #171613;
   --surface: #201e1a;
   --surface-raised: #292620;
@@ -1123,6 +1123,85 @@ p,
   font-weight: 620;
 }
 
+.task-note {
+  color: var(--dim);
+  font-size: 11px;
+  margin: 8px 0 0;
+}
+
+.task-html {
+  overflow-wrap: anywhere;
+}
+
+.task-html > :first-child {
+  margin-top: 0;
+}
+
+.task-html > :last-child {
+  margin-bottom: 0;
+}
+
+.task-html p,
+.task-html ul,
+.task-html ol {
+  margin: 0.85em 0;
+}
+
+.task-html img {
+  background: #fff;
+  border-radius: 14px;
+  display: block;
+  height: auto;
+  margin: 22px 0;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.task-html table {
+  border-collapse: collapse;
+  display: block;
+  margin: 20px 0;
+  max-width: 100%;
+  overflow-x: auto;
+  width: max-content;
+}
+
+.task-html td,
+.task-html th {
+  border: 1px solid var(--line-strong);
+  min-width: 42px;
+  padding: 7px 10px;
+  text-align: center;
+}
+
+.task-html pre {
+  background: var(--surface);
+  border-radius: 14px;
+  font-family: var(--font-geist-mono), monospace;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 14px;
+  white-space: pre;
+}
+
+.task-html .linked-task {
+  background: var(--surface);
+  border-radius: 15px;
+  margin-top: 22px;
+  padding: 14px 16px;
+}
+
+.task-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.task-files .file-link {
+  margin-top: 0;
+}
+
 .answer-toggle {
   align-items: center;
   background: var(--accent);
@@ -1296,6 +1375,10 @@ p,
   color: var(--dim);
   font-size: 9px;
   margin-top: 4px;
+}
+
+.answer-value {
+  white-space: pre-line;
 }
 
 .network-figure {
