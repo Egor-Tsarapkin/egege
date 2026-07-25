@@ -1191,6 +1191,42 @@ p,
   padding: 14px 16px;
 }
 
+.task-formula {
+  color: var(--text);
+}
+
+.task-formula-inline {
+  display: inline;
+  white-space: nowrap;
+}
+
+.task-formula-display {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0 8px;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.task-formula-display .katex-display {
+  margin: 0.75em 0;
+  min-width: max-content;
+  text-align: left;
+}
+
+.task-formula-display .katex-display > .katex {
+  text-align: left;
+}
+
+.task-formula-error {
+  background: var(--surface);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-geist-mono), monospace;
+  padding: 2px 5px;
+}
+
 .task-files {
   display: flex;
   flex-wrap: wrap;
