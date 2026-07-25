@@ -4,7 +4,7 @@ import type { Provider, User } from "@supabase/supabase-js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
-type Section = "home" | "tasks" | "variants" | "dashboard";
+type Section = "home" | "tasks" | "variants" | "theory" | "game" | "dashboard";
 type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
 type Theme = "dark" | "light";
@@ -45,6 +45,7 @@ type Burst = {
 
 const STORAGE_KEY = "egege-activity-v1";
 const PREFERENCES_KEY = "egege-preferences-v1";
+const PREMIUM_KEY = "egege-premium-demo-v1";
 const XP_PER_ANSWER = 10;
 const defaultPreferences: Preferences = {
   theme: "dark",
@@ -124,12 +125,33 @@ function DashboardIcon() {
   );
 }
 
+function TheoryIcon() {
+  return (
+    <span className="dock-icon theory-icon" aria-hidden="true">
+      <i />
+      <i />
+    </span>
+  );
+}
+
+function GameIcon() {
+  return (
+    <span className="dock-icon game-icon" aria-hidden="true">
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
+
 function Dock({
   navigate,
   isRegistered,
+  isPremium,
 }: {
   navigate: (section: Section) => void;
   isRegistered: boolean;
+  isPremium: boolean;
 }) {
   const dockRef = useRef<HTMLDivElement>(null);
   const dockFrame = useRef<number | null>(null);
@@ -159,6 +181,12 @@ function Dock({
     { section: "tasks", label: "База заданий", icon: <DatabaseIcon /> },
     { section: "variants", label: "Варианты", icon: <VariantsIcon /> },
   ];
+  if (isRegistered && isPremium) {
+    items.push(
+      { section: "theory", label: "Теория", icon: <TheoryIcon /> },
+      { section: "game", label: "Игра", icon: <GameIcon /> },
+    );
+  }
   if (isRegistered) {
     items.push({ section: "dashboard", label: "Дашборд", icon: <DashboardIcon /> });
   }
@@ -174,7 +202,7 @@ function Dock({
       {items.map((item, index) => (
         <button
           className="dock-item"
-          style={{ "--dock-scale": scales[index] } as React.CSSProperties}
+          style={{ "--dock-scale": scales[index] ?? 1 } as React.CSSProperties}
           onClick={() => navigate(item.section)}
           key={item.section}
         >
@@ -190,11 +218,13 @@ function AppHeader({
   section,
   navigate,
   isRegistered,
+  isPremium,
   profile,
 }: {
   section: Section;
   navigate: (section: Section) => void;
   isRegistered: boolean;
+  isPremium: boolean;
   profile: React.ReactNode;
 }) {
   return (
@@ -218,6 +248,22 @@ function AppHeader({
           >
             Варианты
           </button>
+          {isRegistered && isPremium && (
+            <>
+              <button
+                className={section === "theory" ? "nav-active" : ""}
+                onClick={() => navigate("theory")}
+              >
+                Теория
+              </button>
+              <button
+                className={section === "game" ? "nav-active" : ""}
+                onClick={() => navigate("game")}
+              >
+                Игра
+              </button>
+            </>
+          )}
           {isRegistered && (
             <button
               className={section === "dashboard" ? "nav-active" : ""}
@@ -238,8 +284,10 @@ function ProfileMenu({
   user,
   authConfigured,
   preferences,
+  isPremium,
   onToggle,
   onPreference,
+  onPremiumChange,
   onEmailLogin,
   onGoogleLogin,
   onLogout,
@@ -249,8 +297,10 @@ function ProfileMenu({
   user: User | null;
   authConfigured: boolean | null;
   preferences: Preferences;
+  isPremium: boolean;
   onToggle: () => void;
   onPreference: (next: Partial<Preferences>) => void;
+  onPremiumChange: (next: boolean) => void;
   onEmailLogin: (email: string) => Promise<string>;
   onGoogleLogin: () => Promise<string>;
   onLogout: () => Promise<void>;
@@ -292,12 +342,19 @@ function ProfileMenu({
   return (
     <div className={`profile ${home ? "profile-home" : ""}`}>
       <button
-        className={`profile-trigger ${isRegistered ? "is-user" : "is-guest"}`}
+        className={`profile-trigger ${isRegistered ? "is-user" : "is-guest"} ${
+          isPremium ? "is-premium" : ""
+        }`}
         onClick={onToggle}
         aria-expanded={open}
         aria-label={isRegistered ? "Открыть профиль" : "Войти"}
       >
-        {isRegistered ? <span>{userInitial}</span> : "Войти"}
+        {isRegistered ? (
+          <>
+            {isPremium && <i className="premium-crown" aria-hidden="true" />}
+            <span>{userInitial}</span>
+          </>
+        ) : "Войти"}
       </button>
       <section className={`profile-panel ${open ? "is-open" : ""}`} aria-hidden={!open}>
         <div className="profile-panel-heading">
@@ -366,9 +423,37 @@ function ProfileMenu({
         <div className="profile-auth">
           {isRegistered ? (
             <>
+              <div className={`premium-demo ${isPremium ? "is-active" : ""}`}>
+                <div>
+                  <span className="premium-label">
+                    <i className="premium-crown is-inline" aria-hidden="true" />
+                    Тестовый премиум
+                  </span>
+                  <small>
+                    {isPremium
+                      ? "Теория и Игра открыты"
+                      : "Включите, чтобы проверить премиум-разделы"}
+                  </small>
+                </div>
+                <button
+                  className="premium-switch"
+                  role="switch"
+                  aria-checked={isPremium}
+                  aria-label="Переключить тестовый премиум"
+                  onClick={() => onPremiumChange(!isPremium)}
+                >
+                  <span />
+                </button>
+              </div>
               <div className="profile-person">
-                <span>{userInitial}</span>
-                <div><strong>{userLabel}</strong><small>Дашборд открыт</small></div>
+                <span className={isPremium ? "has-premium" : ""}>
+                  {isPremium && <i className="premium-crown" aria-hidden="true" />}
+                  {userInitial}
+                </span>
+                <div>
+                  <strong>{userLabel}</strong>
+                  <small>{isPremium ? "Премиум-профиль" : "Обычный профиль"}</small>
+                </div>
               </div>
               <button className="secondary-auth" onClick={() => void onLogout()}>
                 Выйти
@@ -511,6 +596,49 @@ function PageHeading({
   );
 }
 
+function PremiumPlaceholder({ section }: { section: "theory" | "game" }) {
+  const isTheory = section === "theory";
+
+  return (
+    <>
+      <PageHeading
+        eyebrow="Премиум-раздел"
+        title={isTheory ? "Теория" : "Игра"}
+        description={
+          isTheory
+            ? "Здесь появится удобный учебник по программированию и темам ЕГЭ."
+            : "Здесь появятся короткие игровые уровни, которые удобно проходить с телефона."
+        }
+      />
+      <section className={`premium-placeholder placeholder-${section}`}>
+        <div className="placeholder-visual" aria-hidden="true">
+          {isTheory ? (
+            <span className="placeholder-book">
+              <i />
+              <i />
+            </span>
+          ) : (
+            <span className="placeholder-path">
+              <i />
+              <i />
+              <i />
+            </span>
+          )}
+        </div>
+        <div className="placeholder-copy">
+          <span className="soon-badge"><i /> Скоро</span>
+          <h2>{isTheory ? "Собираем знания по главам" : "Готовим первую вселенную"}</h2>
+          <p>
+            {isTheory
+              ? "Перенесём и переработаем материалы из Notion, добавим понятную навигацию и связи с практикой."
+              : "Первый прототип будет состоять из коротких уровней с кодом, блоками и упражнениями на отступы."}
+          </p>
+        </div>
+      </section>
+    </>
+  );
+}
+
 function Dashboard({ activity }: { activity: Activity }) {
   const calendar = useMemo(() => {
     const today = new Date();
@@ -627,6 +755,7 @@ export default function Home() {
   const [toast, setToast] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isPremium, setIsPremium] = useState(false);
   const [authConfigured, setAuthConfigured] = useState<boolean | null>(null);
   const [preferences, setPreferences] = useState<Preferences>(() => {
     if (typeof window === "undefined") return defaultPreferences;
@@ -642,6 +771,18 @@ export default function Home() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstId = useRef(0);
   const isRegistered = Boolean(user);
+
+  useEffect(() => {
+    if (!user) {
+      setIsPremium(false);
+      return;
+    }
+    try {
+      setIsPremium(window.localStorage.getItem(`${PREMIUM_KEY}:${user.id}`) === "true");
+    } catch {
+      setIsPremium(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     let active = true;
@@ -695,6 +836,11 @@ export default function Home() {
     if (nextSection === "dashboard" && !isRegistered) {
       setProfileOpen(true);
       notify("Дашборд откроется после входа");
+      return;
+    }
+    if ((nextSection === "theory" || nextSection === "game") && (!isRegistered || !isPremium)) {
+      setProfileOpen(true);
+      notify(isRegistered ? "Включите тестовый премиум в профиле" : "Премиум-разделы откроются после входа");
       return;
     }
     setSection(nextSection);
@@ -773,6 +919,20 @@ export default function Home() {
     });
   };
 
+  const updatePremium = (next: boolean) => {
+    if (!user) return;
+    setIsPremium(next);
+    try {
+      window.localStorage.setItem(`${PREMIUM_KEY}:${user.id}`, String(next));
+    } catch {
+      // The demo switch still works for the current session.
+    }
+    if (!next && (section === "theory" || section === "game")) {
+      setSection("dashboard");
+    }
+    notify(next ? "Премиум включён — новые разделы открыты" : "Премиум выключен");
+  };
+
   const sendMagicLink = async (email: string) => {
     const client = await getSupabaseBrowserClient();
     if (!client) return "Нужно подключить Supabase — инструкция уже подготовлена.";
@@ -806,7 +966,7 @@ export default function Home() {
     const client = await getSupabaseBrowserClient();
     if (client) await client.auth.signOut();
     setUser(null);
-    if (section === "dashboard") setSection("tasks");
+    if (section === "dashboard" || section === "theory" || section === "game") setSection("tasks");
     setProfileOpen(false);
     notify("Вы вышли из профиля");
   };
@@ -817,8 +977,10 @@ export default function Home() {
       user={user}
       authConfigured={authConfigured}
       preferences={preferences}
+      isPremium={isPremium}
       onToggle={() => setProfileOpen((current) => !current)}
       onPreference={updatePreferences}
+      onPremiumChange={updatePremium}
       onEmailLogin={sendMagicLink}
       onGoogleLogin={loginWithGoogle}
       onLogout={logout}
@@ -882,8 +1044,10 @@ export default function Home() {
           user={user}
           authConfigured={authConfigured}
           preferences={preferences}
+          isPremium={isPremium}
           onToggle={() => setProfileOpen((current) => !current)}
           onPreference={updatePreferences}
+          onPremiumChange={updatePremium}
           onEmailLogin={sendMagicLink}
           onGoogleLogin={loginWithGoogle}
           onLogout={logout}
@@ -894,10 +1058,14 @@ export default function Home() {
           <h1><span className="ege-part">EGE</span><span className="ge-part">GE</span></h1>
           <p className="brand-by">by Tsarapkin</p>
           <p className="eyebrow">ЕГЭ по информатике</p>
-          <Dock navigate={navigate} isRegistered={isRegistered} />
+          <Dock navigate={navigate} isRegistered={isRegistered} isPremium={isPremium} />
         </div>
         <p className="home-note">
-          {isRegistered ? "Профиль активен · прогресс на этом устройстве" : "Открытая база · без регистрации"}
+          {isPremium
+            ? "Премиум активен · новые разделы открыты"
+            : isRegistered
+              ? "Профиль активен · прогресс на этом устройстве"
+              : "Открытая база · без регистрации"}
         </p>
         <Toast message={toast} />
       </main>
@@ -910,6 +1078,7 @@ export default function Home() {
         section={section}
         navigate={navigate}
         isRegistered={isRegistered}
+        isPremium={isPremium}
         profile={profile}
       />
 
@@ -1039,6 +1208,10 @@ export default function Home() {
             )}
           </>
         )}
+
+        {section === "theory" && <PremiumPlaceholder section="theory" />}
+
+        {section === "game" && <PremiumPlaceholder section="game" />}
 
         {section === "dashboard" && (
           <>
