@@ -1,6 +1,6 @@
 "use client";
 
-import type { User } from "@supabase/supabase-js";
+import type { Provider, User } from "@supabase/supabase-js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
@@ -341,6 +341,7 @@ function ProfileMenu({
   onPreference,
   onEmailLogin,
   onGoogleLogin,
+  onTelegramLogin,
   onLogout,
   home = false,
 }: {
@@ -352,6 +353,7 @@ function ProfileMenu({
   onPreference: (next: Partial<Preferences>) => void;
   onEmailLogin: (email: string) => Promise<string>;
   onGoogleLogin: () => Promise<string>;
+  onTelegramLogin: () => Promise<string>;
   onLogout: () => Promise<void>;
   home?: boolean;
 }) {
@@ -359,6 +361,12 @@ function ProfileMenu({
   const [authBusy, setAuthBusy] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
   const isRegistered = Boolean(user);
+  const userLabel =
+    user?.email ??
+    user?.user_metadata?.preferred_username ??
+    user?.user_metadata?.name ??
+    "Ученик EGEGE";
+  const userInitial = userLabel.trim().charAt(0).toUpperCase() || "Е";
   const accents: Array<{ value: Accent; label: string }> = [
     { value: "lime", label: "Лайм" },
     { value: "blue", label: "Синий" },
@@ -390,7 +398,7 @@ function ProfileMenu({
         aria-expanded={open}
         aria-label={isRegistered ? "Открыть профиль" : "Войти"}
       >
-        {isRegistered ? <span>Е</span> : "Войти"}
+        {isRegistered ? <span>{userInitial}</span> : "Войти"}
       </button>
       <section className={`profile-panel ${open ? "is-open" : ""}`} aria-hidden={!open}>
         <div className="profile-panel-heading">
@@ -398,7 +406,7 @@ function ProfileMenu({
             <strong>{isRegistered ? "Профиль ученика" : "Настройте под себя"}</strong>
             <span>
               {isRegistered
-                ? user?.email
+                ? userLabel
                 : "Оформление сохраняется на этом устройстве"}
             </span>
           </div>
@@ -460,8 +468,8 @@ function ProfileMenu({
           {isRegistered ? (
             <>
               <div className="profile-person">
-                <span>Е</span>
-                <div><strong>{user?.email}</strong><small>Дашборд открыт</small></div>
+                <span>{userInitial}</span>
+                <div><strong>{userLabel}</strong><small>Дашборд открыт</small></div>
               </div>
               <button className="secondary-auth" onClick={() => void onLogout()}>
                 Выйти
@@ -469,7 +477,26 @@ function ProfileMenu({
             </>
           ) : (
             <>
-              <p>Войдите без пароля — пришлём безопасную ссылку на почту.</p>
+              <p>Войдите удобным способом — пароль создавать не нужно.</p>
+              <div className="social-auth-list">
+                <button
+                  className="social-auth google-auth"
+                  onClick={() => void runAuth(onGoogleLogin)}
+                  disabled={!authConfigured || authBusy}
+                >
+                  <b aria-hidden="true">G</b>
+                  Продолжить с Google
+                </button>
+                <button
+                  className="social-auth telegram-auth"
+                  onClick={() => void runAuth(onTelegramLogin)}
+                  disabled={!authConfigured || authBusy}
+                >
+                  <b aria-hidden="true">➤</b>
+                  Продолжить с Telegram
+                </button>
+              </div>
+              <div className="auth-divider"><span>или по почте</span></div>
               <form
                 className="auth-form"
                 onSubmit={(event) => {
@@ -498,15 +525,6 @@ function ProfileMenu({
                   {authBusy ? "Отправляем…" : "Получить ссылку"}
                 </button>
               </form>
-              <div className="auth-divider"><span>или</span></div>
-              <button
-                className="google-auth"
-                onClick={() => void runAuth(onGoogleLogin)}
-                disabled={!authConfigured || authBusy}
-              >
-                <b aria-hidden="true">G</b>
-                Продолжить с Google
-              </button>
               {authConfigured === null && <p className="auth-status">Проверяем подключение…</p>}
               {authConfigured === false && (
                 <p className="auth-status is-warning">
@@ -865,18 +883,22 @@ export default function Home() {
     return "Ссылка отправлена. Проверьте почту.";
   };
 
-  const loginWithGoogle = async () => {
+  const loginWithProvider = async (provider: Provider, label: string) => {
     const client = await getSupabaseBrowserClient();
     if (!client) return "Нужно подключить Supabase — инструкция уже подготовлена.";
 
     const { error } = await client.auth.signInWithOAuth({
-      provider: "google",
+      provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=/`,
       },
     });
-    return error ? `Не удалось войти: ${error.message}` : "Открываем Google…";
+    return error ? `Не удалось войти: ${error.message}` : `Открываем ${label}…`;
   };
+
+  const loginWithGoogle = () => loginWithProvider("google", "Google");
+  const loginWithTelegram = () =>
+    loginWithProvider("custom:telegram", "Telegram");
 
   const logout = async () => {
     const client = await getSupabaseBrowserClient();
@@ -897,6 +919,7 @@ export default function Home() {
       onPreference={updatePreferences}
       onEmailLogin={sendMagicLink}
       onGoogleLogin={loginWithGoogle}
+      onTelegramLogin={loginWithTelegram}
       onLogout={logout}
     />
   );
@@ -944,6 +967,7 @@ export default function Home() {
           onPreference={updatePreferences}
           onEmailLogin={sendMagicLink}
           onGoogleLogin={loginWithGoogle}
+          onTelegramLogin={loginWithTelegram}
           onLogout={logout}
           home
         />
