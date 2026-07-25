@@ -341,7 +341,6 @@ function ProfileMenu({
   onPreference,
   onEmailLogin,
   onGoogleLogin,
-  onTelegramLogin,
   onLogout,
   home = false,
 }: {
@@ -353,7 +352,6 @@ function ProfileMenu({
   onPreference: (next: Partial<Preferences>) => void;
   onEmailLogin: (email: string) => Promise<string>;
   onGoogleLogin: () => Promise<string>;
-  onTelegramLogin: () => Promise<string>;
   onLogout: () => Promise<void>;
   home?: boolean;
 }) {
@@ -486,14 +484,6 @@ function ProfileMenu({
                 >
                   <b aria-hidden="true">G</b>
                   Продолжить с Google
-                </button>
-                <button
-                  className="social-auth telegram-auth"
-                  onClick={() => void runAuth(onTelegramLogin)}
-                  disabled={!authConfigured || authBusy}
-                >
-                  <b aria-hidden="true">➤</b>
-                  Продолжить с Telegram
                 </button>
               </div>
               <div className="auth-divider"><span>или по почте</span></div>
@@ -897,8 +887,6 @@ export default function Home() {
   };
 
   const loginWithGoogle = () => loginWithProvider("google", "Google");
-  const loginWithTelegram = () =>
-    loginWithProvider("custom:telegram", "Telegram");
 
   const logout = async () => {
     const client = await getSupabaseBrowserClient();
@@ -919,7 +907,6 @@ export default function Home() {
       onPreference={updatePreferences}
       onEmailLogin={sendMagicLink}
       onGoogleLogin={loginWithGoogle}
-      onTelegramLogin={loginWithTelegram}
       onLogout={logout}
     />
   );
@@ -967,7 +954,6 @@ export default function Home() {
           onPreference={updatePreferences}
           onEmailLogin={sendMagicLink}
           onGoogleLogin={loginWithGoogle}
-          onTelegramLogin={loginWithTelegram}
           onLogout={logout}
           home
         />

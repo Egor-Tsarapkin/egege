@@ -839,18 +839,6 @@ p,
   color: #4285f4;
 }
 
-.telegram-auth b {
-  background: #2aabee;
-  color: #fff;
-  font-size: 10px;
-  padding-right: 1px;
-  transform: rotate(-18deg);
-}
-
-.telegram-auth:hover:not(:disabled) b {
-  transform: rotate(-18deg) scale(1.08);
-}
-
 .auth-status {
   color: var(--accent) !important;
   margin: 10px 2px 0 !important;
