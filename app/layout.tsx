@@ -3,6 +3,25 @@ import { headers } from "next/headers";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 
+const appearanceScript = `
+(() => {
+  const defaults = { theme: "dark", accent: "lime" };
+  const themes = new Set(["dark", "light"]);
+  const accents = new Set(["lime", "blue", "red", "pink", "beige"]);
+
+  try {
+    const saved = JSON.parse(localStorage.getItem("egege-preferences-v1") || "{}");
+    const theme = themes.has(saved.theme) ? saved.theme : defaults.theme;
+    const accent = accents.has(saved.accent) ? saved.accent : defaults.accent;
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.accent = accent;
+  } catch {
+    document.documentElement.dataset.theme = defaults.theme;
+    document.documentElement.dataset.accent = defaults.accent;
+  }
+})();
+`;
+
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
@@ -43,7 +62,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" data-theme="dark" data-accent="lime" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: appearanceScript }} />
+      </head>
       <body>{children}</body>
     </html>
   );

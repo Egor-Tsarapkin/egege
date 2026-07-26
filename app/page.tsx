@@ -1389,22 +1389,38 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [authConfigured, setAuthConfigured] = useState<boolean | null>(null);
-  const [preferences, setPreferences] = useState<Preferences>(() => {
-    if (typeof window === "undefined") return defaultPreferences;
-    try {
-      const saved = window.localStorage.getItem(PREFERENCES_KEY);
-      return saved
-        ? { ...defaultPreferences, ...(JSON.parse(saved) as Partial<Preferences>) }
-        : defaultPreferences;
-    } catch {
-      return defaultPreferences;
-    }
-  });
+  const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstId = useRef(0);
   const claimingTasks = useRef(new Set<string>());
   const isRegistered = Boolean(user);
+
+  useEffect(() => {
+    let restored = defaultPreferences;
+
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}") as
+        Partial<Preferences>;
+      restored = {
+        theme: saved.theme === "light" ? "light" : "dark",
+        accent: ["lime", "blue", "red", "pink", "beige"].includes(saved.accent ?? "")
+          ? (saved.accent as Accent)
+          : defaultPreferences.accent,
+        reaction: ["xp", "hearts", "letters", "fire", "fireworks", "random"].includes(
+          saved.reaction ?? "",
+        )
+          ? (saved.reaction as Reaction)
+          : defaultPreferences.reaction,
+      };
+    } catch {
+      // Invalid local preferences are replaced with safe defaults.
+    }
+
+    document.documentElement.dataset.theme = restored.theme;
+    document.documentElement.dataset.accent = restored.accent;
+    queueMicrotask(() => setPreferences(restored));
+  }, []);
 
   const notify = (message: string) => {
     setToast("");
@@ -1668,6 +1684,8 @@ export default function Home() {
   const updatePreferences = (next: Partial<Preferences>) => {
     setPreferences((current) => {
       const updated = { ...current, ...next };
+      document.documentElement.dataset.theme = updated.theme;
+      document.documentElement.dataset.accent = updated.accent;
       try {
         window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
       } catch {
@@ -1744,11 +1762,6 @@ export default function Home() {
       onLogout={logout}
     />
   );
-
-  const appearance = {
-    "data-theme": preferences.theme,
-    "data-accent": preferences.accent,
-  };
 
   const filteredTasks = useMemo(
     () =>
@@ -1834,7 +1847,7 @@ export default function Home() {
 
   if (section === "home") {
     return (
-      <main className="home" {...appearance}>
+      <main className="home">
         <ProfileMenu
           open={profileOpen}
           user={user}
@@ -1882,7 +1895,7 @@ export default function Home() {
   }
 
   return (
-    <main className="tasks-page" {...appearance}>
+    <main className="tasks-page">
       <AppHeader
         section={section}
         navigate={navigate}
