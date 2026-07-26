@@ -2588,7 +2588,7 @@ footer {
 }
 
 .preview-theory-card {
-  animation: preview-theory-cycle 8s cubic-bezier(0.2, 0, 0, 1) infinite;
+  animation: preview-theory-cycle 6s cubic-bezier(0.2, 0, 0, 1) infinite;
   animation-delay: calc(var(--card-index) * 2s);
   background: var(--surface);
   border-radius: 19px;
@@ -2600,6 +2600,7 @@ footer {
   position: absolute;
   top: 20px;
   width: 182px;
+  z-index: 1;
 }
 
 .preview-theory::before,
@@ -2818,11 +2819,11 @@ footer {
     opacity: 0;
     transform: translate(22px, 4px) rotate(7deg) scale(0.97);
   }
-  6%, 19% {
+  7%, 27% {
     opacity: 1;
     transform: translate(0, 0) rotate(-1deg) scale(1);
   }
-  25%, 100% {
+  33.333%, 100% {
     opacity: 0;
     transform: translate(-34px, -8px) rotate(-8deg) scale(0.96);
   }

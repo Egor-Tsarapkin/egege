@@ -738,7 +738,7 @@ function GatePreview({ section }: { section: GateSection }) {
   }
 
   if (section === "theory") {
-    const theoryCards = ["if", "for", "while", "def"];
+    const theoryCards = ["if", "for", "def"];
     return (
       <div className="gate-preview preview-theory" aria-hidden="true">
         {theoryCards.map((keyword, index) => (
