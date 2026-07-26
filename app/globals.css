@@ -294,7 +294,7 @@ p,
 }
 
 .access-lock.is-premium {
-  color: var(--accent);
+  color: var(--muted);
 }
 
 .chain-strand {
@@ -311,6 +311,28 @@ p,
 
 .chain-strand.chain-reverse {
   transform: translate(-50%, -50%) rotate(-22deg);
+}
+
+.chain-strand::before,
+.chain-strand::after {
+  background: var(--surface-raised);
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  content: "";
+  height: 8px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  z-index: 1;
+}
+
+.chain-strand::before {
+  left: -7px;
+}
+
+.chain-strand::after {
+  right: -7px;
 }
 
 .chain-strand i {
@@ -397,20 +419,35 @@ p,
 }
 
 .access-lock.is-compact .chain-strand {
-  gap: 3px;
+  gap: 2px;
+}
+
+.access-lock.is-compact .chain-strand::before,
+.access-lock.is-compact .chain-strand::after {
+  border-width: 1.5px;
+  height: 6px;
+  width: 6px;
+}
+
+.access-lock.is-compact .chain-strand::before {
+  left: -5px;
+}
+
+.access-lock.is-compact .chain-strand::after {
+  right: -5px;
 }
 
 .access-lock.is-compact .chain-strand i {
   border-radius: 5px;
   border-width: 1.6px;
-  flex-basis: 12px;
-  height: 8px;
+  flex-basis: 10px;
+  height: 7px;
 }
 
 .access-lock.is-compact .chain-strand i::after {
   height: 2px;
   left: 100%;
-  width: 5px;
+  width: 4px;
 }
 
 .access-lock.is-compact .chain-padlock {
@@ -3234,6 +3271,59 @@ footer {
   .dock-item .access-lock {
     inset: 0;
     transform: none;
+  }
+
+  .dock-item .chain-strand {
+    gap: 2px;
+  }
+
+  .dock-item .chain-strand::before,
+  .dock-item .chain-strand::after {
+    border-width: 1.4px;
+    height: 6px;
+    width: 6px;
+  }
+
+  .dock-item .chain-strand::before {
+    left: -5px;
+  }
+
+  .dock-item .chain-strand::after {
+    right: -5px;
+  }
+
+  .dock-item .chain-strand i {
+    border-radius: 5px;
+    border-width: 1.5px;
+    flex-basis: 10px;
+    height: 7px;
+  }
+
+  .dock-item .chain-strand i::after {
+    height: 2px;
+    left: 100%;
+    width: 4px;
+  }
+
+  .dock-item .chain-padlock {
+    border-radius: 4px;
+    height: 14px;
+    width: 14px;
+  }
+
+  .dock-item .chain-padlock::before {
+    border-width: 1.4px;
+    height: 6px;
+    left: 3px;
+    top: -5px;
+    width: 8px;
+  }
+
+  .dock-item .chain-padlock i {
+    height: 3px;
+    left: 5.5px;
+    top: 5px;
+    width: 3px;
   }
 
   .topbar .access-lock.is-compact {

@@ -159,11 +159,11 @@ function AccessBadge({
       aria-hidden="true"
     >
       <span className="chain-strand chain-forward">
-        {Array.from({ length: 9 }, (_, index) => <i key={index} />)}
+        {Array.from({ length: 5 }, (_, index) => <i key={index} />)}
       </span>
       {premium && (
         <span className="chain-strand chain-reverse">
-          {Array.from({ length: 9 }, (_, index) => <i key={index} />)}
+          {Array.from({ length: 5 }, (_, index) => <i key={index} />)}
         </span>
       )}
       <span className="chain-padlock"><i /></span>
@@ -754,7 +754,7 @@ function GatePreview({ section }: { section: GateSection }) {
           </div>
         ))}
         <div className="preview-premium-lock">
-          <AccessBadge premium />
+          <AccessBadge premium compact />
         </div>
       </div>
     );
