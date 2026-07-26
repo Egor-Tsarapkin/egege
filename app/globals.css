@@ -371,6 +371,7 @@ p,
   box-shadow:
     0 0 0 1.5px currentColor,
     0 4px 9px color-mix(in srgb, var(--bg) 32%, transparent);
+  color: var(--accent);
   height: 18px;
   left: 50%;
   position: absolute;
