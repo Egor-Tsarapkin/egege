@@ -423,6 +423,9 @@ function CodeTarget({
                 );
               })}
               {line.length === 0 && <span className={typed.length === lineOffset ? "is-current" : "is-future"}> </span>}
+              {lineIndex < lines.length - 1 && typed.length === lineOffset + line.length && (
+                <span className="is-current trainer-newline-caret"> </span>
+              )}
             </code>
           </div>
         );
@@ -443,6 +446,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
   const [best, setBest] = useState(() => readBest(userId, "python"));
   const [isNewBest, setIsNewBest] = useState(false);
   const captureRef = useRef<HTMLTextAreaElement>(null);
+  const codeScrollRef = useRef<HTMLDivElement>(null);
   const startedAtRef = useRef<number | null>(null);
   const elapsedRef = useRef(0);
 
@@ -478,6 +482,37 @@ export default function TypingTrainer({ userId }: { userId: string }) {
     return () => window.clearInterval(interval);
   }, [running]);
 
+  useEffect(() => {
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+    const frame = window.requestAnimationFrame(() => {
+      captureRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const scrollContainer = codeScrollRef.current;
+    const cursor = scrollContainer?.querySelector<HTMLElement>(".is-current");
+    if (!scrollContainer || !cursor) return;
+
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const cursorRect = cursor.getBoundingClientRect();
+    const verticalMargin = Math.min(64, containerRect.height * 0.24);
+    const horizontalMargin = Math.min(80, containerRect.width * 0.16);
+
+    if (cursorRect.bottom > containerRect.bottom - verticalMargin) {
+      scrollContainer.scrollTop += cursorRect.bottom - (containerRect.bottom - verticalMargin);
+    } else if (cursorRect.top < containerRect.top + verticalMargin) {
+      scrollContainer.scrollTop -= containerRect.top + verticalMargin - cursorRect.top;
+    }
+
+    if (cursorRect.right > containerRect.right - horizontalMargin) {
+      scrollContainer.scrollLeft += cursorRect.right - (containerRect.right - horizontalMargin);
+    } else if (cursorRect.left < containerRect.left + horizontalMargin) {
+      scrollContainer.scrollLeft -= containerRect.left + horizontalMargin - cursorRect.left;
+    }
+  }, [target, typed]);
+
   const reset = (nextMode = mode, nextExerciseIndex = exerciseIndex) => {
     setMode(nextMode);
     setExerciseIndex(nextExerciseIndex);
@@ -491,7 +526,11 @@ export default function TypingTrainer({ userId }: { userId: string }) {
     setIsNewBest(false);
     startedAtRef.current = null;
     elapsedRef.current = 0;
-    requestAnimationFrame(() => captureRef.current?.focus());
+    if (codeScrollRef.current) {
+      codeScrollRef.current.scrollTop = 0;
+      codeScrollRef.current.scrollLeft = 0;
+    }
+    requestAnimationFrame(() => captureRef.current?.focus({ preventScroll: true }));
   };
 
   const startTimer = () => {
@@ -507,16 +546,30 @@ export default function TypingTrainer({ userId }: { userId: string }) {
     captureRef.current?.blur();
   };
 
-  const handleChange = (value: string) => {
+  const handleChange = (value: string, countedCharacters?: number) => {
     if (completed) return;
-    const nextValue = value.slice(0, target.length);
+    let nextValue = value.slice(0, target.length);
+    let charactersToCount = countedCharacters;
+
+    if (
+      nextValue.length === typed.length + 1 &&
+      nextValue[typed.length] === "\n" &&
+      target[typed.length] === "\n"
+    ) {
+      let nextContentIndex = typed.length + 1;
+      while (target[nextContentIndex] === " ") nextContentIndex += 1;
+      nextValue = `${nextValue}${target.slice(typed.length + 1, nextContentIndex)}`;
+      charactersToCount ??= 1;
+    }
+
     if (nextValue.length > typed.length) {
       const added = nextValue.slice(typed.length);
+      const counted = added.slice(0, charactersToCount ?? added.length);
       let addedMistakes = 0;
-      Array.from(added).forEach((character, index) => {
+      Array.from(counted).forEach((character, index) => {
         if (character !== target[typed.length + index]) addedMistakes += 1;
       });
-      setKeystrokes((current) => current + added.length);
+      setKeystrokes((current) => current + counted.length);
       setMistakes((current) => current + addedMistakes);
       startTimer();
     }
@@ -532,8 +585,10 @@ export default function TypingTrainer({ userId }: { userId: string }) {
       const nextIsBest = resultSpeed > best;
       setElapsedMs(finalElapsed);
       setRunning(false);
+      setFocused(false);
       setIsNewBest(nextIsBest);
       startedAtRef.current = null;
+      captureRef.current?.blur();
       if (nextIsBest) {
         setBest(resultSpeed);
         try {
@@ -555,7 +610,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
   }, [nextKey]);
 
   return (
-    <div className={`typing-trainer ${focused ? "is-focused" : ""}`}>
+    <div className={`typing-trainer ${focused ? "is-focused" : ""} ${completed ? "is-complete" : ""}`}>
       <section className="trainer-hero">
         <div className="trainer-heading">
           <p className="eyebrow">Тренажёр</p>
@@ -600,7 +655,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
           </div>
         </div>
 
-        <div className="trainer-code-scroll">
+        <div className="trainer-code-scroll" ref={codeScrollRef}>
           <CodeTarget target={target} typed={typed} />
         </div>
 
@@ -612,6 +667,21 @@ export default function TypingTrainer({ userId }: { userId: string }) {
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onKeyDown={(event) => {
+            if (event.key === "Enter" && !completed) {
+              event.preventDefault();
+              const cursorIndex = typed.length;
+              const nextLineStart = cursorIndex + 1;
+              let nextContentIndex = nextLineStart;
+
+              if (target[cursorIndex] === "\n") {
+                while (target[nextContentIndex] === " ") nextContentIndex += 1;
+                const indentation = target.slice(nextLineStart, nextContentIndex);
+                handleChange(`${typed}\n${indentation}`, 1);
+              } else {
+                handleChange(`${typed}\n`, 1);
+              }
+              return;
+            }
             if (event.key === "Escape") {
               event.preventDefault();
               pause();
@@ -626,14 +696,36 @@ export default function TypingTrainer({ userId }: { userId: string }) {
           aria-label="Поле тренировки печати"
         />
 
-        {!focused && !completed && (
-          <button
-            className="trainer-focus-prompt"
-            onClick={() => captureRef.current?.focus()}
-          >
-            <span>{typed ? "Продолжить" : "Нажмите, чтобы начать"}</span>
-            <small>На компьютере можно сразу печатать · Esc — пауза</small>
-          </button>
+        {!typed && !completed && (
+          <div className="trainer-start-note" aria-hidden="true">
+            <i />
+            <span>Как только начнёте писать, таймер пойдёт</span>
+          </div>
+        )}
+
+        {completed && (
+          <section className="trainer-result-overlay" aria-live="polite">
+            <div>
+              <p className="eyebrow">Результат</p>
+              <h2>Код набран!</h2>
+              <p>{isNewBest ? "Новый лучший темп — отличная работа." : "Точность важнее спешки. Попробуйте ещё раз."}</p>
+            </div>
+            <div className="trainer-result-stats">
+              <span><strong>{speed}</strong> зн/мин</span>
+              <span><strong>{accuracy}%</strong> точность</span>
+              <span><strong>{mistakes}</strong> ошибок</span>
+            </div>
+            <div className="trainer-result-actions">
+              <button onClick={() => reset()}>Повторить</button>
+              <button
+                onClick={() =>
+                  reset(mode, (exerciseIndex + 1) % EXERCISES[mode].length)
+                }
+              >
+                Следующее
+              </button>
+            </div>
+          </section>
         )}
       </section>
 
@@ -686,30 +778,6 @@ export default function TypingTrainer({ userId }: { userId: string }) {
         </aside>
       </section>
 
-      {completed && (
-        <section className="trainer-result" aria-live="polite">
-          <div>
-            <p className="eyebrow">Результат</p>
-            <h2>Код набран!</h2>
-            <p>{isNewBest ? "Новый лучший темп — отличная работа." : "Точность важнее спешки. Попробуйте ещё раз."}</p>
-          </div>
-          <div className="trainer-result-stats">
-            <span><strong>{speed}</strong> зн/мин</span>
-            <span><strong>{accuracy}%</strong> точность</span>
-            <span><strong>{mistakes}</strong> ошибок</span>
-          </div>
-          <div className="trainer-result-actions">
-            <button onClick={() => reset()}>Повторить</button>
-            <button
-              onClick={() =>
-                reset(mode, (exerciseIndex + 1) % EXERCISES[mode].length)
-              }
-            >
-              Следующее
-            </button>
-          </div>
-        </section>
-      )}
     </div>
   );
 }
