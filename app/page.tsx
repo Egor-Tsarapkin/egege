@@ -158,14 +158,38 @@ function AccessBadge({
       className={`access-lock ${premium ? "is-premium" : ""} ${compact ? "is-compact" : ""}`}
       aria-hidden="true"
     >
-      <span className="lock-chain">
-        <i />
-        <i />
+      <span className="chain-strand chain-forward">
+        {Array.from({ length: 9 }, (_, index) => <i key={index} />)}
       </span>
-      <span className="tiny-lock" />
-      {premium && <span className="tiny-lock second-lock" />}
+      {premium && (
+        <span className="chain-strand chain-reverse">
+          {Array.from({ length: 9 }, (_, index) => <i key={index} />)}
+        </span>
+      )}
+      <span className="chain-padlock"><i /></span>
     </span>
   );
+}
+
+function repelAccessLock(event: React.PointerEvent<HTMLButtonElement>) {
+  if (window.matchMedia("(hover: none)").matches) return;
+  const lock = event.currentTarget.querySelector<HTMLElement>(".chain-padlock");
+  if (!lock) return;
+  const box = lock.getBoundingClientRect();
+  const deltaX = box.left + box.width / 2 - event.clientX;
+  const deltaY = box.top + box.height / 2 - event.clientY;
+  const distance = Math.max(1, Math.hypot(deltaX, deltaY));
+  const strength = Math.max(0, 1 - distance / 105) * 18;
+  lock.style.setProperty("--lock-away-x", `${(deltaX / distance) * strength}px`);
+  lock.style.setProperty("--lock-away-y", `${(deltaY / distance) * strength}px`);
+  lock.style.setProperty("--lock-tilt", `${(deltaX / distance) * 9}deg`);
+}
+
+function resetAccessLock(event: React.PointerEvent<HTMLButtonElement>) {
+  const lock = event.currentTarget.querySelector<HTMLElement>(".chain-padlock");
+  lock?.style.removeProperty("--lock-away-x");
+  lock?.style.removeProperty("--lock-away-y");
+  lock?.style.removeProperty("--lock-tilt");
 }
 
 function Dock({
@@ -244,6 +268,8 @@ function Dock({
           }`}
           style={{ "--dock-scale": scales[index] ?? 1 } as React.CSSProperties}
           onClick={() => navigate(item.section)}
+          onPointerMove={item.locked ? repelAccessLock : undefined}
+          onPointerLeave={item.locked ? resetAccessLock : undefined}
           aria-label={
             item.locked
               ? `${item.label}: ${item.premium ? "нужны регистрация и премиум" : "нужна регистрация"}`
@@ -308,6 +334,8 @@ function AppHeader({
                 item.locked ? "is-locked" : ""
               } ${rattlingSection === item.section ? "is-rattling" : ""}`}
               onClick={() => navigate(item.section)}
+              onPointerMove={item.locked ? repelAccessLock : undefined}
+              onPointerLeave={item.locked ? resetAccessLock : undefined}
               aria-label={
                 item.locked
                   ? `${item.label}: ${item.premium ? "нужны регистрация и премиум" : "нужна регистрация"}`
@@ -710,24 +738,21 @@ function GatePreview({ section }: { section: GateSection }) {
   }
 
   if (section === "theory") {
+    const theoryCards = ["if", "for", "while", "def"];
     return (
       <div className="gate-preview preview-theory" aria-hidden="true">
-        <div className="preview-theory-card card-back">
-          <i />
-          <i />
-          <i />
-        </div>
-        <div className="preview-theory-card card-middle">
-          <i />
-          <i />
-          <i />
-        </div>
-        <div className="preview-theory-card card-front">
-          <span>if</span>
-          <i />
-          <i />
-          <i />
-        </div>
+        {theoryCards.map((keyword, index) => (
+          <div
+            className="preview-theory-card"
+            style={{ "--card-index": index } as React.CSSProperties}
+            key={keyword}
+          >
+            <span>{keyword}</span>
+            <i />
+            <i />
+            <i />
+          </div>
+        ))}
         <div className="preview-premium-lock">
           <AccessBadge premium />
         </div>
@@ -742,9 +767,12 @@ function GatePreview({ section }: { section: GateSection }) {
       <i className="preview-level level-two" />
       <i className="preview-level level-three" />
       <i className="preview-level level-four" />
-      <span className="preview-paper-mascot">
-        <i />
-        <i />
+      <span className="preview-computer-mascot">
+        <span className="computer-screen">
+          <i />
+          <i />
+        </span>
+        <span className="computer-stand" />
       </span>
     </div>
   );
@@ -768,7 +796,7 @@ function AccessGateModal({
       title: "Учитесь через игру",
       description:
         "Короткие уровни с кодом, отступами и блоками. Прогресс будет сохраняться между устройствами.",
-      features: ["Уровни по 2–4 минуты", "Работает на телефоне"],
+      features: ["Уровни по 2–4 минуты", "На компьютере и телефоне"],
     },
     dashboard: {
       eyebrow: "Бесплатно после регистрации",
@@ -820,7 +848,9 @@ function AccessGateModal({
           <div className="gate-features">
             {copy.features.map((feature, index) => (
               <span key={feature}>
-                {isTheory && index === 1 ? <AccessBadge premium compact /> : <i />}
+                {isTheory && index === 1 ? (
+                  <span className="feature-lock-mark" aria-hidden="true"><i /></span>
+                ) : <i />}
                 {feature}
               </span>
             ))}
