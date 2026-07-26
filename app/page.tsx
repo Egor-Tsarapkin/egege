@@ -44,7 +44,55 @@ type Burst = {
   reaction: BurstReaction;
 };
 
-const STORAGE_KEY = "egege-activity-v1";
+type LeaderboardScope = "all" | "friends";
+type CommunityProfile = {
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarEmoji: string;
+  xp: number;
+  correctCount: number;
+  protectionActiveUntil: number;
+};
+type LeaderboardEntry = {
+  rank: number;
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarEmoji: string;
+  xp: number;
+  correctCount: number;
+  isCurrent: boolean;
+  isFriend: boolean;
+};
+type FriendEntry = {
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarEmoji: string;
+  xp: number;
+  status: "pending" | "accepted";
+  direction: "incoming" | "outgoing" | "friend";
+};
+type CommunityPayload = {
+  profile: CommunityProfile;
+  leaderboard: LeaderboardEntry[];
+  friends: FriendEntry[];
+  completedTaskIds: string[];
+  activity: Activity;
+  protection: { active: boolean; until: number };
+  view: LeaderboardScope;
+};
+type ClaimResult = {
+  status: "awarded" | "duplicate" | "too_fast" | "protected";
+  message: string;
+  completed: boolean;
+  xp?: number;
+  correctCount?: number;
+  dateKey?: string;
+  retryAfter?: number;
+};
+
 const PREFERENCES_KEY = "egege-preferences-v1";
 const PREMIUM_KEY = "egege-premium-demo-v1";
 const PENDING_ACCESS_KEY = "egege-pending-access-v1";
@@ -95,6 +143,26 @@ function dateKey(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+async function communityRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const client = await getSupabaseBrowserClient();
+  if (!client) throw new Error("Авторизация не подключена.");
+  const { data } = await client.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Нужно войти в аккаунт.");
+
+  const response = await fetch(path, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...init?.headers,
+    },
+  });
+  const body = (await response.json()) as T & { error?: string };
+  if (!response.ok) throw new Error(body.error ?? "Не удалось выполнить действие.");
+  return body;
 }
 
 function DatabaseIcon() {
@@ -593,14 +661,27 @@ function ProfileMenu({
 
 function TaskItem({
   task,
+  completed,
   onCorrect,
   onIncorrect,
 }: {
   task: Task;
-  onCorrect: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  completed: boolean;
+  onCorrect: (taskId: string, event: React.MouseEvent<HTMLButtonElement>) => Promise<void>;
   onIncorrect: () => void;
 }) {
   const [answerOpen, setAnswerOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const markCorrect = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (completed || saving) return;
+    setSaving(true);
+    try {
+      await onCorrect(task.id, event);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <article className="task-item">
@@ -642,9 +723,15 @@ function TaskItem({
             <p className="answer-label">Ответ</p>
             <p className="answer-value">{task.answer}</p>
             <div className="match-row">
-              <span>Ваш ответ совпал?</span>
-              <button className="match-yes" onClick={onCorrect}>Да</button>
-              <button onClick={onIncorrect}>Нет</button>
+              <span>{completed ? "Ответ уже отмечен" : "Ваш ответ совпал?"}</span>
+              <button
+                className={`match-yes ${completed ? "is-complete" : ""}`}
+                onClick={markCorrect}
+                disabled={completed || saving}
+              >
+                {completed ? "Учтено" : saving ? "Сохраняем…" : "Да"}
+              </button>
+              <button onClick={onIncorrect} disabled={completed || saving}>Нет</button>
             </div>
           </div>
         </div>
@@ -874,7 +961,33 @@ function AccessGateModal({
   );
 }
 
-function Dashboard({ activity }: { activity: Activity }) {
+function Dashboard({
+  activity,
+  community,
+  loading,
+  scope,
+  onScope,
+  onSetUsername,
+  onAddFriend,
+  onFriendAction,
+}: {
+  activity: Activity;
+  community: CommunityPayload | null;
+  loading: boolean;
+  scope: LeaderboardScope;
+  onScope: (scope: LeaderboardScope) => void;
+  onSetUsername: (username: string) => Promise<void>;
+  onAddFriend: (username: string) => Promise<void>;
+  onFriendAction: (
+    action: "accept_friend" | "decline_friend" | "remove_friend",
+    userId: string,
+  ) => Promise<void>;
+}) {
+  const [usernameDraft, setUsernameDraft] = useState<string | null>(null);
+  const [friendUsername, setFriendUsername] = useState("");
+  const [busyKey, setBusyKey] = useState("");
+  const resolvedUsername = usernameDraft ?? community?.profile.username ?? "";
+
   const calendar = useMemo(() => {
     const today = new Date();
     const start = new Date(today);
@@ -890,7 +1003,10 @@ function Dashboard({ activity }: { activity: Activity }) {
     return { days, padding };
   }, [activity]);
 
-  const total = Object.values(activity).reduce((sum, count) => sum + count, 0);
+  const total =
+    community?.profile.correctCount ??
+    Object.values(activity).reduce((sum, count) => sum + count, 0);
+  const xp = community?.profile.xp ?? total * XP_PER_ANSWER;
   const activeDays = Object.values(activity).filter((count) => count > 0).length;
   let streak = 0;
   const cursor = new Date();
@@ -899,6 +1015,27 @@ function Dashboard({ activity }: { activity: Activity }) {
     streak += 1;
     cursor.setDate(cursor.getDate() - 1);
   }
+  const friends = community?.friends.filter((friend) => friend.status === "accepted") ?? [];
+  const incoming =
+    community?.friends.filter(
+      (friend) => friend.status === "pending" && friend.direction === "incoming",
+    ) ?? [];
+  const outgoing =
+    community?.friends.filter(
+      (friend) => friend.status === "pending" && friend.direction === "outgoing",
+    ) ?? [];
+
+  const run = async (key: string, action: () => Promise<void>) => {
+    if (busyKey) return;
+    setBusyKey(key);
+    try {
+      await action();
+    } catch {
+      // The parent action already shows a concise error toast.
+    } finally {
+      setBusyKey("");
+    }
+  };
 
   return (
     <div className="dashboard-content">
@@ -909,7 +1046,7 @@ function Dashboard({ activity }: { activity: Activity }) {
         </article>
         <article>
           <span>Накоплено</span>
-          <strong>{total * XP_PER_ANSWER}<small> XP</small></strong>
+          <strong>{xp}<small> XP</small></strong>
         </article>
         <article>
           <span>Активных дней</span>
@@ -925,7 +1062,7 @@ function Dashboard({ activity }: { activity: Activity }) {
         <div className="activity-heading">
           <div>
             <h2>Активность</h2>
-            <p>Каждая отметка «Да» добавляет один правильный ответ.</p>
+            <p>Каждое задание может добавить XP только один раз.</p>
           </div>
           <span>Последние 16 недель</span>
         </div>
@@ -955,6 +1092,237 @@ function Dashboard({ activity }: { activity: Activity }) {
         </div>
       </section>
 
+      {community?.protection.active && (
+        <section className="protection-notice" role="status">
+          <span aria-hidden="true">!</span>
+          <div>
+            <h2>Включена защита от накрутки</h2>
+            <p>
+              XP временно не начисляется из-за слишком быстрых отметок. Защита
+              отключится в{" "}
+              {new Date(community.protection.until * 1000).toLocaleTimeString("ru-RU", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}.
+            </p>
+          </div>
+        </section>
+      )}
+
+      <div className="community-grid">
+        <section className="leaderboard-card">
+          <div className="community-heading">
+            <div>
+              <p className="community-eyebrow">Рейтинг</p>
+              <h2>Ученики EGEGE</h2>
+            </div>
+            <div className="leaderboard-tabs" aria-label="Фильтр рейтинга">
+              <button
+                className={scope === "all" ? "is-active" : ""}
+                onClick={() => onScope("all")}
+              >
+                Все
+              </button>
+              <button
+                className={scope === "friends" ? "is-active" : ""}
+                onClick={() => onScope("friends")}
+              >
+                Друзья
+              </button>
+            </div>
+          </div>
+
+          <div className={`leaderboard-list ${loading ? "is-loading" : ""}`}>
+            {loading && !community ? (
+              Array.from({ length: 5 }, (_, index) => (
+                <div className="leaderboard-skeleton" key={index} />
+              ))
+            ) : community?.leaderboard.length ? (
+              community.leaderboard.map((entry) => (
+                <article
+                  className={`leaderboard-row ${entry.isCurrent ? "is-current" : ""}`}
+                  key={entry.userId}
+                >
+                  <span className={`leaderboard-rank rank-${entry.rank}`}>{entry.rank}</span>
+                  <span className="leaderboard-avatar" aria-hidden="true">{entry.avatarEmoji}</span>
+                  <div className="leaderboard-person">
+                    <strong>{entry.displayName}</strong>
+                    <small>
+                      @{entry.username}
+                      {entry.isCurrent ? " · это вы" : entry.isFriend ? " · друг" : ""}
+                    </small>
+                  </div>
+                  <div className="leaderboard-score">
+                    <strong>{entry.xp}</strong>
+                    <small>XP</small>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="community-empty">
+                <span>◎</span>
+                <p>
+                  {scope === "friends"
+                    ? "Добавьте друзей — здесь появится ваш личный рейтинг."
+                    : "Рейтинг появится после первых правильных ответов."}
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="friends-card">
+          <div className="community-heading">
+            <div>
+              <p className="community-eyebrow">Профиль</p>
+              <h2>Друзья</h2>
+            </div>
+            <span className="friends-count">{friends.length}</span>
+          </div>
+
+          <form
+            className="username-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void run("username", () => onSetUsername(resolvedUsername));
+            }}
+          >
+            <label>
+              <span>Ваш уникальный username</span>
+              <div>
+                <i>@</i>
+                <input
+                  value={resolvedUsername}
+                  onChange={(event) =>
+                    setUsernameDraft(
+                      event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20),
+                    )
+                  }
+                  minLength={3}
+                  maxLength={20}
+                  autoComplete="username"
+                  required
+                />
+                <button
+                  disabled={
+                    busyKey === "username" ||
+                    resolvedUsername === community?.profile.username
+                  }
+                >
+                  {busyKey === "username" ? "…" : "Сохранить"}
+                </button>
+              </div>
+            </label>
+          </form>
+
+          <form
+            className="friend-search"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void run("add", async () => {
+                await onAddFriend(friendUsername);
+                setFriendUsername("");
+              });
+            }}
+          >
+            <label htmlFor="friend-username">Добавить по username</label>
+            <div>
+              <i>@</i>
+              <input
+                id="friend-username"
+                value={friendUsername}
+                onChange={(event) =>
+                  setFriendUsername(
+                    event.target.value.toLowerCase().replace(/^@/, "").replace(/[^a-z0-9_]/g, ""),
+                  )
+                }
+                placeholder="username"
+                minLength={3}
+                maxLength={20}
+                required
+              />
+              <button disabled={busyKey === "add"}>
+                {busyKey === "add" ? "Ищем…" : "Добавить"}
+              </button>
+            </div>
+          </form>
+
+          {incoming.length > 0 && (
+            <div className="friend-group">
+              <p>Входящие заявки</p>
+              {incoming.map((friend) => (
+                <article className="friend-row" key={friend.userId}>
+                  <span>{friend.avatarEmoji}</span>
+                  <div>
+                    <strong>{friend.displayName}</strong>
+                    <small>@{friend.username}</small>
+                  </div>
+                  <div className="friend-actions">
+                    <button
+                      className="accept"
+                      disabled={Boolean(busyKey)}
+                      onClick={() =>
+                        void run(`accept:${friend.userId}`, () =>
+                          onFriendAction("accept_friend", friend.userId),
+                        )
+                      }
+                    >
+                      Принять
+                    </button>
+                    <button
+                      aria-label={`Отклонить заявку от ${friend.username}`}
+                      disabled={Boolean(busyKey)}
+                      onClick={() =>
+                        void run(`decline:${friend.userId}`, () =>
+                          onFriendAction("decline_friend", friend.userId),
+                        )
+                      }
+                    >
+                      ×
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          <div className="friend-group">
+            <p>Ваши друзья</p>
+            {friends.length ? (
+              friends.map((friend) => (
+                <article className="friend-row" key={friend.userId}>
+                  <span>{friend.avatarEmoji}</span>
+                  <div>
+                    <strong>{friend.displayName}</strong>
+                    <small>@{friend.username} · {friend.xp} XP</small>
+                  </div>
+                  <button
+                    className="friend-remove"
+                    aria-label={`Удалить ${friend.username} из друзей`}
+                    disabled={Boolean(busyKey)}
+                    onClick={() =>
+                      void run(`remove:${friend.userId}`, () =>
+                        onFriendAction("remove_friend", friend.userId),
+                      )
+                    }
+                  >
+                    ×
+                  </button>
+                </article>
+              ))
+            ) : (
+              <p className="friends-placeholder">Пока здесь никого нет.</p>
+            )}
+          </div>
+
+          {outgoing.length > 0 && (
+            <p className="outgoing-note">
+              Отправлено заявок: <b>{outgoing.length}</b>
+            </p>
+          )}
+        </section>
+      </div>
+
       {total === 0 && (
         <section className="dashboard-note">
           <span>0 XP</span>
@@ -977,15 +1345,11 @@ export default function Home() {
   const [difficulty, setDifficulty] = useState("all");
   const [source, setSource] = useState("all");
   const [openVariant, setOpenVariant] = useState<string | null>(null);
-  const [activity, setActivity] = useState<Activity>(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      return saved ? (JSON.parse(saved) as Activity) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [activity, setActivity] = useState<Activity>({});
+  const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(() => new Set());
+  const [community, setCommunity] = useState<CommunityPayload | null>(null);
+  const [communityLoading, setCommunityLoading] = useState(false);
+  const [leaderboardScope, setLeaderboardScope] = useState<LeaderboardScope>("all");
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [toast, setToast] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -1008,18 +1372,42 @@ export default function Home() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstId = useRef(0);
+  const claimingTasks = useRef(new Set<string>());
   const isRegistered = Boolean(user);
 
+  const notify = (message: string) => {
+    setToast("");
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    requestAnimationFrame(() => setToast(message));
+    toastTimer.current = setTimeout(() => setToast(""), 2500);
+  };
+
+  const applyCommunity = (payload: CommunityPayload) => {
+    setCommunity(payload);
+    setActivity(payload.activity);
+    setCompletedTaskIds(new Set(payload.completedTaskIds));
+  };
+
+  const refreshCommunity = async (scope = leaderboardScope) => {
+    const payload = await communityRequest<CommunityPayload>(
+      `/api/community?view=${scope}`,
+    );
+    applyCommunity(payload);
+    return payload;
+  };
+
   useEffect(() => {
-    if (!user) {
-      setIsPremium(false);
-      return;
-    }
-    try {
-      setIsPremium(window.localStorage.getItem(`${PREMIUM_KEY}:${user.id}`) === "true");
-    } catch {
-      setIsPremium(false);
-    }
+    queueMicrotask(() => {
+      if (!user) {
+        setIsPremium(false);
+        return;
+      }
+      try {
+        setIsPremium(window.localStorage.getItem(`${PREMIUM_KEY}:${user.id}`) === "true");
+      } catch {
+        setIsPremium(false);
+      }
+    });
   }, [user]);
 
   useEffect(() => {
@@ -1044,6 +1432,32 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!user) return;
+
+    let active = true;
+    queueMicrotask(() => {
+      if (active) setCommunityLoading(true);
+    });
+    void communityRequest<CommunityPayload>(`/api/community?view=${leaderboardScope}`)
+      .then((payload) => {
+        if (!active) return;
+        applyCommunity(payload);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        const message = error instanceof Error ? error.message : "Рейтинг временно недоступен.";
+        setToast(message);
+        window.setTimeout(() => setToast(""), 3200);
+      })
+      .finally(() => {
+        if (active) setCommunityLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user, leaderboardScope]);
+
+  useEffect(() => {
     let active = true;
     let unsubscribe: (() => void) | undefined;
 
@@ -1059,7 +1473,14 @@ export default function Home() {
       if (active) setUser(data.session?.user ?? null);
 
       const listener = client.auth.onAuthStateChange((_event, session) => {
-        if (active) setUser(session?.user ?? null);
+        if (!active) return;
+        setUser(session?.user ?? null);
+        if (!session?.user) {
+          setCommunity(null);
+          setActivity({});
+          setCompletedTaskIds(new Set());
+          setCommunityLoading(false);
+        }
       });
       unsubscribe = () => listener.data.subscription.unsubscribe();
     });
@@ -1080,12 +1501,14 @@ export default function Home() {
       // Continue without restoring the intended section.
     }
     if (!pending) return;
-    if (pending === "theory") {
-      setGateSection("theory");
-      return;
-    }
-    setSection(pending);
-    window.scrollTo({ top: 0 });
+    queueMicrotask(() => {
+      if (pending === "theory") {
+        setGateSection("theory");
+        return;
+      }
+      setSection(pending);
+      window.scrollTo({ top: 0 });
+    });
   }, [isRegistered]);
 
   useEffect(() => {
@@ -1117,13 +1540,6 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const notify = (message: string) => {
-    setToast("");
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    requestAnimationFrame(() => setToast(message));
-    toastTimer.current = setTimeout(() => setToast(""), 2500);
-  };
-
   useEffect(() => {
     const url = new URL(window.location.href);
     const authResult = url.searchParams.get("auth");
@@ -1147,33 +1563,77 @@ export default function Home() {
     };
   }, []);
 
-  const addCorrectAnswer = (event: React.MouseEvent<HTMLButtonElement>) => {
-    const selectedReaction =
-      preferences.reaction === "random"
-        ? randomReactions[Math.floor(Math.random() * randomReactions.length)]
-        : preferences.reaction;
-    const nextBurst = {
-      id: ++burstId.current,
-      x: event.clientX,
-      y: event.clientY,
-      reaction: selectedReaction,
-    };
-    setBursts((current) => [...current, nextBurst]);
-    window.setTimeout(() => {
-      setBursts((current) => current.filter((burst) => burst.id !== nextBurst.id));
-    }, 900);
+  const addCorrectAnswer = async (
+    taskId: string,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    if (!user) {
+      setProfileOpen(true);
+      notify("Войдите, чтобы сохранить XP и место в рейтинге");
+      return;
+    }
+    if (completedTaskIds.has(taskId)) {
+      notify("За это задание XP уже учтён");
+      return;
+    }
+    if (claimingTasks.current.has(taskId)) return;
+    claimingTasks.current.add(taskId);
 
-    const key = dateKey(new Date());
-    setActivity((current) => {
-      const next = { ...current, [key]: (current[key] ?? 0) + 1 };
-      try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        // Keep the in-memory dashboard working if storage is unavailable.
+    try {
+      const result = await communityRequest<ClaimResult>("/api/community", {
+        method: "POST",
+        body: JSON.stringify({ action: "claim_xp", taskId }),
+      });
+      if (result.completed) {
+        setCompletedTaskIds((current) => new Set(current).add(taskId));
       }
-      return next;
-    });
-    notify(`+${XP_PER_ANSWER} XP · записано в дашборд`);
+      if (result.status !== "awarded") {
+        notify(result.message);
+        void refreshCommunity().catch(() => undefined);
+        return;
+      }
+
+      const selectedReaction =
+        preferences.reaction === "random"
+          ? randomReactions[Math.floor(Math.random() * randomReactions.length)]
+          : preferences.reaction;
+      const nextBurst = {
+        id: ++burstId.current,
+        x: event.clientX,
+        y: event.clientY,
+        reaction: selectedReaction,
+      };
+      setBursts((current) => [...current, nextBurst]);
+      window.setTimeout(() => {
+        setBursts((current) => current.filter((burst) => burst.id !== nextBurst.id));
+      }, 900);
+
+      if (result.dateKey) {
+        setActivity((current) => ({
+          ...current,
+          [result.dateKey as string]: (current[result.dateKey as string] ?? 0) + 1,
+        }));
+      }
+      setCommunity((current) =>
+        current
+          ? {
+              ...current,
+              profile: {
+                ...current.profile,
+                xp: result.xp ?? current.profile.xp + XP_PER_ANSWER,
+                correctCount: result.correctCount ?? current.profile.correctCount + 1,
+              },
+              completedTaskIds: [...current.completedTaskIds, taskId],
+            }
+          : current,
+      );
+      notify(result.message);
+      void refreshCommunity().catch(() => undefined);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Не удалось сохранить XP.");
+    } finally {
+      claimingTasks.current.delete(taskId);
+    }
   };
 
   const updatePreferences = (next: Partial<Preferences>) => {
@@ -1299,6 +1759,31 @@ export default function Home() {
     setDifficulty("all");
     setSource("all");
   };
+
+  const mutateCommunity = async (payload: Record<string, string>) => {
+    try {
+      const result = await communityRequest<{ message: string }>("/api/community", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      notify(result.message);
+      await refreshCommunity();
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Не удалось сохранить изменение.");
+      throw error;
+    }
+  };
+
+  const setCommunityUsername = (username: string) =>
+    mutateCommunity({ action: "set_username", username });
+
+  const addCommunityFriend = (username: string) =>
+    mutateCommunity({ action: "add_friend", username });
+
+  const updateCommunityFriend = (
+    action: "accept_friend" | "decline_friend" | "remove_friend",
+    userId: string,
+  ) => mutateCommunity({ action, userId });
 
   const taskProps = {
     onCorrect: addCorrectAnswer,
@@ -1448,7 +1933,12 @@ export default function Home() {
                 </div>
               ) : filteredTasks.length ? (
                 filteredTasks.map((task) => (
-                  <TaskItem task={task} key={task.id} {...taskProps} />
+                  <TaskItem
+                    task={task}
+                    completed={completedTaskIds.has(task.id)}
+                    key={task.id}
+                    {...taskProps}
+                  />
                 ))
               ) : (
                 <div className="empty-state">
@@ -1498,7 +1988,14 @@ export default function Home() {
                   .find((variant) => variant.id === openVariant)
                   ?.taskIds.map((taskId) => {
                     const task = tasks.find((item) => item.id === taskId);
-                    return task ? <TaskItem task={task} key={task.id} {...taskProps} /> : null;
+                    return task ? (
+                      <TaskItem
+                        task={task}
+                        completed={completedTaskIds.has(task.id)}
+                        key={task.id}
+                        {...taskProps}
+                      />
+                    ) : null;
                   })}
               </section>
             )}
@@ -1514,9 +2011,18 @@ export default function Home() {
             <PageHeading
               eyebrow="Ваш профиль"
               title="Дашборд"
-              description="Пока прогресс хранится в этом браузере; синхронизацию подключим после базы пользователей."
+              description="Прогресс, рейтинг и друзья синхронизируются с вашим аккаунтом."
             />
-            <Dashboard activity={activity} />
+            <Dashboard
+              activity={activity}
+              community={community}
+              loading={communityLoading}
+              scope={leaderboardScope}
+              onScope={setLeaderboardScope}
+              onSetUsername={setCommunityUsername}
+              onAddFriend={addCommunityFriend}
+              onFriendAction={updateCommunityFriend}
+            />
           </>
         )}
       </div>
