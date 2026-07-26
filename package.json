@@ -12,6 +12,7 @@
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "tasks:render-math": "node scripts/render-task-math.mjs",
+    "tasks:split": "node scripts/split-task-data.mjs",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

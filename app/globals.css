@@ -1579,6 +1579,14 @@ p,
   margin: 22px 0;
   max-width: 100%;
   object-fit: contain;
+  outline: 1px solid oklch(0 0 0 / 0.1);
+  outline-offset: -1px;
+}
+
+[data-theme="dark"] .task-html img {
+  background: #f7f7f7;
+  filter: invert(0.88) hue-rotate(180deg);
+  outline-color: oklch(1 0 0 / 0.1);
 }
 
 .task-html table {
@@ -1960,6 +1968,12 @@ p,
   color: var(--muted);
   font-size: 13px;
   margin: 9px 0 22px;
+}
+
+.choose-task-number > span {
+  color: var(--accent);
+  font-family: var(--font-geist-mono), monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 footer {

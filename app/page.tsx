@@ -1370,9 +1370,10 @@ function Dashboard({
 export default function Home() {
   const [section, setSection] = useState<Section>("home");
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [tasksLoading, setTasksLoading] = useState(true);
+  const [variantTasks, setVariantTasks] = useState<Task[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [type, setType] = useState("all");
+  const [type, setType] = useState("");
   const [difficulty, setDifficulty] = useState("all");
   const [source, setSource] = useState("all");
   const [openVariant, setOpenVariant] = useState<string | null>(null);
@@ -1394,6 +1395,7 @@ export default function Home() {
   const gateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstId = useRef(0);
   const claimingTasks = useRef(new Set<string>());
+  const taskIndex = useRef<Record<string, number>>({});
   const isRegistered = Boolean(user);
 
   useEffect(() => {
@@ -1456,25 +1458,67 @@ export default function Home() {
   }, [user]);
 
   useEffect(() => {
-    let active = true;
-    void fetch("/data/kompege-tasks.json")
+    void fetch("/data/task-index.json")
+      .then((response) => (response.ok ? response.json() : {}))
+      .then((index: Record<string, number>) => {
+        taskIndex.current = index;
+      })
+      .catch(() => {
+        taskIndex.current = {};
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!type) {
+      queueMicrotask(() => {
+        setTasks([]);
+        setTasksLoading(false);
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      setTasks([]);
+      setTasksLoading(true);
+    });
+
+    void fetch(`/data/tasks/${type}.json`, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error("Не удалось загрузить задания");
         return response.json() as Promise<Task[]>;
       })
       .then((data) => {
-        if (active) setTasks(data);
+        setTasks(data);
       })
-      .catch(() => {
-        if (active) notify("Не удалось загрузить базу заданий");
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        notify("Не удалось загрузить выбранный номер");
       })
       .finally(() => {
-        if (active) setTasksLoading(false);
+        if (!controller.signal.aborted) setTasksLoading(false);
       });
+
     return () => {
-      active = false;
+      controller.abort();
     };
-  }, []);
+  }, [type]);
+
+  useEffect(() => {
+    if (section !== "variants" || variantTasks.length > 0) return;
+    const controller = new AbortController();
+    void fetch("/data/variant-tasks.json", { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error("Не удалось загрузить варианты");
+        return response.json() as Promise<Task[]>;
+      })
+      .then(setVariantTasks)
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        notify("Не удалось загрузить задания варианта");
+      });
+    return () => controller.abort();
+  }, [section, variantTasks.length]);
 
   useEffect(() => {
     if (!user) return;
@@ -1769,7 +1813,7 @@ export default function Home() {
         const normalizedSearch = search.trim();
         return (
           (!normalizedSearch || task.id.includes(normalizedSearch)) &&
-          (type === "all" || task.number === Number(type)) &&
+          task.number === Number(type) &&
           (difficulty === "all" || task.difficulty === difficulty) &&
           (source === "all" || task.source === source)
         );
@@ -1783,23 +1827,30 @@ export default function Home() {
         id: "01",
         title: "Разминка",
         description: "Три коротких задания из разных тем.",
-        taskIds: [tasks[0]?.id, tasks[9]?.id, tasks[21]?.id].filter(Boolean) as string[],
+        taskIds: ["31347", "31350", "31354"],
       },
       {
         id: "02",
         title: "Практика с файлами",
         description: "Два задания повышенной сложности.",
-        taskIds: [tasks[48]?.id, tasks[75]?.id].filter(Boolean) as string[],
+        taskIds: ["31363", "31370"],
       },
     ],
-    [tasks],
+    [],
   );
 
   const resetFilters = () => {
     setSearch("");
-    setType("all");
+    setType("");
     setDifficulty("all");
     setSource("all");
+  };
+
+  const updateTaskSearch = (value: string) => {
+    const nextSearch = value.replace(/\D/g, "");
+    setSearch(nextSearch);
+    const matchedNumber = taskIndex.current[nextSearch];
+    if (matchedNumber) setType(String(matchedNumber));
   };
 
   const mutateCommunity = async (payload: Record<string, string>) => {
@@ -1922,7 +1973,7 @@ export default function Home() {
                   <input
                     inputMode="numeric"
                     value={search}
-                    onChange={(event) => setSearch(event.target.value.replace(/\D/g, ""))}
+                    onChange={(event) => updateTaskSearch(event.target.value)}
                     placeholder="Например, 1042"
                   />
                   {search && (
@@ -1933,7 +1984,7 @@ export default function Home() {
               <label>
                 <span>Номер задания</span>
                 <select value={type} onChange={(event) => setType(event.target.value)}>
-                  <option value="all">Все номера</option>
+                  <option value="" disabled>Выберите номер</option>
                   {Array.from({ length: 27 }, (_, index) => index + 1).map((number) => (
                     <option value={number} key={number}>№{number}</option>
                   ))}
@@ -1960,14 +2011,22 @@ export default function Home() {
               </button>
             </section>
 
-            <div className="results-bar">
-              <span>Найдено: <b>{filteredTasks.length}</b></span>
-              <i />
-              <span>Показаны все задания</span>
-            </div>
+            {type && (
+              <div className="results-bar">
+                <span>Найдено: <b>{filteredTasks.length}</b></span>
+                <i />
+                <span>Загружен только №{type}</span>
+              </div>
+            )}
 
             <section className="task-list" aria-live="polite">
-              {tasksLoading ? (
+              {!type ? (
+                <div className="empty-state choose-task-number">
+                  <span>№</span>
+                  <h2>Выберите номер задания</h2>
+                  <p>Мы загрузим только нужный тип — так база останется быстрой.</p>
+                </div>
+              ) : tasksLoading ? (
                 <div className="empty-state is-loading">
                   <span>•••</span>
                   <h2>Загружаем задания</h2>
@@ -2029,7 +2088,7 @@ export default function Home() {
                 {variants
                   .find((variant) => variant.id === openVariant)
                   ?.taskIds.map((taskId) => {
-                    const task = tasks.find((item) => item.id === taskId);
+                    const task = variantTasks.find((item) => item.id === taskId);
                     return task ? (
                       <TaskItem
                         task={task}

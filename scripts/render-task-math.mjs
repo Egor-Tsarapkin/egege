@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import katex from "katex";
+import { splitTaskData } from "./split-task-data.mjs";
 
 const dataPath = new URL("../public/data/kompege-tasks.json", import.meta.url);
 const tasks = JSON.parse(await readFile(dataPath, "utf8"));
@@ -50,4 +51,5 @@ for (const task of tasks) {
 }
 
 await writeFile(dataPath, `${JSON.stringify(tasks, null, 2)}\n`);
+await splitTaskData();
 console.log(`Rendered ${renderedCount} formulas; failures: ${failedCount}`);
