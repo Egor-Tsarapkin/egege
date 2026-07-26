@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 type Section = "home" | "tasks" | "variants" | "theory" | "game" | "dashboard";
+type GateSection = Extract<Section, "theory" | "game" | "dashboard">;
 type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
 type Theme = "dark" | "light";
@@ -46,6 +47,7 @@ type Burst = {
 const STORAGE_KEY = "egege-activity-v1";
 const PREFERENCES_KEY = "egege-preferences-v1";
 const PREMIUM_KEY = "egege-premium-demo-v1";
+const PENDING_ACCESS_KEY = "egege-pending-access-v1";
 const XP_PER_ANSWER = 10;
 const defaultPreferences: Preferences = {
   theme: "dark",
@@ -144,14 +146,38 @@ function GameIcon() {
   );
 }
 
+function AccessBadge({
+  premium = false,
+  compact = false,
+}: {
+  premium?: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <span
+      className={`access-lock ${premium ? "is-premium" : ""} ${compact ? "is-compact" : ""}`}
+      aria-hidden="true"
+    >
+      <span className="lock-chain">
+        <i />
+        <i />
+      </span>
+      <span className="tiny-lock" />
+      {premium && <span className="tiny-lock second-lock" />}
+    </span>
+  );
+}
+
 function Dock({
   navigate,
   isRegistered,
   isPremium,
+  rattlingSection,
 }: {
   navigate: (section: Section) => void;
   isRegistered: boolean;
   isPremium: boolean;
+  rattlingSection: GateSection | null;
 }) {
   const dockRef = useRef<HTMLDivElement>(null);
   const dockFrame = useRef<number | null>(null);
@@ -177,19 +203,31 @@ function Dock({
     section: Section;
     label: string;
     icon: React.ReactNode;
+    locked?: boolean;
+    premium?: boolean;
   }> = [
     { section: "tasks", label: "База заданий", icon: <DatabaseIcon /> },
     { section: "variants", label: "Варианты", icon: <VariantsIcon /> },
+    {
+      section: "theory",
+      label: "Теория",
+      icon: <TheoryIcon />,
+      locked: !isRegistered || !isPremium,
+      premium: true,
+    },
+    {
+      section: "game",
+      label: "Игра",
+      icon: <GameIcon />,
+      locked: !isRegistered,
+    },
+    {
+      section: "dashboard",
+      label: "Дашборд",
+      icon: <DashboardIcon />,
+      locked: !isRegistered,
+    },
   ];
-  if (isRegistered && isPremium) {
-    items.push(
-      { section: "theory", label: "Теория", icon: <TheoryIcon /> },
-      { section: "game", label: "Игра", icon: <GameIcon /> },
-    );
-  }
-  if (isRegistered) {
-    items.push({ section: "dashboard", label: "Дашборд", icon: <DashboardIcon /> });
-  }
 
   return (
     <div
@@ -201,13 +239,21 @@ function Dock({
     >
       {items.map((item, index) => (
         <button
-          className="dock-item"
+          className={`dock-item ${item.locked ? "is-locked" : ""} ${
+            rattlingSection === item.section ? "is-rattling" : ""
+          }`}
           style={{ "--dock-scale": scales[index] ?? 1 } as React.CSSProperties}
           onClick={() => navigate(item.section)}
+          aria-label={
+            item.locked
+              ? `${item.label}: ${item.premium ? "нужны регистрация и премиум" : "нужна регистрация"}`
+              : item.label
+          }
           key={item.section}
         >
           {item.icon}
           <span>{item.label}</span>
+          {item.locked && <AccessBadge premium={item.premium} />}
         </button>
       ))}
     </div>
@@ -219,14 +265,34 @@ function AppHeader({
   navigate,
   isRegistered,
   isPremium,
+  rattlingSection,
   profile,
 }: {
   section: Section;
   navigate: (section: Section) => void;
   isRegistered: boolean;
   isPremium: boolean;
+  rattlingSection: GateSection | null;
   profile: React.ReactNode;
 }) {
+  const navItems: Array<{
+    section: Exclude<Section, "home">;
+    label: string;
+    locked?: boolean;
+    premium?: boolean;
+  }> = [
+    { section: "tasks", label: "База" },
+    { section: "variants", label: "Варианты" },
+    {
+      section: "theory",
+      label: "Теория",
+      locked: !isRegistered || !isPremium,
+      premium: true,
+    },
+    { section: "game", label: "Игра", locked: !isRegistered },
+    { section: "dashboard", label: "Дашборд", locked: !isRegistered },
+  ];
+
   return (
     <header className="topbar">
       <button className="wordmark" onClick={() => navigate("home")}>
@@ -236,42 +302,23 @@ function AppHeader({
       </button>
       <div className="topbar-actions">
         <nav aria-label="Разделы">
-          <button
-            className={section === "tasks" ? "nav-active" : ""}
-            onClick={() => navigate("tasks")}
-          >
-            База
-          </button>
-          <button
-            className={section === "variants" ? "nav-active" : ""}
-            onClick={() => navigate("variants")}
-          >
-            Варианты
-          </button>
-          {isRegistered && isPremium && (
-            <>
-              <button
-                className={section === "theory" ? "nav-active" : ""}
-                onClick={() => navigate("theory")}
-              >
-                Теория
-              </button>
-              <button
-                className={section === "game" ? "nav-active" : ""}
-                onClick={() => navigate("game")}
-              >
-                Игра
-              </button>
-            </>
-          )}
-          {isRegistered && (
+          {navItems.map((item) => (
             <button
-              className={section === "dashboard" ? "nav-active" : ""}
-              onClick={() => navigate("dashboard")}
+              className={`${section === item.section ? "nav-active" : ""} ${
+                item.locked ? "is-locked" : ""
+              } ${rattlingSection === item.section ? "is-rattling" : ""}`}
+              onClick={() => navigate(item.section)}
+              aria-label={
+                item.locked
+                  ? `${item.label}: ${item.premium ? "нужны регистрация и премиум" : "нужна регистрация"}`
+                  : item.label
+              }
+              key={item.section}
             >
-              Дашборд
+              {item.label}
+              {item.locked && <AccessBadge premium={item.premium} compact />}
             </button>
-          )}
+          ))}
         </nav>
         {profile}
       </div>
@@ -431,8 +478,8 @@ function ProfileMenu({
                   </span>
                   <small>
                     {isPremium
-                      ? "Теория и Игра открыты"
-                      : "Включите, чтобы проверить премиум-разделы"}
+                      ? "Теория открыта"
+                      : "Включите, чтобы проверить раздел теории"}
                   </small>
                 </div>
                 <button
@@ -602,7 +649,7 @@ function PremiumPlaceholder({ section }: { section: "theory" | "game" }) {
   return (
     <>
       <PageHeading
-        eyebrow="Премиум-раздел"
+        eyebrow={isTheory ? "Премиум-раздел" : "Для учеников EGEGE"}
         title={isTheory ? "Теория" : "Игра"}
         description={
           isTheory
@@ -636,6 +683,164 @@ function PremiumPlaceholder({ section }: { section: "theory" | "game" }) {
         </div>
       </section>
     </>
+  );
+}
+
+function GatePreview({ section }: { section: GateSection }) {
+  if (section === "dashboard") {
+    return (
+      <div className="gate-preview preview-dashboard" aria-hidden="true">
+        <div className="preview-stat-row">
+          <span><i />42</span>
+          <span><i />7 дней</span>
+        </div>
+        <div className="preview-heatmap">
+          {Array.from({ length: 35 }, (_, index) => (
+            <i
+              style={{ "--cell-index": index } as React.CSSProperties}
+              key={index}
+            />
+          ))}
+        </div>
+        <div className="preview-progress">
+          <span />
+        </div>
+      </div>
+    );
+  }
+
+  if (section === "theory") {
+    return (
+      <div className="gate-preview preview-theory" aria-hidden="true">
+        <div className="preview-theory-card card-back">
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="preview-theory-card card-middle">
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="preview-theory-card card-front">
+          <span>if</span>
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="preview-premium-lock">
+          <AccessBadge premium />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="gate-preview preview-game" aria-hidden="true">
+      <span className="preview-path-line" />
+      <i className="preview-level level-one" />
+      <i className="preview-level level-two" />
+      <i className="preview-level level-three" />
+      <i className="preview-level level-four" />
+      <span className="preview-paper-mascot">
+        <i />
+        <i />
+      </span>
+    </div>
+  );
+}
+
+function AccessGateModal({
+  section,
+  isRegistered,
+  onClose,
+  onContinue,
+}: {
+  section: GateSection;
+  isRegistered: boolean;
+  onClose: () => void;
+  onContinue: () => void;
+}) {
+  const isTheory = section === "theory";
+  const copy = {
+    game: {
+      eyebrow: "Бесплатно после регистрации",
+      title: "Учитесь через игру",
+      description:
+        "Короткие уровни с кодом, отступами и блоками. Прогресс будет сохраняться между устройствами.",
+      features: ["Уровни по 2–4 минуты", "Работает на телефоне"],
+    },
+    dashboard: {
+      eyebrow: "Бесплатно после регистрации",
+      title: "Весь прогресс в одном месте",
+      description:
+        "Активность, XP и серии дней будут привязаны к вашему профилю и не потеряются.",
+      features: ["Календарь активности", "Личная статистика"],
+    },
+    theory: {
+      eyebrow: "Премиум-раздел",
+      title: "Теория без лишней воды",
+      description:
+        "Главы по программированию и темам ЕГЭ с понятными примерами, мини-проверками и связями с практикой.",
+      features: ["Нужна регистрация", "Нужен премиум"],
+    },
+  }[section];
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="gate-overlay" role="presentation" onMouseDown={onClose}>
+      <section
+        className={`gate-modal gate-${section}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="gate-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button className="gate-close" onClick={onClose} aria-label="Закрыть">×</button>
+        <div className="gate-visual">
+          <GatePreview section={section} />
+          <span className="gate-preview-label">Мини-превью</span>
+        </div>
+        <div className="gate-copy">
+          <p className="gate-eyebrow">{copy.eyebrow}</p>
+          <h2 id="gate-title">{copy.title}</h2>
+          <p className="gate-description">{copy.description}</p>
+          <div className="gate-features">
+            {copy.features.map((feature, index) => (
+              <span key={feature}>
+                {isTheory && index === 1 ? <AccessBadge premium compact /> : <i />}
+                {feature}
+              </span>
+            ))}
+          </div>
+          <button className="gate-primary" onClick={onContinue}>
+            {!isRegistered
+              ? "Войти или зарегистрироваться"
+              : isTheory
+                ? "Посмотреть премиум"
+                : "Продолжить"}
+          </button>
+          <button className="gate-secondary" onClick={onClose}>Пока не сейчас</button>
+          {isTheory && isRegistered && (
+            <small className="gate-demo-note">
+              В тестовой версии премиум включается в личном кабинете.
+            </small>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -754,6 +959,8 @@ export default function Home() {
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [toast, setToast] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [gateSection, setGateSection] = useState<GateSection | null>(null);
+  const [rattlingSection, setRattlingSection] = useState<GateSection | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [authConfigured, setAuthConfigured] = useState<boolean | null>(null);
@@ -769,6 +976,7 @@ export default function Home() {
     }
   });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstId = useRef(0);
   const isRegistered = Boolean(user);
 
@@ -832,15 +1040,46 @@ export default function Home() {
     };
   }, []);
 
-  const navigate = (nextSection: Section) => {
-    if (nextSection === "dashboard" && !isRegistered) {
-      setProfileOpen(true);
-      notify("Дашборд откроется после входа");
+  useEffect(() => {
+    if (!isRegistered) return;
+    let pending: GateSection | null = null;
+    try {
+      pending = window.sessionStorage.getItem(PENDING_ACCESS_KEY) as GateSection | null;
+      window.sessionStorage.removeItem(PENDING_ACCESS_KEY);
+    } catch {
+      // Continue without restoring the intended section.
+    }
+    if (!pending) return;
+    if (pending === "theory") {
+      setGateSection("theory");
       return;
     }
-    if ((nextSection === "theory" || nextSection === "game") && (!isRegistered || !isPremium)) {
-      setProfileOpen(true);
-      notify(isRegistered ? "Включите тестовый премиум в профиле" : "Премиум-разделы откроются после входа");
+    setSection(pending);
+    window.scrollTo({ top: 0 });
+  }, [isRegistered]);
+
+  useEffect(() => {
+    return () => {
+      if (gateTimer.current) clearTimeout(gateTimer.current);
+    };
+  }, []);
+
+  const showAccessGate = (target: GateSection) => {
+    if (gateTimer.current) clearTimeout(gateTimer.current);
+    setRattlingSection(target);
+    gateTimer.current = setTimeout(() => {
+      setRattlingSection(null);
+      setGateSection(target);
+    }, 420);
+  };
+
+  const navigate = (nextSection: Section) => {
+    if ((nextSection === "dashboard" || nextSection === "game") && !isRegistered) {
+      showAccessGate(nextSection);
+      return;
+    }
+    if (nextSection === "theory" && (!isRegistered || !isPremium)) {
+      showAccessGate("theory");
       return;
     }
     setSection(nextSection);
@@ -927,10 +1166,10 @@ export default function Home() {
     } catch {
       // The demo switch still works for the current session.
     }
-    if (!next && (section === "theory" || section === "game")) {
+    if (!next && section === "theory") {
       setSection("dashboard");
     }
-    notify(next ? "Премиум включён — новые разделы открыты" : "Премиум выключен");
+    notify(next ? "Премиум включён — теория открыта" : "Премиум выключен");
   };
 
   const sendMagicLink = async (email: string) => {
@@ -1036,6 +1275,19 @@ export default function Home() {
     onIncorrect: () => notify("Ответ отмечен — попробуйте ещё одно задание"),
   };
 
+  const continueFromGate = () => {
+    if (!gateSection) return;
+    if (!isRegistered) {
+      try {
+        window.sessionStorage.setItem(PENDING_ACCESS_KEY, gateSection);
+      } catch {
+        // Sign-in still works without restoring the requested section.
+      }
+    }
+    setGateSection(null);
+    requestAnimationFrame(() => setProfileOpen(true));
+  };
+
   if (section === "home") {
     return (
       <main className="home" {...appearance}>
@@ -1058,15 +1310,28 @@ export default function Home() {
           <h1><span className="ege-part">EGE</span><span className="ge-part">GE</span></h1>
           <p className="brand-by">by Tsarapkin</p>
           <p className="eyebrow">ЕГЭ по информатике</p>
-          <Dock navigate={navigate} isRegistered={isRegistered} isPremium={isPremium} />
+          <Dock
+            navigate={navigate}
+            isRegistered={isRegistered}
+            isPremium={isPremium}
+            rattlingSection={rattlingSection}
+          />
         </div>
         <p className="home-note">
           {isPremium
-            ? "Премиум активен · новые разделы открыты"
+            ? "Премиум активен · теория открыта"
             : isRegistered
-              ? "Профиль активен · прогресс на этом устройстве"
+              ? "Игра и дашборд открыты · теория в премиуме"
               : "Открытая база · без регистрации"}
         </p>
+        {gateSection && (
+          <AccessGateModal
+            section={gateSection}
+            isRegistered={isRegistered}
+            onClose={() => setGateSection(null)}
+            onContinue={continueFromGate}
+          />
+        )}
         <Toast message={toast} />
       </main>
     );
@@ -1079,6 +1344,7 @@ export default function Home() {
         navigate={navigate}
         isRegistered={isRegistered}
         isPremium={isPremium}
+        rattlingSection={rattlingSection}
         profile={profile}
       />
 
@@ -1232,6 +1498,14 @@ export default function Home() {
         <span>by Tsarapkin · открытая база заданий</span>
       </footer>
 
+      {gateSection && (
+        <AccessGateModal
+          section={gateSection}
+          isRegistered={isRegistered}
+          onClose={() => setGateSection(null)}
+          onContinue={continueFromGate}
+        />
+      )}
       <Toast message={toast} />
       <div className="xp-layer" aria-hidden="true">
         {bursts.map((burst) => (
