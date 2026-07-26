@@ -1,11 +1,13 @@
 "use client";
 
 import type { Provider, User } from "@supabase/supabase-js";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
-type Section = "home" | "tasks" | "variants" | "theory" | "game" | "dashboard";
-type GateSection = Extract<Section, "theory" | "game" | "dashboard">;
+const TypingTrainer = lazy(() => import("./typing-trainer"));
+
+type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "dashboard";
+type GateSection = Extract<Section, "theory" | "game" | "trainer" | "dashboard">;
 type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
 type Theme = "dark" | "light";
@@ -214,6 +216,14 @@ function GameIcon() {
   );
 }
 
+function TrainerIcon() {
+  return (
+    <span className="dock-icon trainer-icon" aria-hidden="true">
+      {Array.from({ length: 9 }, (_, index) => <i key={index} />)}
+    </span>
+  );
+}
+
 function AccessBadge({
   premium = false,
   compact = false,
@@ -314,6 +324,12 @@ function Dock({
       locked: !isRegistered,
     },
     {
+      section: "trainer",
+      label: "Тренажёр",
+      icon: <TrainerIcon />,
+      locked: !isRegistered,
+    },
+    {
       section: "dashboard",
       label: "Дашборд",
       icon: <DashboardIcon />,
@@ -384,6 +400,7 @@ function AppHeader({
       premium: true,
     },
     { section: "game", label: "Игра", locked: !isRegistered },
+    { section: "trainer", label: "Тренажёр", locked: !isRegistered },
     { section: "dashboard", label: "Дашборд", locked: !isRegistered },
   ];
 
@@ -847,6 +864,22 @@ function GatePreview({ section }: { section: GateSection }) {
     );
   }
 
+  if (section === "trainer") {
+    return (
+      <div className="gate-preview preview-trainer" aria-hidden="true">
+        <div className="preview-trainer-code">
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="preview-trainer-keyboard">
+          {Array.from({ length: 18 }, (_, index) => <i key={index} />)}
+        </div>
+        <span>42 зн/мин</span>
+      </div>
+    );
+  }
+
   return (
     <div className="gate-preview preview-game" aria-hidden="true">
       <span className="preview-path-line" />
@@ -891,6 +924,13 @@ function AccessGateModal({
       description:
         "Активность, XP и серии дней будут привязаны к вашему профилю и не потеряются.",
       features: ["Календарь активности", "Личная статистика"],
+    },
+    trainer: {
+      eyebrow: "Бесплатно после регистрации",
+      title: "Печатайте код быстрее",
+      description:
+        "Тренажёр показывает следующую клавишу и правильный палец, а прогресс остаётся в вашем профиле.",
+      features: ["Python, русский и символы", "На компьютере и телефоне"],
     },
     theory: {
       eyebrow: "Премиум-раздел",
@@ -1616,7 +1656,10 @@ export default function Home() {
   };
 
   const navigate = (nextSection: Section) => {
-    if ((nextSection === "dashboard" || nextSection === "game") && !isRegistered) {
+    if (
+      (nextSection === "dashboard" || nextSection === "game" || nextSection === "trainer") &&
+      !isRegistered
+    ) {
       showAccessGate(nextSection);
       return;
     }
@@ -1786,7 +1829,14 @@ export default function Home() {
     const client = await getSupabaseBrowserClient();
     if (client) await client.auth.signOut();
     setUser(null);
-    if (section === "dashboard" || section === "theory" || section === "game") setSection("tasks");
+    if (
+      section === "dashboard" ||
+      section === "theory" ||
+      section === "game" ||
+      section === "trainer"
+    ) {
+      setSection("tasks");
+    }
     setProfileOpen(false);
     notify("Вы вышли из профиля");
   };
@@ -1929,7 +1979,7 @@ export default function Home() {
           {isPremium
             ? "Премиум активен · теория открыта"
             : isRegistered
-              ? "Игра и дашборд открыты · теория в премиуме"
+              ? "Игра, тренажёр и дашборд открыты · теория в премиуме"
               : "Открытая база · без регистрации"}
         </p>
         {gateSection && (
@@ -1956,7 +2006,7 @@ export default function Home() {
         profile={profile}
       />
 
-      <div className="tasks-shell">
+      <div className={`tasks-shell ${section === "trainer" ? "is-trainer-shell" : ""}`}>
         {section === "tasks" && (
           <>
             <PageHeading
@@ -2106,6 +2156,19 @@ export default function Home() {
         {section === "theory" && <PremiumPlaceholder section="theory" />}
 
         {section === "game" && <PremiumPlaceholder section="game" />}
+
+        {section === "trainer" && user && (
+          <Suspense
+            fallback={
+              <div className="trainer-loading" role="status">
+                <span>•••</span>
+                <p>Готовим клавиатуру</p>
+              </div>
+            }
+          >
+            <TypingTrainer userId={user.id} />
+          </Suspense>
+        )}
 
         {section === "dashboard" && (
           <>
