@@ -1024,6 +1024,37 @@ function Dashboard({
     community?.friends.filter(
       (friend) => friend.status === "pending" && friend.direction === "outgoing",
     ) ?? [];
+  const visibleLeaderboard: LeaderboardEntry[] =
+    scope === "all"
+      ? community?.leaderboard ?? []
+      : community
+        ? [
+            {
+              rank: 0,
+              userId: community.profile.userId,
+              username: community.profile.username,
+              displayName: community.profile.displayName,
+              avatarEmoji: community.profile.avatarEmoji,
+              xp: community.profile.xp,
+              correctCount: community.profile.correctCount,
+              isCurrent: true,
+              isFriend: false,
+            },
+            ...friends.map((friend) => ({
+              rank: 0,
+              userId: friend.userId,
+              username: friend.username,
+              displayName: friend.displayName,
+              avatarEmoji: friend.avatarEmoji,
+              xp: friend.xp,
+              correctCount: 0,
+              isCurrent: false,
+              isFriend: true,
+            })),
+          ]
+            .sort((first, second) => second.xp - first.xp || first.username.localeCompare(second.username))
+            .map((entry, index) => ({ ...entry, rank: index + 1 }))
+        : [];
 
   const run = async (key: string, action: () => Promise<void>) => {
     if (busyKey) return;
@@ -1137,8 +1168,8 @@ function Dashboard({
               Array.from({ length: 5 }, (_, index) => (
                 <div className="leaderboard-skeleton" key={index} />
               ))
-            ) : community?.leaderboard.length ? (
-              community.leaderboard.map((entry) => (
+            ) : visibleLeaderboard.length ? (
+              visibleLeaderboard.map((entry) => (
                 <article
                   className={`leaderboard-row ${entry.isCurrent ? "is-current" : ""}`}
                   key={entry.userId}
@@ -1388,10 +1419,8 @@ export default function Home() {
     setCompletedTaskIds(new Set(payload.completedTaskIds));
   };
 
-  const refreshCommunity = async (scope = leaderboardScope) => {
-    const payload = await communityRequest<CommunityPayload>(
-      `/api/community?view=${scope}`,
-    );
+  const refreshCommunity = async () => {
+    const payload = await communityRequest<CommunityPayload>("/api/community?view=all");
     applyCommunity(payload);
     return payload;
   };
@@ -1438,7 +1467,7 @@ export default function Home() {
     queueMicrotask(() => {
       if (active) setCommunityLoading(true);
     });
-    void communityRequest<CommunityPayload>(`/api/community?view=${leaderboardScope}`)
+    void communityRequest<CommunityPayload>("/api/community?view=all")
       .then((payload) => {
         if (!active) return;
         applyCommunity(payload);
@@ -1455,7 +1484,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [user, leaderboardScope]);
+  }, [user]);
 
   useEffect(() => {
     let active = true;
