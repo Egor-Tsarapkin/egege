@@ -95,14 +95,16 @@ function MascotRocket({ atNextPlanet }: { atNextPlanet: boolean }) {
       className={`theory-rocket-orbit ${atNextPlanet ? "is-at-next" : ""}`}
       aria-hidden="true"
     >
-      <span className="theory-rocket">
-        <span className="rocket-flame" />
-        <span className="rocket-fin rocket-fin-left" />
-        <span className="rocket-fin rocket-fin-right" />
-        <span className="rocket-body">
-          <span className="rocket-window">
-            <i />
-            <i />
+      <span className="theory-rocket-path">
+        <span className="theory-rocket">
+          <span className="rocket-flame" />
+          <span className="rocket-fin rocket-fin-left" />
+          <span className="rocket-fin rocket-fin-right" />
+          <span className="rocket-body">
+            <span className="rocket-window">
+              <i />
+              <i />
+            </span>
           </span>
         </span>
       </span>
@@ -365,11 +367,17 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 }`}
                 key={planet.id}
               >
-                <PlanetSphere
-                  progress={planetProgress}
-                  variant={planet.id}
-                  complete={planetProgress === 100}
-                />
+                <span className="theory-planet-visual">
+                  <PlanetSphere
+                    progress={planetProgress}
+                    variant={planet.id}
+                    complete={planetProgress === 100}
+                  />
+                  {((progress < 100 && planet.id === 0) ||
+                    (progress === 100 && planet.id === 1)) && (
+                    <MascotRocket atNextPlanet={progress === 100} />
+                  )}
+                </span>
                 <span className="theory-planet-label">
                   <small>{planet.chapter}</small>
                   <strong>{planet.title}</strong>
@@ -379,7 +387,6 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
             );
           })}
 
-          <MascotRocket atNextPlanet={progress === 100} />
         </div>
 
         <p className="theory-map-hint">

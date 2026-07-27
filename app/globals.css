@@ -2506,6 +2506,20 @@ footer {
   top: 61%;
 }
 
+.theory-planet-visual {
+  --rocket-orbit-pad: 22px;
+  display: grid;
+  height: 112px;
+  place-items: center;
+  position: relative;
+  width: 112px;
+}
+
+.theory-planet-0 .theory-planet-visual {
+  height: 142px;
+  width: 142px;
+}
+
 .theory-planet-sphere {
   animation: theory-planet-float 6.4s ease-in-out infinite;
   background: var(--surface-raised);
@@ -2524,6 +2538,7 @@ footer {
     box-shadow 180ms ease-out,
     scale 180ms ease-out;
   width: 112px;
+  z-index: 2;
 }
 
 .theory-planet-1 .theory-planet-sphere {
@@ -2785,32 +2800,32 @@ footer {
 }
 
 .theory-rocket-orbit {
-  animation: theory-rocket-orbit 16s linear infinite;
-  height: 174px;
-  left: 20%;
+  animation: theory-rocket-depth 12s linear infinite;
+  inset: calc(var(--rocket-orbit-pad) * -1);
+  pointer-events: none;
   position: absolute;
-  top: 57%;
-  transform: translate(-50%, -50%);
-  transition:
-    left 900ms cubic-bezier(0.2, 0, 0, 1),
-    top 900ms cubic-bezier(0.2, 0, 0, 1),
-    width 900ms cubic-bezier(0.2, 0, 0, 1),
-    height 900ms cubic-bezier(0.2, 0, 0, 1);
-  width: 174px;
-  z-index: 3;
-}
-
-.theory-rocket-orbit.is-at-next {
-  height: 142px;
-  left: 51%;
-  top: 39%;
-  width: 142px;
+  z-index: 1;
 }
 
 @keyframes theory-rocket-orbit {
   to {
-    rotate: 360deg;
+    transform: rotate(360deg);
   }
+}
+
+@keyframes theory-rocket-depth {
+  0%, 24.9%, 75%, 100% {
+    z-index: 1;
+  }
+  25%, 74.9% {
+    z-index: 3;
+  }
+}
+
+.theory-rocket-path {
+  animation: theory-rocket-orbit 12s linear infinite;
+  inset: 0;
+  position: absolute;
 }
 
 .theory-rocket {
@@ -2932,12 +2947,15 @@ footer {
   top: 74%;
 }
 
-.theory-space.is-chapter-open .theory-planet-0 .theory-planet-sphere {
+.theory-space.is-chapter-open .theory-planet-0 .theory-planet-sphere,
+.theory-space.is-chapter-open .theory-planet-0 .theory-planet-visual {
   height: 112px;
   width: 112px;
 }
 
-.theory-space.is-chapter-open .theory-planet-sphere {
+.theory-space.is-chapter-open .theory-planet-sphere,
+.theory-space.is-chapter-open .theory-planet-visual {
+  --rocket-orbit-pad: 18px;
   height: 86px;
   width: 86px;
 }
@@ -2954,20 +2972,6 @@ footer {
   top: 44%;
   transform: rotate(89deg);
   width: 25%;
-}
-
-.theory-space.is-chapter-open .theory-rocket-orbit {
-  height: 158px;
-  left: 29%;
-  top: 58%;
-  width: 158px;
-}
-
-.theory-space.is-chapter-open .theory-rocket-orbit.is-at-next {
-  height: 130px;
-  left: 69%;
-  top: 38%;
-  width: 130px;
 }
 
 .theory-chapter {
@@ -7124,12 +7128,15 @@ footer {
     top: 72%;
   }
 
-  .theory-planet-0 .theory-planet-sphere {
+  .theory-planet-0 .theory-planet-sphere,
+  .theory-planet-0 .theory-planet-visual {
     height: 108px;
     width: 108px;
   }
 
-  .theory-planet-sphere {
+  .theory-planet-sphere,
+  .theory-planet-visual {
+    --rocket-orbit-pad: 16px;
     height: 80px;
     width: 80px;
   }
@@ -7150,20 +7157,6 @@ footer {
     top: 44%;
     transform: rotate(96deg);
     width: 23%;
-  }
-
-  .theory-rocket-orbit {
-    height: 148px;
-    left: 28%;
-    top: 51%;
-    width: 148px;
-  }
-
-  .theory-rocket-orbit.is-at-next {
-    height: 116px;
-    left: 72%;
-    top: 38%;
-    width: 116px;
   }
 
   .theory-map-hint {
@@ -7361,7 +7354,16 @@ footer {
   .theory-planet-liquid::before,
   .theory-planet-liquid::after,
   .theory-auto-badge i,
-  .theory-rocket-orbit {
+  .theory-rocket-orbit,
+  .theory-rocket-path {
     animation: none !important;
+  }
+
+  .theory-rocket-orbit {
+    z-index: 3;
+  }
+
+  .theory-rocket-path {
+    transform: rotate(145deg);
   }
 }
