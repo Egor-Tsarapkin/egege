@@ -91,17 +91,47 @@ function PlanetSphere({
 
 function MascotRocket({ atNextPlanet }: { atNextPlanet: boolean }) {
   return (
-    <span className={`theory-rocket ${atNextPlanet ? "is-at-next" : ""}`} aria-hidden="true">
-      <span className="rocket-flame" />
-      <span className="rocket-fin rocket-fin-left" />
-      <span className="rocket-fin rocket-fin-right" />
-      <span className="rocket-body">
-        <span className="rocket-window">
-          <i />
-          <i />
+    <span
+      className={`theory-rocket-orbit ${atNextPlanet ? "is-at-next" : ""}`}
+      aria-hidden="true"
+    >
+      <span className="theory-rocket">
+        <span className="rocket-flame" />
+        <span className="rocket-fin rocket-fin-left" />
+        <span className="rocket-fin rocket-fin-right" />
+        <span className="rocket-body">
+          <span className="rocket-window">
+            <i />
+            <i />
+          </span>
         </span>
       </span>
     </span>
+  );
+}
+
+function EditorFrame({
+  children,
+  file = "main.py",
+  className = "",
+}: {
+  children: React.ReactNode;
+  file?: string;
+  className?: string;
+}) {
+  return (
+    <div className={`theory-editor ${className}`}>
+      <div className="theory-editor-bar" aria-hidden="true">
+        <span>
+          <i />
+          <i />
+          <i />
+        </span>
+        <small>{file}</small>
+        <b>Python</b>
+      </div>
+      {children}
+    </div>
   );
 }
 
@@ -123,7 +153,13 @@ function LessonStatus({
       onClick={() => onComplete(id)}
     >
       <span aria-hidden="true">{completed ? "✓" : ready ? "→" : "·"}</span>
-      {completed ? "Блок пройден" : ready ? "Завершить блок" : "Сначала попробуйте пример"}
+      {completed
+        ? "Блок пройден"
+        : ready
+          ? id === "indent"
+            ? "Завершить главу"
+            : "Перейти к следующему блоку"
+          : "Сначала выполните задание"}
     </button>
   );
 }
@@ -177,6 +213,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
   const [infographicTick, setInfographicTick] = useState(0);
   const [infographicReady, setInfographicReady] = useState(false);
+  const [activeLesson, setActiveLesson] = useState<LessonId | "intro">("intro");
   const [algorithmChoice, setAlgorithmChoice] = useState("");
   const [printChoice, setPrintChoice] = useState("");
   const [errorChoice, setErrorChoice] = useState("");
@@ -196,16 +233,19 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   }, [storageKey]);
 
   useEffect(() => {
-    if (selectedPlanet !== 0) return;
+    if (selectedPlanet !== 0 || activeLesson === "intro") return;
     const interval = window.setInterval(() => {
       setInfographicTick((current) => (current + 1) % 12);
     }, 1150);
-    const readyTimer = window.setTimeout(() => setInfographicReady(true), 3450);
+    const readyTimer =
+      activeLesson === "route"
+        ? window.setTimeout(() => setInfographicReady(true), 3450)
+        : undefined;
     return () => {
       window.clearInterval(interval);
-      window.clearTimeout(readyTimer);
+      if (readyTimer) window.clearTimeout(readyTimer);
     };
-  }, [selectedPlanet]);
+  }, [activeLesson, selectedPlanet]);
 
   const progress = Math.round((completedLessons.size / lessonIds.length) * 100);
   const executionStep = infographicTick % 4;
@@ -215,17 +255,53 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     [selectedPlanet],
   );
 
+  const goToLesson = (lessonId: LessonId, delay = 0) => {
+    window.setTimeout(() => {
+      document.getElementById(`theory-${lessonId}`)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+
+      window.setTimeout(
+        () => {
+          setInfographicTick(0);
+          setInfographicReady(false);
+          setActiveLesson(lessonId);
+        },
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 520,
+      );
+    }, delay);
+  };
+
   const completeLesson = (id: LessonId) => {
-    setCompletedLessons((current) => {
-      const updated = new Set(current);
-      updated.add(id);
-      try {
-        window.localStorage.setItem(storageKey, JSON.stringify(Array.from(updated)));
-      } catch {
-        // Progress remains available for the current session.
-      }
-      return updated;
-    });
+    const updated = new Set(completedLessons);
+    updated.add(id);
+    setCompletedLessons(updated);
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(Array.from(updated)));
+    } catch {
+      // Progress remains available for the current session.
+    }
+
+    const currentIndex = lessonIds.indexOf(id);
+    const nextLesson =
+      lessonIds.slice(currentIndex + 1).find((lessonId) => !updated.has(lessonId)) ??
+      lessonIds.find((lessonId) => !updated.has(lessonId));
+
+    if (nextLesson) {
+      goToLesson(nextLesson, 140);
+    } else {
+      window.setTimeout(() => {
+        document.getElementById("theory-finish")?.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+          block: "center",
+        });
+      }, 140);
+    }
   };
 
   const replayChapter = () => {
@@ -234,6 +310,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     setPrintChoice("");
     setErrorChoice("");
     setIndentChoice("");
+    setActiveLesson("intro");
     try {
       window.localStorage.removeItem(storageKey);
     } catch {
@@ -244,18 +321,12 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const scrollToFirstIncomplete = (completed = completedLessons) => {
     const firstIncomplete = lessonIds.find((lessonId) => !completed.has(lessonId));
     if (!firstIncomplete) return;
-    window.setTimeout(() => {
-      document.getElementById(`theory-${firstIncomplete}`)?.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "auto"
-          : "smooth",
-        block: "start",
-      });
-    }, 380);
+    goToLesson(firstIncomplete, 380);
   };
 
   const openPlanet = (planetId: number) => {
     setSelectedPlanet(planetId);
+    if (planetId === 0) setActiveLesson("intro");
     if (planetId === 0 && completedLessons.size > 0 && completedLessons.size < lessonIds.length) {
       scrollToFirstIncomplete();
     }
@@ -362,12 +433,96 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 </div>
               </div>
 
+              <section className="theory-intro" id="theory-intro">
+                <div className="theory-intro-heading">
+                  <p className="eyebrow">Перед стартом</p>
+                  <h3>Компьютер — очень быстрый, но буквальный помощник</h3>
+                  <p>
+                    Представьте помощника, который не понимает намёков, эмоций и интонации. Он
+                    делает только то, что вы сказали, — буквально.
+                  </p>
+                </div>
+
+                <div className="theory-intro-story">
+                  <span aria-hidden="true">“</span>
+                  <p>Сходи в магазин и купи хлеб, а если есть яйца — возьми десяток.</p>
+                  <small>
+                    Для человека всё понятно. Компьютеру придётся точно объяснить, что значит
+                    «если есть», куда идти и какие именно яйца брать.
+                  </small>
+                </div>
+
+                <p className="theory-intro-lead">
+                  Это и есть программирование: учиться разговаривать с компьютером на понятном ему
+                  языке. Он ничего не додумает за вас, зато никогда не забудет команду и выполнит
+                  точную инструкцию с огромной скоростью.
+                </p>
+
+                <div className="theory-intro-points">
+                  <span><i>01</i>Не угадывает</span>
+                  <span><i>02</i>Не забывает</span>
+                  <span><i>03</i>Точно выполняет</span>
+                </div>
+
+                <div className="theory-constructor">
+                  <div>
+                    <p className="eyebrow">Как устроены задачи ЕГЭ</p>
+                    <h4>Большая задача собирается из маленьких деталей</h4>
+                  </div>
+                  <div className="theory-constructor-parts" aria-label="Примеры маленьких подзадач">
+                    <span>Проверить условие</span>
+                    <span>Взять символ</span>
+                    <span>Посчитать</span>
+                    <span>Найти максимум</span>
+                  </div>
+                  <p>
+                    Не нужно учить задачи наизусть. Нужно знать ограниченный набор маленьких
+                    действий и уметь собирать из них новое решение — как конструктор.
+                  </p>
+                </div>
+
+                <aside className="theory-intro-insight">
+                  Если вы умеете решать маленькие задачи, то сможете решить бесчисленное количество
+                  больших, которые из них состоят.
+                </aside>
+
+                <div className="theory-intro-program">
+                  <div>
+                    <p className="eyebrow">Как работает программа</p>
+                    <h4>Сверху вниз. Одна команда за другой.</h4>
+                    <p>
+                      Порядок, пропущенный шаг и даже опечатка имеют значение. Программирование —
+                      это не угадывание, а умение чётко объяснить, чего вы хотите.
+                    </p>
+                  </div>
+                  <EditorFrame>
+                    <div className="theory-code is-static">
+                      {["x = 10", "y = 5", "print(x + y)"].map((line, index) => (
+                        <div key={line}>
+                          <span>{index + 1}</span>
+                          <code>{line}</code>
+                        </div>
+                      ))}
+                    </div>
+                  </EditorFrame>
+                  <small>
+                    Результат — <strong>15</strong>. Здесь <code>x</code> и <code>y</code> хранят
+                    значения. О переменных поговорим на следующей планете.
+                  </small>
+                </div>
+
+                <button className="theory-start-button" onClick={() => goToLesson("route")}>
+                  Начать главу
+                  <span aria-hidden="true">↓</span>
+                </button>
+              </section>
+
               <nav className="theory-document-nav" aria-label="Содержание главы">
                 {lessonIds.map((lessonId, index) => (
-                  <a href={`#theory-${lessonId}`} key={lessonId}>
+                  <button onClick={() => goToLesson(lessonId)} key={lessonId}>
                     <span>{completedLessons.has(lessonId) ? "✓" : index + 1}</span>
                     {lessonTitles[lessonId]}
-                  </a>
+                  </button>
                 ))}
               </nav>
 
@@ -384,26 +539,28 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   выполняется целиком — только после этого программа переходит к следующей.
                 </p>
                 <div className="theory-execution">
-                  <div className="theory-code" aria-label="Пример программы">
-                    {['print("Старт")', 'print("Шаг 1")', 'print("Финиш")'].map(
-                      (line, index) => (
-                        <div
-                          className={
-                            index === Math.min(executionStep, 2)
-                              ? "is-running"
-                              : executionStep > index
-                                ? "is-done"
-                                : ""
-                          }
-                          key={line}
-                        >
-                          <span>{index + 1}</span>
-                          <code>{line}</code>
-                          <i>{executionStep > index ? "✓" : ""}</i>
-                        </div>
-                      ),
-                    )}
-                  </div>
+                  <EditorFrame>
+                    <div className="theory-code" aria-label="Пример программы">
+                      {['print("Старт")', 'print("Шаг 1")', 'print("Финиш")'].map(
+                        (line, index) => (
+                          <div
+                            className={
+                              index === Math.min(executionStep, 2)
+                                ? "is-running"
+                                : executionStep > index
+                                  ? "is-done"
+                                  : ""
+                            }
+                            key={line}
+                          >
+                            <span>{index + 1}</span>
+                            <code>{line}</code>
+                            <i>{executionStep > index ? "✓" : ""}</i>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  </EditorFrame>
                   <div className="theory-console">
                     <span>Вывод</span>
                     <code>
@@ -486,9 +643,11 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   в кавычках, а несколько значений внутри скобок разделяют запятыми.
                 </p>
                 <div className="theory-split-example">
-                  <div className="theory-code is-static">
-                    <div><span>1</span><code>print(&quot;Счёт&quot;, 3)</code></div>
-                  </div>
+                  <EditorFrame>
+                    <div className="theory-code is-static">
+                      <div><span>1</span><code>print(&quot;Счёт&quot;, 3)</code></div>
+                    </div>
+                  </EditorFrame>
                   <div className="theory-console">
                     <span>Вывод</span>
                     <code><i>Счёт 3</i></code>
@@ -530,9 +689,11 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   строки: там находится тип ошибки и короткое объяснение.
                 </p>
                 <div className="theory-error-example">
-                  <div className="theory-code is-static">
-                    <div><span>1</span><code>print(hello)</code></div>
-                  </div>
+                  <EditorFrame>
+                    <div className="theory-code is-static">
+                      <div><span>1</span><code>print(hello)</code></div>
+                    </div>
+                  </EditorFrame>
                   <div className="theory-traceback">
                     <span>Traceback (most recent call last):</span>
                     <span>File &quot;main.py&quot;, line 1</span>
@@ -604,7 +765,10 @@ print("Да")`}</code></pre>
                 />
               </article>
 
-              <section className={`theory-finish ${progress === 100 ? "is-ready" : ""}`}>
+              <section
+                className={`theory-finish ${progress === 100 ? "is-ready" : ""}`}
+                id="theory-finish"
+              >
                 <div className="theory-finish-planet">
                   <PlanetSphere progress={progress} variant={0} complete={progress === 100} />
                 </div>

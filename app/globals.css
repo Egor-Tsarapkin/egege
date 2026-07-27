@@ -2784,24 +2784,42 @@ footer {
   font-variant-numeric: tabular-nums;
 }
 
-.theory-rocket {
-  height: 58px;
-  left: 30%;
+.theory-rocket-orbit {
+  animation: theory-rocket-orbit 16s linear infinite;
+  height: 174px;
+  left: 20%;
   position: absolute;
-  top: 49%;
-  transform: translate(-50%, -50%) rotate(42deg);
+  top: 57%;
+  transform: translate(-50%, -50%);
   transition:
     left 900ms cubic-bezier(0.2, 0, 0, 1),
     top 900ms cubic-bezier(0.2, 0, 0, 1),
-    transform 900ms cubic-bezier(0.2, 0, 0, 1);
-  width: 36px;
+    width 900ms cubic-bezier(0.2, 0, 0, 1),
+    height 900ms cubic-bezier(0.2, 0, 0, 1);
+  width: 174px;
   z-index: 3;
 }
 
-.theory-rocket.is-at-next {
-  left: 41%;
-  top: 35%;
-  transform: translate(-50%, -50%) rotate(57deg);
+.theory-rocket-orbit.is-at-next {
+  height: 142px;
+  left: 51%;
+  top: 39%;
+  width: 142px;
+}
+
+@keyframes theory-rocket-orbit {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.theory-rocket {
+  height: 58px;
+  left: 50%;
+  position: absolute;
+  top: -3px;
+  transform: translate(-50%, -50%) rotate(94deg);
+  width: 36px;
 }
 
 .rocket-body {
@@ -2938,14 +2956,18 @@ footer {
   width: 25%;
 }
 
-.theory-space.is-chapter-open .theory-rocket {
-  left: 45%;
-  top: 50%;
+.theory-space.is-chapter-open .theory-rocket-orbit {
+  height: 158px;
+  left: 29%;
+  top: 58%;
+  width: 158px;
 }
 
-.theory-space.is-chapter-open .theory-rocket.is-at-next {
-  left: 57%;
-  top: 33%;
+.theory-space.is-chapter-open .theory-rocket-orbit.is-at-next {
+  height: 130px;
+  left: 69%;
+  top: 38%;
+  width: 130px;
 }
 
 .theory-chapter {
@@ -3083,8 +3105,9 @@ footer {
   padding: 9px;
 }
 
-.theory-document-nav a {
+.theory-document-nav button {
   align-items: center;
+  background: transparent;
   border-radius: 11px;
   color: var(--text-soft);
   display: flex;
@@ -3092,18 +3115,19 @@ footer {
   gap: 10px;
   min-height: 40px;
   padding: 7px 10px;
-  text-decoration: none;
+  text-align: left;
   transition:
     background-color 140ms ease-out,
     color 140ms ease-out;
+  width: 100%;
 }
 
-.theory-document-nav a:hover {
+.theory-document-nav button:hover {
   background: var(--surface);
   color: var(--text);
 }
 
-.theory-document-nav a span {
+.theory-document-nav button span {
   align-items: center;
   background: var(--surface-soft);
   border-radius: 7px;
@@ -3114,6 +3138,201 @@ footer {
   height: 24px;
   justify-content: center;
   width: 24px;
+}
+
+.theory-intro {
+  margin-top: 54px;
+}
+
+.theory-intro-heading {
+  max-width: 640px;
+}
+
+.theory-intro-heading .eyebrow,
+.theory-constructor .eyebrow,
+.theory-intro-program .eyebrow {
+  color: var(--accent);
+  margin: 0 0 11px;
+}
+
+.theory-intro-heading h3 {
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  font-weight: 620;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+  margin: 0;
+}
+
+.theory-intro-heading > p:last-child,
+.theory-intro-lead {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.75;
+  margin: 20px 0 0;
+}
+
+.theory-intro-story {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  margin-top: 26px;
+  overflow: hidden;
+  padding: 22px 22px 20px 52px;
+  position: relative;
+}
+
+.theory-intro-story > span {
+  color: var(--accent);
+  font-family: Georgia, serif;
+  font-size: 42px;
+  left: 18px;
+  line-height: 1;
+  position: absolute;
+  top: 17px;
+}
+
+.theory-intro-story p {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 560;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.theory-intro-story small {
+  color: var(--muted);
+  display: block;
+  font-size: 10px;
+  line-height: 1.65;
+  margin-top: 9px;
+}
+
+.theory-intro-points {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 22px;
+}
+
+.theory-intro-points span {
+  align-items: center;
+  background: var(--surface-raised);
+  border-radius: 12px;
+  color: var(--text-soft);
+  display: flex;
+  font-size: 10px;
+  gap: 9px;
+  min-height: 48px;
+  padding: 0 12px;
+}
+
+.theory-intro-points i {
+  color: var(--accent);
+  font-size: 8px;
+  font-style: normal;
+}
+
+.theory-constructor {
+  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  margin-top: 48px;
+  padding: 38px 0;
+}
+
+.theory-constructor h4,
+.theory-intro-program h4 {
+  font-size: clamp(1.55rem, 3vw, 2.2rem);
+  font-weight: 610;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  margin: 0;
+}
+
+.theory-constructor-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.theory-constructor-parts span {
+  background: var(--accent-wash);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  border-radius: 999px;
+  color: var(--text-soft);
+  font-size: 10px;
+  padding: 9px 12px;
+}
+
+.theory-constructor > p,
+.theory-intro-program > div:first-child > p:last-child {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 20px 0 0;
+}
+
+.theory-intro-insight {
+  background: var(--accent-wash-strong);
+  border-left: 3px solid var(--accent);
+  border-radius: 3px 14px 14px 3px;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.7;
+  margin-top: 26px;
+  padding: 17px 18px;
+}
+
+.theory-intro-program {
+  display: grid;
+  gap: 22px;
+  margin-top: 52px;
+}
+
+.theory-intro-program > small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.theory-intro-program > small code {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+}
+
+.theory-intro-program > small strong {
+  color: var(--accent);
+}
+
+.theory-start-button {
+  align-items: center;
+  background: var(--accent);
+  border-radius: 13px;
+  color: var(--accent-ink);
+  display: flex;
+  font-size: 11px;
+  font-weight: 650;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 28px;
+  min-height: 52px;
+  padding: 0 20px;
+  transition:
+    background-color 140ms ease-out,
+    transform 140ms ease-out;
+  width: 100%;
+}
+
+.theory-start-button:hover {
+  background: var(--accent-hover);
+}
+
+.theory-start-button:active {
+  transform: scale(0.985);
+}
+
+.theory-start-button span {
+  font-size: 15px;
 }
 
 .theory-lesson {
@@ -3180,9 +3399,64 @@ footer {
   padding: 12px;
 }
 
+.theory-editor {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  box-shadow: 0 10px 28px color-mix(in srgb, #000 10%, transparent);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.theory-editor-bar {
+  align-items: center;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--line);
+  color: var(--dim);
+  display: grid;
+  font-size: 8px;
+  grid-template-columns: 1fr auto 1fr;
+  min-height: 32px;
+  padding: 0 11px;
+}
+
+.theory-editor-bar > span {
+  display: flex;
+  gap: 5px;
+}
+
+.theory-editor-bar > span i {
+  background: var(--line-strong);
+  border-radius: 50%;
+  display: block;
+  height: 6px;
+  width: 6px;
+}
+
+.theory-editor-bar > span i:first-child {
+  background: var(--accent);
+  opacity: 0.72;
+}
+
+.theory-editor-bar small {
+  color: var(--muted);
+  font-family: var(--font-geist-mono);
+  font-size: 8px;
+}
+
+.theory-editor-bar b {
+  font-size: 7px;
+  font-weight: 560;
+  justify-self: end;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
 .theory-code {
   display: grid;
   gap: 4px;
+  min-height: 100px;
+  padding: 10px;
 }
 
 .theory-code > div {
@@ -3226,7 +3500,7 @@ footer {
 }
 
 .theory-code.is-static > div {
-  background: var(--surface);
+  background: var(--bg);
   color: var(--text-soft);
   grid-template-columns: 23px 1fr;
 }
@@ -3334,25 +3608,28 @@ footer {
 
 .theory-complete-button {
   align-items: center;
-  background: transparent;
-  border-radius: 11px;
-  color: var(--accent);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  color: var(--dim);
   display: flex;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 620;
   gap: 9px;
   margin-top: 22px;
-  min-height: 44px;
-  padding: 0 12px;
+  min-height: 52px;
+  padding: 0 16px;
   transition:
     background-color 140ms ease-out,
+    border-color 140ms ease-out,
     color 140ms ease-out,
     transform 140ms ease-out;
+  width: 100%;
 }
 
 .theory-complete-button span {
   align-items: center;
-  background: var(--accent-wash-strong);
+  background: var(--surface-soft);
   border-radius: 7px;
   display: flex;
   height: 24px;
@@ -3361,7 +3638,7 @@ footer {
 }
 
 .theory-complete-button:hover:not(:disabled) {
-  background: var(--accent-wash);
+  background: var(--accent-hover);
 }
 
 .theory-complete-button:active:not(:disabled) {
@@ -3371,9 +3648,22 @@ footer {
 .theory-complete-button:disabled {
   color: var(--dim);
   cursor: default;
+  opacity: 0.72;
+}
+
+.theory-complete-button:not(:disabled):not(.is-complete) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.theory-complete-button:not(:disabled):not(.is-complete) span {
+  background: color-mix(in srgb, var(--accent-ink) 12%, transparent);
 }
 
 .theory-complete-button.is-complete {
+  background: var(--accent-wash);
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--line));
   color: var(--muted);
 }
 
@@ -6862,15 +7152,18 @@ footer {
     width: 23%;
   }
 
-  .theory-rocket {
-    left: 44%;
-    top: 45%;
-    scale: 0.86;
+  .theory-rocket-orbit {
+    height: 148px;
+    left: 28%;
+    top: 51%;
+    width: 148px;
   }
 
-  .theory-rocket.is-at-next {
-    left: 59%;
-    top: 34%;
+  .theory-rocket-orbit.is-at-next {
+    height: 116px;
+    left: 72%;
+    top: 38%;
+    width: 116px;
   }
 
   .theory-map-hint {
@@ -6900,6 +7193,40 @@ footer {
 
   .theory-document-nav {
     margin-top: 35px;
+  }
+
+  .theory-intro {
+    margin-top: 42px;
+  }
+
+  .theory-intro-heading h3 {
+    font-size: 2rem;
+  }
+
+  .theory-intro-heading > p:last-child,
+  .theory-intro-lead {
+    font-size: 13px;
+  }
+
+  .theory-intro-story {
+    padding: 19px 18px 18px 44px;
+  }
+
+  .theory-intro-story > span {
+    left: 14px;
+  }
+
+  .theory-intro-points {
+    grid-template-columns: 1fr;
+  }
+
+  .theory-constructor {
+    margin-top: 38px;
+    padding: 30px 0;
+  }
+
+  .theory-intro-program {
+    margin-top: 42px;
   }
 
   .theory-lesson {
@@ -7025,7 +7352,7 @@ footer {
   }
 
   .theory-planet-liquid,
-  .theory-rocket,
+  .theory-rocket-orbit,
   .theory-chapter-progress i {
     transition-duration: 0.01ms !important;
   }
@@ -7033,7 +7360,8 @@ footer {
   .theory-planet-sphere,
   .theory-planet-liquid::before,
   .theory-planet-liquid::after,
-  .theory-auto-badge i {
+  .theory-auto-badge i,
+  .theory-rocket-orbit {
     animation: none !important;
   }
 }
