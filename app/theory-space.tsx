@@ -47,21 +47,44 @@ const lessonTitles: Record<LessonId, string> = {
 
 function PlanetSphere({
   progress,
+  variant = 0,
   complete = false,
 }: {
   progress: number;
+  variant?: number;
   complete?: boolean;
 }) {
   return (
     <span
-      className={`theory-planet-sphere ${complete ? "is-complete" : ""}`}
+      className={`theory-planet-sphere planet-variant-${variant} ${
+        complete ? "is-complete" : ""
+      }`}
       style={{ "--planet-progress": `${progress}%` } as React.CSSProperties}
       aria-hidden="true"
     >
       <span className="theory-planet-liquid" />
-      <i className="planet-crater crater-one" />
-      <i className="planet-crater crater-two" />
-      <i className="planet-crater crater-three" />
+      {variant === 0 && (
+        <>
+          <i className="planet-crater crater-one" />
+          <i className="planet-crater crater-two" />
+          <i className="planet-crater crater-three" />
+        </>
+      )}
+      {variant === 1 && (
+        <span className="planet-data-pattern">
+          <i />
+          <i />
+          <i />
+          <i />
+        </span>
+      )}
+      {variant === 2 && (
+        <span className="planet-logic-pattern">
+          <i />
+          <i />
+          <i />
+        </span>
+      )}
     </span>
   );
 }
@@ -152,7 +175,8 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const storageKey = `egege-theory-progress-v1:${userId}`;
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
-  const [executionStep, setExecutionStep] = useState(0);
+  const [infographicTick, setInfographicTick] = useState(0);
+  const [infographicReady, setInfographicReady] = useState(false);
   const [algorithmChoice, setAlgorithmChoice] = useState("");
   const [printChoice, setPrintChoice] = useState("");
   const [errorChoice, setErrorChoice] = useState("");
@@ -171,7 +195,21 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     });
   }, [storageKey]);
 
+  useEffect(() => {
+    if (selectedPlanet !== 0) return;
+    const interval = window.setInterval(() => {
+      setInfographicTick((current) => (current + 1) % 12);
+    }, 1150);
+    const readyTimer = window.setTimeout(() => setInfographicReady(true), 3450);
+    return () => {
+      window.clearInterval(interval);
+      window.clearTimeout(readyTimer);
+    };
+  }, [selectedPlanet]);
+
   const progress = Math.round((completedLessons.size / lessonIds.length) * 100);
+  const executionStep = infographicTick % 4;
+  const algorithmStep = infographicTick % 3;
   const activePlanet = useMemo(
     () => planets.find((planet) => planet.id === selectedPlanet) ?? null,
     [selectedPlanet],
@@ -192,7 +230,6 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
 
   const replayChapter = () => {
     setCompletedLessons(new Set());
-    setExecutionStep(0);
     setAlgorithmChoice("");
     setPrintChoice("");
     setErrorChoice("");
@@ -204,8 +241,24 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     }
   };
 
-  const advanceExecution = () => {
-    setExecutionStep((current) => (current >= 3 ? 0 : current + 1));
+  const scrollToFirstIncomplete = (completed = completedLessons) => {
+    const firstIncomplete = lessonIds.find((lessonId) => !completed.has(lessonId));
+    if (!firstIncomplete) return;
+    window.setTimeout(() => {
+      document.getElementById(`theory-${firstIncomplete}`)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    }, 380);
+  };
+
+  const openPlanet = (planetId: number) => {
+    setSelectedPlanet(planetId);
+    if (planetId === 0 && completedLessons.size > 0 && completedLessons.size < lessonIds.length) {
+      scrollToFirstIncomplete();
+    }
   };
 
   return (
@@ -235,13 +288,17 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 className={`theory-planet theory-planet-${planet.id} ${
                   selectedPlanet === planet.id ? "is-selected" : ""
                 } ${isCurrent ? "is-current" : ""}`}
-                onClick={() => setSelectedPlanet(planet.id)}
+                onClick={() => openPlanet(planet.id)}
                 aria-label={`${planet.chapter}. ${planet.title}. ${
                   isCurrent ? `Пройдено ${progress}%` : "Глава готовится"
                 }`}
                 key={planet.id}
               >
-                <PlanetSphere progress={planetProgress} complete={planetProgress === 100} />
+                <PlanetSphere
+                  progress={planetProgress}
+                  variant={planet.id}
+                  complete={planetProgress === 100}
+                />
                 <span className="theory-planet-label">
                   <small>{planet.chapter}</small>
                   <strong>{planet.title}</strong>
@@ -280,7 +337,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
 
           {activePlanet.id !== 0 ? (
             <div className="theory-coming-soon">
-              <PlanetSphere progress={0} />
+              <PlanetSphere progress={0} variant={activePlanet.id} />
               <p className="eyebrow">{activePlanet.chapter}</p>
               <h2>{activePlanet.title}</h2>
               <p>{activePlanet.description}</p>
@@ -332,9 +389,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                       (line, index) => (
                         <div
                           className={
-                            executionStep > 0 && index === Math.min(executionStep - 1, 2)
+                            index === Math.min(executionStep, 2)
                               ? "is-running"
-                              : executionStep > index + 1
+                              : executionStep > index
                                 ? "is-done"
                                 : ""
                           }
@@ -349,23 +406,16 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   </div>
                   <div className="theory-console">
                     <span>Вывод</span>
-                    {executionStep === 0 ? (
-                      <small>Нажмите «Запустить»</small>
-                    ) : (
-                      <code>
-                        {["Старт", "Шаг 1", "Финиш"]
-                          .slice(0, executionStep)
-                          .map((line) => <i key={line}>{line}</i>)}
-                      </code>
-                    )}
+                    <code>
+                      {["Старт", "Шаг 1", "Финиш"]
+                        .slice(0, Math.min(executionStep + 1, 3))
+                        .map((line) => <i key={line}>{line}</i>)}
+                    </code>
                   </div>
-                  <button className="theory-run-button" onClick={advanceExecution}>
-                    {executionStep === 0
-                      ? "Запустить"
-                      : executionStep < 3
-                        ? "Следующая строка"
-                        : "Посмотреть ещё раз"}
-                  </button>
+                  <span className="theory-auto-badge">
+                    <i aria-hidden="true" />
+                    Автовоспроизведение
+                  </span>
                 </div>
                 <aside className="theory-note">
                   Позже условия и циклы научат программу менять этот прямой маршрут. Но пока
@@ -374,7 +424,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 <LessonStatus
                   id="route"
                   completed={completedLessons.has("route")}
-                  ready={executionStep === 3}
+                  ready={infographicReady}
                   onComplete={completeLesson}
                 />
               </article>
@@ -391,28 +441,34 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   Алгоритм — это понятная последовательность команд для получения результата.
                   Если переставить команды, результат тоже может измениться.
                 </p>
-                <div className="theory-sequence" aria-label="Последовательность команд">
-                  <span><i>1</i>Показать «Е»</span>
-                  <b aria-hidden="true">→</b>
-                  <span><i>2</i>Показать «Г»</span>
-                  <b aria-hidden="true">→</b>
-                  <span><i>3</i>Показать «Э»</span>
+                <div className="theory-sequence" aria-label="Последовательность работы программы">
+                  {["Получить команду", "Выполнить её", "Перейти дальше"].map((label, index) => (
+                    <span
+                      className={`${index === algorithmStep ? "is-active" : ""} ${
+                        index < algorithmStep ? "is-done" : ""
+                      }`}
+                      key={label}
+                    >
+                      <i>{index + 1}</i>
+                      {label}
+                    </span>
+                  ))}
                 </div>
                 <ChoiceGroup
-                  label="Что появится на экране?"
+                  label="Какое определение алгоритма верное?"
                   options={[
-                    { value: "ege", label: "ЕГЭ" },
-                    { value: "ege-reverse", label: "ЭГЕ" },
-                    { value: "letters", label: "Три случайные буквы" },
+                    { value: "random", label: "Набор случайных действий" },
+                    { value: "sequence", label: "Последовательность понятных команд" },
+                    { value: "text", label: "Любой текст в редакторе" },
                   ]}
                   value={algorithmChoice}
-                  correct="ege"
+                  correct="sequence"
                   onChange={setAlgorithmChoice}
                 />
                 <LessonStatus
                   id="algorithm"
                   completed={completedLessons.has("algorithm")}
-                  ready={algorithmChoice === "ege"}
+                  ready={algorithmChoice === "sequence"}
                   onComplete={completeLesson}
                 />
               </article>
@@ -431,11 +487,11 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 </p>
                 <div className="theory-split-example">
                   <div className="theory-code is-static">
-                    <div><span>1</span><code>print(&quot;ЕГЭ&quot;, 2027)</code></div>
+                    <div><span>1</span><code>print(&quot;Счёт&quot;, 3)</code></div>
                   </div>
                   <div className="theory-console">
                     <span>Вывод</span>
-                    <code><i>ЕГЭ 2027</i></code>
+                    <code><i>Счёт 3</i></code>
                   </div>
                 </div>
                 <ChoiceGroup
@@ -550,7 +606,7 @@ print("Да")`}</code></pre>
 
               <section className={`theory-finish ${progress === 100 ? "is-ready" : ""}`}>
                 <div className="theory-finish-planet">
-                  <PlanetSphere progress={progress} complete={progress === 100} />
+                  <PlanetSphere progress={progress} variant={0} complete={progress === 100} />
                 </div>
                 <div>
                   <p className="eyebrow">{progress === 100 ? "Глава пройдена" : "Финиш близко"}</p>
@@ -560,8 +616,12 @@ print("Да")`}</code></pre>
                       ? "Ракета уже переместилась к следующей планете. Старые вопросы будут возвращаться в будущих уровнях игры."
                       : "Завершите оставшиеся смысловые блоки — одного пролистывания для прогресса недостаточно."}
                   </p>
-                  {progress === 100 && (
+                  {progress === 100 ? (
                     <button onClick={replayChapter}>Повторить главу</button>
+                  ) : (
+                    <button onClick={() => scrollToFirstIncomplete()}>
+                      К первому непройденному вопросу
+                    </button>
                   )}
                 </div>
               </section>
