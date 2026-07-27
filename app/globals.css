@@ -4227,10 +4227,10 @@ footer {
 }
 
 .trainer-hand-shape {
-  height: 92px;
-  margin: 7px auto 0;
+  height: 108px;
+  margin: 5px auto 0;
   position: relative;
-  width: 92px;
+  width: 104px;
 }
 
 .trainer-hand-right .trainer-hand-shape {
@@ -4240,56 +4240,59 @@ footer {
 .trainer-hand-shape b {
   background: var(--surface-raised);
   border: 1px solid var(--line-strong);
-  border-radius: 18px 18px 24px 24px;
+  border-radius: 25px 25px 31px 31px;
+  border-top-color: transparent;
   bottom: 5px;
-  height: 49px;
-  left: 28px;
+  height: 61px;
+  left: 23px;
   position: absolute;
-  width: 49px;
+  width: 62px;
+  z-index: 2;
 }
 
 .trainer-hand-shape i {
   background: var(--surface-raised);
   border: 1px solid var(--line-strong);
-  border-radius: 999px 999px 8px 8px;
-  bottom: 45px;
+  border-bottom: 0;
+  border-radius: 999px 999px 3px 3px;
+  bottom: 52px;
   position: absolute;
   transform-origin: bottom center;
   transition:
     background-color 130ms ease-out,
-    border-color 130ms ease-out,
-    transform 130ms ease-out;
-  width: 12px;
+    border-color 130ms ease-out;
+  width: 15px;
   z-index: 1;
 }
 
 .trainer-hand-shape .finger-little {
-  height: 31px;
+  height: 39px;
   left: 17px;
-  transform: rotate(-8deg);
+  transform: rotate(-5deg);
 }
 
 .trainer-hand-shape .finger-ring {
-  height: 39px;
-  left: 31px;
+  height: 48px;
+  left: 35px;
 }
 
 .trainer-hand-shape .finger-middle {
-  height: 45px;
-  left: 45px;
+  height: 53px;
+  left: 52px;
 }
 
 .trainer-hand-shape .finger-index {
-  height: 40px;
-  left: 59px;
-  transform: rotate(3deg);
+  height: 48px;
+  left: 69px;
+  transform: rotate(2deg);
 }
 
 .trainer-hand-shape .finger-thumb {
-  bottom: 16px;
-  height: 32px;
-  left: 17px;
-  transform: rotate(-43deg);
+  bottom: 17px;
+  height: 40px;
+  left: 20px;
+  transform: rotate(-48deg);
+  transform-origin: bottom center;
 }
 
 .trainer-hand-shape i.is-active {
@@ -4298,20 +4301,20 @@ footer {
 }
 
 .trainer-hand-shape .finger-little.is-active {
-  transform: rotate(-8deg) translateY(-3px);
+  transform: rotate(-5deg);
 }
 
 .trainer-hand-shape .finger-ring.is-active,
 .trainer-hand-shape .finger-middle.is-active {
-  transform: translateY(-3px);
+  transform: none;
 }
 
 .trainer-hand-shape .finger-index.is-active {
-  transform: rotate(3deg) translateY(-3px);
+  transform: rotate(2deg);
 }
 
 .trainer-hand-shape .finger-thumb.is-active {
-  transform: rotate(-43deg) translateY(-3px);
+  transform: rotate(-48deg);
 }
 
 .trainer-finger-guides {
@@ -4698,14 +4701,14 @@ footer {
   }
 
   .trainer-hand-shape {
-    height: 78px;
-    margin-top: 1px;
-    transform: scale(0.82);
+    height: 108px;
+    margin: 1px auto -20px;
+    transform: scale(0.78);
     transform-origin: center top;
   }
 
   .trainer-hand-right .trainer-hand-shape {
-    transform: scale(-0.82, 0.82);
+    transform: scale(-0.78, 0.78);
   }
 
   .trainer-finger-guides {

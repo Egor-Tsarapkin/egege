@@ -55,16 +55,42 @@ while n > 0:
     total += n % 10
     n //= 10
 print(total)`,
+    `def count_even(values):
+    count = 0
+    for value in values:
+        if value % 2 == 0:
+            count += 1
+    return count
+
+print(count_even([3, 6, 8, 11]))`,
+    `numbers = list(map(int, input().split()))
+maximum = numbers[0]
+for number in numbers:
+    if number > maximum:
+        maximum = number
+print(maximum)`,
+    `text = input()
+result = ""
+for char in text:
+    if char != " ":
+        result += char
+print(result)`,
   ],
   russian: [
     "Точный код начинается со спокойного ритма и правильной постановки рук.",
     "Сначала печатай без ошибок, а скорость обязательно появится следом.",
     "Короткая ежедневная тренировка помогает увереннее писать программы.",
+    "Держи ровный темп: не торопись на сложных сочетаниях и следи за точностью.",
+    "Хорошая привычка — смотреть на экран, а не искать каждую клавишу глазами.",
+    "Несколько спокойных минут практики каждый день дают заметный результат.",
   ],
   symbols: [
     "() [] {} : ; == != += -= // **",
     "range(10): nums[i] += value",
     "print(f\"Ответ: {result}\")",
+    "if (a <= b) and (b != 0):",
+    "items[2:8] == values[::-1]",
+    "{key: value for key, value in pairs}",
   ],
 };
 
