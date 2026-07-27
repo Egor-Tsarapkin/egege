@@ -5217,6 +5217,153 @@ footer {
   }
 }
 
+@media (min-width: 701px) {
+  .tasks-shell.is-trainer-shell {
+    max-width: 1540px;
+    min-height: calc(100dvh - 72px);
+    padding: 16px clamp(18px, 3vw, 40px);
+  }
+
+  .typing-trainer {
+    display: grid;
+    gap: 12px;
+    grid-template-rows: auto minmax(260px, 1fr) 224px;
+    height: calc(100dvh - 104px);
+    min-height: 610px;
+  }
+
+  .trainer-hero {
+    align-items: center;
+    gap: 18px;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .trainer-heading .eyebrow {
+    margin-bottom: 5px;
+  }
+
+  .trainer-heading h1 {
+    font-size: clamp(2.2rem, 4vw, 3.3rem);
+    line-height: 0.96;
+  }
+
+  .trainer-heading > p:not(.eyebrow) {
+    font-size: 11px;
+    line-height: 1.4;
+    margin-top: 5px;
+  }
+
+  .trainer-modes {
+    margin-top: 10px;
+    padding: 3px;
+  }
+
+  .trainer-modes button {
+    min-height: 34px;
+    padding: 0 12px;
+  }
+
+  .trainer-metrics {
+    gap: 7px;
+    grid-template-columns: repeat(3, minmax(90px, 1fr));
+  }
+
+  .trainer-metrics > div {
+    border-radius: 15px;
+    min-width: 0;
+    padding: 11px 12px;
+  }
+
+  .trainer-metrics span {
+    margin-bottom: 4px;
+  }
+
+  .trainer-metrics strong {
+    font-size: 18px;
+  }
+
+  .trainer-stage {
+    border-radius: 23px;
+    height: 100%;
+    margin-top: 0;
+    min-height: 0;
+  }
+
+  .trainer-stage-toolbar {
+    min-height: 48px;
+    padding: 0 18px;
+  }
+
+  .trainer-code-scroll {
+    inset: 48px 0 0;
+    padding: clamp(22px, 3vh, 34px);
+  }
+
+  .trainer-capture {
+    inset: 48px 0 0;
+  }
+
+  .trainer-guidance {
+    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) 246px;
+    height: 224px;
+    margin-top: 0;
+    min-height: 0;
+  }
+
+  .trainer-keyboard,
+  .trainer-hands {
+    border-radius: 22px;
+  }
+
+  .trainer-keyboard {
+    gap: 5px;
+    padding: 12px;
+  }
+
+  .trainer-keyboard-row {
+    gap: 5px;
+  }
+
+  .trainer-key {
+    border-radius: 7px;
+    height: 34px;
+  }
+
+  .trainer-hands {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 14px;
+  }
+
+  .trainer-next-key {
+    align-self: stretch;
+  }
+
+  .trainer-next-key strong {
+    min-height: 34px;
+  }
+
+  .trainer-hand-pair {
+    margin-top: 8px;
+  }
+
+  .trainer-hand-visual {
+    height: 80px;
+    margin-top: 2px;
+    width: 80px;
+  }
+
+  .trainer-finger-guides {
+    align-self: stretch;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    margin-top: auto;
+    padding: 9px 0 0;
+  }
+}
+
 @media (hover: none) {
   .dock-item {
     transform: none !important;
