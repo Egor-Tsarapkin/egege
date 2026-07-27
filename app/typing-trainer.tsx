@@ -400,9 +400,10 @@ function HandDiagram({
       <div className="trainer-hand-visual" aria-hidden="true">
         <Hand className="trainer-hand-icon" strokeWidth={0.58} />
         {fingers.map((finger) => (
-          <i
-            className={`trainer-fingertip finger-${finger} ${activeFingers.has(finger) ? "is-active" : ""}`}
+          <Hand
+            className={`trainer-hand-highlight finger-${finger} ${activeFingers.has(finger) ? "is-active" : ""}`}
             key={finger}
+            strokeWidth={1.16}
           />
         ))}
       </div>
