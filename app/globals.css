@@ -5343,6 +5343,17 @@ footer {
     flex-grow: 2.15;
   }
 
+  .trainer-key b {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .trainer-key-wide b {
+    font-size: 8px;
+  }
+
   .trainer-hands {
     display: flex;
     flex-direction: column;
