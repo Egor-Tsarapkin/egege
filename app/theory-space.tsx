@@ -16,33 +16,30 @@ type Planet = {
 const planets: Planet[] = [
   {
     id: 0,
-    chapter: "Глава 0",
+    chapter: "Глава 1",
     title: "Как думает компьютер",
-    description: "Порядок команд, print, первые ошибки и отступы.",
+    description: "Точные инструкции, порядок команд и переменные.",
   },
   {
     id: 1,
-    chapter: "Глава 1",
-    title: "Данные и переменные",
-    description: "Как программа запоминает и изменяет значения.",
-  },
-  {
-    id: 2,
     chapter: "Глава 2",
     title: "Условия и логика",
     description: "Как код принимает решения и выбирает маршрут.",
   },
+  {
+    id: 2,
+    chapter: "Глава 3",
+    title: "Циклы и повторения",
+    description: "Как поручить программе повторяющуюся работу.",
+  },
 ];
 
-const lessonIds = ["route", "algorithm", "print", "errors", "indent"] as const;
+const lessonIds = ["program", "variables"] as const;
 type LessonId = (typeof lessonIds)[number];
 
 const lessonTitles: Record<LessonId, string> = {
-  route: "Строка за строкой",
-  algorithm: "Последовательность команд",
-  print: "Голос программы",
-  errors: "Ошибки — это подсказки",
-  indent: "Отступы собирают блоки",
+  program: "Как работает программа",
+  variables: "Переменные: коробки с именами",
 };
 
 function PlanetSphere({
@@ -89,12 +86,9 @@ function PlanetSphere({
   );
 }
 
-function MascotRocket({ atNextPlanet }: { atNextPlanet: boolean }) {
+function MascotRocket() {
   return (
-    <span
-      className={`theory-rocket-orbit ${atNextPlanet ? "is-at-next" : ""}`}
-      aria-hidden="true"
-    >
+    <span className="theory-rocket-orbit" aria-hidden="true">
       <span className="theory-rocket-path">
         <span className="theory-rocket">
           <span className="rocket-flame" />
@@ -140,86 +134,265 @@ function EditorFrame({
 function LessonStatus({
   id,
   completed,
-  ready,
   onComplete,
 }: {
   id: LessonId;
   completed: boolean;
-  ready: boolean;
   onComplete: (id: LessonId) => void;
 }) {
   return (
     <button
       className={`theory-complete-button ${completed ? "is-complete" : ""}`}
-      disabled={!ready || completed}
+      disabled={completed}
       onClick={() => onComplete(id)}
     >
-      <span aria-hidden="true">{completed ? "✓" : ready ? "→" : "·"}</span>
+      <span aria-hidden="true">{completed ? "✓" : "→"}</span>
       {completed
         ? "Блок пройден"
-        : ready
-          ? id === "indent"
-            ? "Завершить главу"
-            : "Перейти к следующему блоку"
-          : "Сначала выполните задание"}
+        : id === "program"
+          ? "Завершить блок · заполнить планету на 50%"
+          : "Завершить главу"}
     </button>
   );
 }
 
-function ChoiceGroup({
-  label,
-  options,
-  value,
-  correct,
-  onChange,
-}: {
-  label: string;
-  options: Array<{ value: string; label: string }>;
-  value: string;
-  correct: string;
-  onChange: (value: string) => void;
-}) {
-  const answered = Boolean(value);
-  const isCorrect = value === correct;
+function LiteralAssistantGraphic() {
+  return (
+    <div className="literal-comic" aria-label="Компьютер выполняет инструкцию буквально">
+      <div className="literal-panel literal-request">
+        <div className="comic-person" aria-hidden="true">
+          <i />
+          <span />
+        </div>
+        <div className="comic-list">
+          <small>Инструкция</small>
+          <strong>Купи хлеб</strong>
+          <span>Если есть яйца — возьми десяток</span>
+        </div>
+        <div className="comic-robot is-listening" aria-hidden="true">
+          <i className="robot-antenna" />
+          <span className="robot-head"><i /><i /></span>
+          <span className="robot-body" />
+        </div>
+      </div>
+
+      <div className="literal-panel literal-store">
+        <div className="bread-shelf" aria-hidden="true">
+          <span className="bread-kind bread-round" />
+          <span className="bread-kind bread-loaf" />
+          <small>Хлеб №1</small>
+          <small>Хлеб №2</small>
+        </div>
+        <div className="comic-robot is-confused" aria-hidden="true">
+          <i className="robot-antenna" />
+          <span className="robot-head"><i /><i /></span>
+          <span className="robot-body" />
+        </div>
+        <span className="robot-question" aria-hidden="true">?</span>
+        <strong className="robot-stuck">ЗАВИС</strong>
+      </div>
+
+      <p>
+        Компьютер выполняет всё буквально.
+        <strong> Ему нужна чёткая инструкция.</strong>
+      </p>
+    </div>
+  );
+}
+
+const taskParts = [
+  { label: "Условие", className: "part-condition" },
+  { label: "Символ", className: "part-symbol" },
+  { label: "Счётчик", className: "part-counter" },
+  { label: "Максимум", className: "part-maximum" },
+  { label: "Остаток", className: "part-remainder" },
+];
+
+function TaskConstructorGraphic() {
+  const crates = [
+    ["part-condition", "part-counter", "part-maximum"],
+    ["part-symbol", "part-counter", "part-condition"],
+    ["part-remainder", "part-maximum", "part-symbol"],
+  ];
 
   return (
-    <div className="theory-choice-block">
-      <p>{label}</p>
-      <div className="theory-choices">
-        {options.map((option) => (
-          <button
-            className={`${value === option.value ? "is-selected" : ""} ${
-              value === option.value && isCorrect ? "is-correct" : ""
-            }`}
-            onClick={() => onChange(option.value)}
-            key={option.value}
-          >
-            {option.label}
-          </button>
+    <div className="task-constructor" aria-label="Большие задачи собираются из маленьких подзадач">
+      <header>
+        <div>
+          <small>Конечный набор деталей</small>
+          <strong>Маленькие подзадачи</strong>
+        </div>
+        <span>Учим детали → решаем всё</span>
+      </header>
+
+      <div className="task-parts-bank">
+        {taskParts.map((part) => (
+          <span className={part.className} key={part.label}>{part.label}</span>
         ))}
       </div>
-      {answered && (
-        <small className={isCorrect ? "is-correct" : "is-wrong"} role="status">
-          {isCorrect
-            ? "Верно. Можно двигаться дальше."
-            : "Пока нет. Посмотрите на строки и прочитайте их сверху вниз."}
-        </small>
-      )}
+
+      <div className="task-conveyor">
+        <span className="conveyor-line" aria-hidden="true" />
+        {crates.map((parts, crateIndex) => (
+          <div
+            className={`task-crate task-crate-${crateIndex + 1}`}
+            key={crateIndex}
+            aria-hidden="true"
+          >
+            <small>Задача №{crateIndex + 1}</small>
+            <div>
+              {parts.map((part, partIndex) => (
+                <i className={part} key={`${part}-${partIndex}`} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p>Набор деталей ограничен, а задач, которые можно из них собрать, — очень много.</p>
+    </div>
+  );
+}
+
+function ProgramExample() {
+  return (
+    <div className="program-example">
+      <EditorFrame className="program-reading-editor">
+        <div className="theory-code is-static">
+          {["x = 10", "y = 5", "print(x + y)"].map((line, index) => (
+            <div className={`program-line program-line-${index + 1}`} key={line}>
+              <span>{index + 1}</span>
+              <code>{line}</code>
+              <i>{index === 2 ? "15" : "✓"}</i>
+            </div>
+          ))}
+        </div>
+      </EditorFrame>
+      <div className="program-direction" aria-hidden="true">
+        <span>Старт</span>
+        <i />
+        <strong>сверху вниз</strong>
+      </div>
+    </div>
+  );
+}
+
+function LifeBoxGraphic() {
+  return (
+    <div className="life-box-graphic" aria-label="Коробка с яблоком и ярлыком яблоко">
+      <div className="life-box-copy">
+        <small>Обычная жизнь</small>
+        <strong>Кладём значение внутрь</strong>
+        <p>Наклейка помогает потом обратиться к нужной коробке по имени.</p>
+      </div>
+      <div className="cardboard-scene" aria-hidden="true">
+        <span className="css-apple"><i /></span>
+        <span className="cardboard-box">
+          <i className="box-flap box-flap-left" />
+          <i className="box-flap box-flap-right" />
+          <strong>яблоко</strong>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function AssignmentGraphic() {
+  return (
+    <div className="assignment-graphic" aria-label="x равно 5 означает положить значение 5 в переменную x">
+      <div className="assignment-code">
+        <code><strong>x</strong> = <b>5</b></code>
+        <small>читаем справа налево</small>
+      </div>
+      <div className="assignment-motion" aria-hidden="true">
+        <span className="assignment-value">5</span>
+        <i className="assignment-arrow" />
+        <span className="variable-box"><small>имя</small><strong>x</strong><b>5</b></span>
+      </div>
+      <p><strong>=</strong> — оператор присваивания: «положи значение справа в переменную слева».</p>
+    </div>
+  );
+}
+
+function EqualityGraphic() {
+  return (
+    <div className="equality-graphic">
+      <div className="equality-card is-assign">
+        <span>=</span>
+        <div>
+          <small>Присваивание</small>
+          <strong>Положи</strong>
+          <code>x = 5</code>
+        </div>
+      </div>
+      <div className="equality-card is-compare">
+        <span>==</span>
+        <div>
+          <small>Проверка</small>
+          <strong>Равно?</strong>
+          <code>x == 5</code>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const dataTypes = [
+  { type: "int", name: "Целое число", example: "x = 10", value: "10" },
+  { type: "float", name: "Дробь", example: "y = 3.14", value: "3.14" },
+  { type: "str", name: "Строка", example: 'name = "Катя"', value: '"Катя"' },
+  { type: "bool", name: "Логика", example: "flag = True", value: "True" },
+];
+
+function DataTypesTable() {
+  return (
+    <div className="data-types-table" role="table" aria-label="Основные типы данных Python">
+      <div className="data-type-row is-heading" role="row">
+        <span role="columnheader">Тип</span>
+        <span role="columnheader">Пример</span>
+        <span role="columnheader">Значение</span>
+      </div>
+      {dataTypes.map((item) => (
+        <div className="data-type-row" role="row" key={item.type}>
+          <span role="cell"><i>{item.type}</i><small>{item.name}</small></span>
+          <code role="cell">{item.example}</code>
+          <strong role="cell">{item.value}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TypeDifferenceGraphic() {
+  return (
+    <div className="type-difference">
+      <div className="type-difference-cells">
+        <div>
+          <small>Число</small>
+          <code>x = <strong>5</strong></code>
+          <span>int</span>
+          <p>Можно складывать и умножать как число.</p>
+        </div>
+        <div>
+          <small>Строка</small>
+          <code>y = <strong>&quot;5&quot;</strong></code>
+          <span>str</span>
+          <p>Это один текстовый символ в кавычках.</p>
+        </div>
+      </div>
+      <div className="same-screen">
+        <span>На экране</span>
+        <code>5&nbsp;&nbsp;&nbsp;5</code>
+        <strong>Выглядят одинаково — ведут себя по-разному</strong>
+      </div>
     </div>
   );
 }
 
 export default function TheorySpace({ userId }: TheorySpaceProps) {
-  const storageKey = `egege-theory-progress-v1:${userId}`;
+  const storageKey = `egege-theory-progress-v2:${userId}`;
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
-  const [infographicTick, setInfographicTick] = useState(0);
-  const [infographicReady, setInfographicReady] = useState(false);
-  const [activeLesson, setActiveLesson] = useState<LessonId | "intro">("intro");
-  const [algorithmChoice, setAlgorithmChoice] = useState("");
-  const [printChoice, setPrintChoice] = useState("");
-  const [errorChoice, setErrorChoice] = useState("");
-  const [indentChoice, setIndentChoice] = useState("");
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -234,24 +407,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     });
   }, [storageKey]);
 
-  useEffect(() => {
-    if (selectedPlanet !== 0 || activeLesson === "intro") return;
-    const interval = window.setInterval(() => {
-      setInfographicTick((current) => (current + 1) % 12);
-    }, 1150);
-    const readyTimer =
-      activeLesson === "route"
-        ? window.setTimeout(() => setInfographicReady(true), 3450)
-        : undefined;
-    return () => {
-      window.clearInterval(interval);
-      if (readyTimer) window.clearTimeout(readyTimer);
-    };
-  }, [activeLesson, selectedPlanet]);
-
-  const progress = Math.round((completedLessons.size / lessonIds.length) * 100);
-  const executionStep = infographicTick % 4;
-  const algorithmStep = infographicTick % 3;
+  const progress = completedLessons.size * 50;
   const activePlanet = useMemo(
     () => planets.find((planet) => planet.id === selectedPlanet) ?? null,
     [selectedPlanet],
@@ -265,15 +421,6 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
           : "smooth",
         block: "start",
       });
-
-      window.setTimeout(
-        () => {
-          setInfographicTick(0);
-          setInfographicReady(false);
-          setActiveLesson(lessonId);
-        },
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 520,
-      );
     }, delay);
   };
 
@@ -287,13 +434,8 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
       // Progress remains available for the current session.
     }
 
-    const currentIndex = lessonIds.indexOf(id);
-    const nextLesson =
-      lessonIds.slice(currentIndex + 1).find((lessonId) => !updated.has(lessonId)) ??
-      lessonIds.find((lessonId) => !updated.has(lessonId));
-
-    if (nextLesson) {
-      goToLesson(nextLesson, 140);
+    if (id === "program") {
+      goToLesson("variables", 160);
     } else {
       window.setTimeout(() => {
         document.getElementById("theory-finish")?.scrollIntoView({
@@ -302,33 +444,27 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
             : "smooth",
           block: "center",
         });
-      }, 140);
+      }, 160);
     }
   };
 
   const replayChapter = () => {
     setCompletedLessons(new Set());
-    setAlgorithmChoice("");
-    setPrintChoice("");
-    setErrorChoice("");
-    setIndentChoice("");
-    setActiveLesson("intro");
     try {
       window.localStorage.removeItem(storageKey);
     } catch {
       // The in-memory reset still works.
     }
+    document.getElementById("theory-intro")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const scrollToFirstIncomplete = (completed = completedLessons) => {
     const firstIncomplete = lessonIds.find((lessonId) => !completed.has(lessonId));
-    if (!firstIncomplete) return;
-    goToLesson(firstIncomplete, 380);
+    if (firstIncomplete) goToLesson(firstIncomplete, 360);
   };
 
   const openPlanet = (planetId: number) => {
     setSelectedPlanet(planetId);
-    if (planetId === 0) setActiveLesson("intro");
     if (planetId === 0 && completedLessons.size > 0 && completedLessons.size < lessonIds.length) {
       scrollToFirstIncomplete();
     }
@@ -374,9 +510,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                     complete={planetProgress === 100}
                   />
                   {((progress < 100 && planet.id === 0) ||
-                    (progress === 100 && planet.id === 1)) && (
-                    <MascotRocket atNextPlanet={progress === 100} />
-                  )}
+                    (progress === 100 && planet.id === 1)) && <MascotRocket />}
                 </span>
                 <span className="theory-planet-label">
                   <small>{planet.chapter}</small>
@@ -386,7 +520,6 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
               </button>
             );
           })}
-
         </div>
 
         <p className="theory-map-hint">
@@ -406,9 +539,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
               <span>К карте</span>
             </button>
             <div className="theory-chapter-progress">
-              <span>
-                <i style={{ width: `${activePlanet.id === 0 ? progress : 0}%` }} />
-              </span>
+              <span><i style={{ width: `${activePlanet.id === 0 ? progress : 0}%` }} /></span>
               <small>{activePlanet.id === 0 ? `${progress}%` : "0%"}</small>
             </div>
           </header>
@@ -420,111 +551,32 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
               <h2>{activePlanet.title}</h2>
               <p>{activePlanet.description}</p>
               <span>Глава готовится</span>
-              <small>
-                В дальнейшем её можно будет открыть сразу — строгой блокировки по порядку не будет.
-              </small>
+              <small>Её можно будет открыть сразу — строгой блокировки по порядку не будет.</small>
             </div>
           ) : (
-            <div className="theory-document">
+            <div className="theory-document theory-chapter-one">
               <div className="theory-document-title">
-                <p className="eyebrow">Глава 0 · Основы</p>
-                <h2>Как думает компьютер</h2>
+                <p className="eyebrow">Глава 1 · Основы</p>
+                <h2>Как думает компьютер и что такое переменные</h2>
                 <p>
-                  Компьютер не угадывает наши намерения. Он спокойно выполняет точные команды —
-                  одну за другой.
+                  Сначала разберёмся, почему компьютеру нужны точные инструкции. Затем научим его
+                  хранить значения под понятными именами.
                 </p>
                 <div className="theory-document-meta">
-                  <span>5 блоков</span>
-                  <span>≈ 12 минут</span>
-                  <span>{completedLessons.size}/5 пройдено</span>
+                  <span>Предисловие + 2 блока</span>
+                  <span>≈ 18 минут</span>
+                  <span>{completedLessons.size}/2 пройдено</span>
                 </div>
               </div>
 
-              <section className="theory-intro" id="theory-intro">
-                <div className="theory-intro-heading">
-                  <p className="eyebrow">Перед стартом</p>
-                  <h3>Компьютер — очень быстрый, но буквальный помощник</h3>
-                  <p>
-                    Представьте помощника, который не понимает намёков, эмоций и интонации. Он
-                    делает только то, что вы сказали, — буквально.
-                  </p>
-                </div>
-
-                <div className="theory-intro-story">
-                  <span aria-hidden="true">“</span>
-                  <p>Сходи в магазин и купи хлеб, а если есть яйца — возьми десяток.</p>
-                  <small>
-                    Для человека всё понятно. Компьютеру придётся точно объяснить, что значит
-                    «если есть», куда идти и какие именно яйца брать.
-                  </small>
-                </div>
-
-                <p className="theory-intro-lead">
-                  Это и есть программирование: учиться разговаривать с компьютером на понятном ему
-                  языке. Он ничего не додумает за вас, зато никогда не забудет команду и выполнит
-                  точную инструкцию с огромной скоростью.
-                </p>
-
-                <div className="theory-intro-points">
-                  <span><i>01</i>Не угадывает</span>
-                  <span><i>02</i>Не забывает</span>
-                  <span><i>03</i>Точно выполняет</span>
-                </div>
-
-                <div className="theory-constructor">
-                  <div>
-                    <p className="eyebrow">Как устроены задачи ЕГЭ</p>
-                    <h4>Большая задача собирается из маленьких деталей</h4>
-                  </div>
-                  <div className="theory-constructor-parts" aria-label="Примеры маленьких подзадач">
-                    <span>Проверить условие</span>
-                    <span>Взять символ</span>
-                    <span>Посчитать</span>
-                    <span>Найти максимум</span>
-                  </div>
-                  <p>
-                    Не нужно учить задачи наизусть. Нужно знать ограниченный набор маленьких
-                    действий и уметь собирать из них новое решение — как конструктор.
-                  </p>
-                </div>
-
-                <aside className="theory-intro-insight">
-                  Если вы умеете решать маленькие задачи, то сможете решить бесчисленное количество
-                  больших, которые из них состоят.
-                </aside>
-
-                <div className="theory-intro-program">
-                  <div>
-                    <p className="eyebrow">Как работает программа</p>
-                    <h4>Сверху вниз. Одна команда за другой.</h4>
-                    <p>
-                      Порядок, пропущенный шаг и даже опечатка имеют значение. Программирование —
-                      это не угадывание, а умение чётко объяснить, чего вы хотите.
-                    </p>
-                  </div>
-                  <EditorFrame>
-                    <div className="theory-code is-static">
-                      {["x = 10", "y = 5", "print(x + y)"].map((line, index) => (
-                        <div key={line}>
-                          <span>{index + 1}</span>
-                          <code>{line}</code>
-                        </div>
-                      ))}
-                    </div>
-                  </EditorFrame>
-                  <small>
-                    Результат — <strong>15</strong>. Здесь <code>x</code> и <code>y</code> хранят
-                    значения. О переменных поговорим на следующей планете.
-                  </small>
-                </div>
-
-                <button className="theory-start-button" onClick={() => goToLesson("route")}>
-                  Начать главу
-                  <span aria-hidden="true">↓</span>
-                </button>
-              </section>
-
               <nav className="theory-document-nav" aria-label="Содержание главы">
+                <button onClick={() => document.getElementById("theory-intro")?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                })}>
+                  <span>0</span>
+                  Предисловие
+                </button>
                 {lessonIds.map((lessonId, index) => (
                   <button onClick={() => goToLesson(lessonId)} key={lessonId}>
                     <span>{completedLessons.has(lessonId) ? "✓" : index + 1}</span>
@@ -533,241 +585,229 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 ))}
               </nav>
 
-              <article className="theory-lesson" id="theory-route">
+              <section className="theory-intro chapter-one-intro" id="theory-intro">
+                <div className="theory-section-heading">
+                  <span>00</span>
+                  <div>
+                    <p className="eyebrow">Предисловие · прогресс пока не начисляется</p>
+                    <h3>Компьютер — твой буквальный помощник</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Представь, что у тебя есть помощник. Он не понимает ни намёков, ни эмоций, ни
+                    интонации. Он делает только то, что ты скажешь — <strong>буквально</strong>.
+                  </p>
+                  <p>
+                    Ты говоришь ему: «Сходи в магазин и купи хлеб, если есть яйца — возьми
+                    десяток». Он всё сделает, но только если ты точно объяснил, что значит «если
+                    есть» и куда идти. Если в магазине два вида хлеба — он зависнет. Если ты не
+                    сказал, где деньги, — уйдёт с пустыми руками.
+                  </p>
+                  <p>
+                    Так вот — это и есть программирование. А этот помощник — и есть компьютер.
+                  </p>
+                </div>
+
+                <LiteralAssistantGraphic />
+
+                <div className="computer-strengths">
+                  <p>Он очень тупой, но зато:</p>
+                  <div>
+                    <span><i>01</i>никогда не забывает</span>
+                    <span><i>02</i>не ошибается сам</span>
+                    <span><i>03</i>выполняет инструкции со скоростью света</span>
+                  </div>
+                  <strong>Твоя задача — научиться разговаривать с ним на понятном ему языке.</strong>
+                </div>
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Особенности заданий на ЕГЭ</p>
+                  <h4>Большая задача — комбинация маленьких подзадач</h4>
+                  <p>
+                    Почти все задачи на ЕГЭ собираются из небольших действий, которые повторяются
+                    снова и снова в разных сочетаниях:
+                  </p>
+                  <ul className="subtask-list">
+                    <li>проверить, делится ли число на 3 и 5;</li>
+                    <li>найти последний символ строки;</li>
+                    <li>посчитать количество подходящих чисел;</li>
+                    <li>найти максимум или минимум среди значений.</li>
+                  </ul>
+                  <p>
+                    Ты не учишь задачи наизусть. Ты учишься собирать решение как из конструктора —
+                    из деталей, которые уже знаешь как решать.
+                  </p>
+                </div>
+
+                <TaskConstructorGraphic />
+
+                <aside className="theory-intro-insight">
+                  Если ты знаешь, как решать маленькие задачи, которых не так много, то сможешь
+                  решить бесчисленное количество больших задач, которые из них состоят.
+                </aside>
+
+                <div className="learning-outcomes">
+                  <p className="eyebrow">В этой главе ты выучишь</p>
+                  <div>
+                    <span><i>1</i>как называются разные действия;</span>
+                    <span><i>2</i>как они записываются в коде — это синтаксис;</span>
+                    <span><i>3</i>как собирать действия в правильном порядке.</span>
+                  </div>
+                  <strong>
+                    Если ты поймёшь эти принципы, то сможешь решить даже новую задачу.
+                  </strong>
+                </div>
+
+                <button className="theory-start-button" onClick={() => goToLesson("program")}>
+                  Перейти к первому блоку
+                  <span aria-hidden="true">↓</span>
+                </button>
+              </section>
+
+              <article className="theory-lesson chapter-one-block" id="theory-program">
                 <div className="theory-lesson-heading">
                   <span>01</span>
                   <div>
-                    <p className="eyebrow">Порядок выполнения</p>
-                    <h3>Строка за строкой</h3>
+                    <p className="eyebrow">Как работает программа</p>
+                    <h3>Строго по порядку — сверху вниз</h3>
                   </div>
                 </div>
-                <p>
-                  Обычно Python начинает с первой строки и движется сверху вниз. Текущая строка
-                  выполняется целиком — только после этого программа переходит к следующей.
-                </p>
-                <div className="theory-execution">
-                  <EditorFrame>
-                    <div className="theory-code" aria-label="Пример программы">
-                      {['print("Старт")', 'print("Шаг 1")', 'print("Финиш")'].map(
-                        (line, index) => (
-                          <div
-                            className={
-                              index === Math.min(executionStep, 2)
-                                ? "is-running"
-                                : executionStep > index
-                                  ? "is-done"
-                                  : ""
-                            }
-                            key={line}
-                          >
-                            <span>{index + 1}</span>
-                            <code>{line}</code>
-                            <i>{executionStep > index ? "✓" : ""}</i>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  </EditorFrame>
-                  <div className="theory-console">
-                    <span>Вывод</span>
-                    <code>
-                      {["Старт", "Шаг 1", "Финиш"]
-                        .slice(0, Math.min(executionStep + 1, 3))
-                        .map((line) => <i key={line}>{line}</i>)}
-                    </code>
-                  </div>
-                  <span className="theory-auto-badge">
-                    <i aria-hidden="true" />
-                    Автовоспроизведение
-                  </span>
+                <div className="theory-prose">
+                  <p>
+                    Когда ты запускаешь программу, она выполняет команды строго по порядку. Одна
+                    за другой. Без догадок, без логики, без «ну ты понял».
+                  </p>
+                  <p>
+                    Компьютер не умеет додумать — он ждёт точную пошаговую инструкцию. Если
+                    перепутать команды, забыть важный шаг или сделать опечатку, программа не
+                    сработает либо даст не тот результат, который ты ожидал.
+                  </p>
                 </div>
-                <aside className="theory-note">
-                  Позже условия и циклы научат программу менять этот прямой маршрут. Но пока
-                  главное правило — читать код сверху вниз.
-                </aside>
+
+                <blockquote className="theory-statement">
+                  Программирование — это не про «умение писать код», а про умение чётко объяснить,
+                  что ты хочешь.
+                </blockquote>
+
+                <ProgramExample />
+
+                <div className="example-explanation">
+                  <p>
+                    Не пугайся: всё, что используется в примере, мы подробно разберём дальше.
+                    Но интуитивно уже видно, что программа выведет <strong>15</strong>.
+                  </p>
+                  <p>
+                    Пока просто знай: <code>x</code> и <code>y</code> — это переменные. Они хранят
+                    значения, и с ними можно работать.
+                  </p>
+                </div>
+
                 <LessonStatus
-                  id="route"
-                  completed={completedLessons.has("route")}
-                  ready={infographicReady}
+                  id="program"
+                  completed={completedLessons.has("program")}
                   onComplete={completeLesson}
                 />
               </article>
 
-              <article className="theory-lesson" id="theory-algorithm">
+              <article className="theory-lesson chapter-one-block" id="theory-variables">
                 <div className="theory-lesson-heading">
                   <span>02</span>
                   <div>
-                    <p className="eyebrow">Алгоритм</p>
-                    <h3>Порядок меняет результат</h3>
+                    <p className="eyebrow">Переменные</p>
+                    <h3>Коробки с именами</h3>
                   </div>
                 </div>
-                <p>
-                  Алгоритм — это понятная последовательность команд для получения результата.
-                  Если переставить команды, результат тоже может измениться.
-                </p>
-                <div className="theory-sequence" aria-label="Последовательность работы программы">
-                  {["Получить команду", "Выполнить её", "Перейти дальше"].map((label, index) => (
-                    <span
-                      className={`${index === algorithmStep ? "is-active" : ""} ${
-                        index < algorithmStep ? "is-done" : ""
-                      }`}
-                      key={label}
-                    >
-                      <i>{index + 1}</i>
-                      {label}
-                    </span>
-                  ))}
-                </div>
-                <ChoiceGroup
-                  label="Какое определение алгоритма верное?"
-                  options={[
-                    { value: "random", label: "Набор случайных действий" },
-                    { value: "sequence", label: "Последовательность понятных команд" },
-                    { value: "text", label: "Любой текст в редакторе" },
-                  ]}
-                  value={algorithmChoice}
-                  correct="sequence"
-                  onChange={setAlgorithmChoice}
-                />
-                <LessonStatus
-                  id="algorithm"
-                  completed={completedLessons.has("algorithm")}
-                  ready={algorithmChoice === "sequence"}
-                  onComplete={completeLesson}
-                />
-              </article>
 
-              <article className="theory-lesson" id="theory-print">
-                <div className="theory-lesson-heading">
-                  <span>03</span>
-                  <div>
-                    <p className="eyebrow">Первая команда</p>
-                    <h3><code>print</code> — голос программы</h3>
-                  </div>
+                <div className="theory-prose">
+                  <p>
+                    Представь коробку, в которую ты кладёшь яблоко. На коробку наклеиваешь стикер
+                    «яблоко». Теперь нужную коробку легко найти по имени.
+                  </p>
                 </div>
-                <p>
-                  Команда <code>print()</code> показывает информацию на экране. Текст записывают
-                  в кавычках, а несколько значений внутри скобок разделяют запятыми.
+
+                <LifeBoxGraphic />
+
+                <div className="theory-prose">
+                  <p>
+                    В программировании похожую роль выполняют переменные. Переменная — это
+                    <strong> имя, связанное с некоторым значением</strong>. Образ коробки удобен
+                    для начала, хотя технически Python хранит значение в памяти, а имя позволяет
+                    к нему обратиться.
+                  </p>
+                  <p>
+                    В переменной можно хранить число, текст, логическое значение и даже целый
+                    список.
+                  </p>
+                </div>
+
+                <AssignmentGraphic />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Знак равенства</p>
+                  <h4><code>=</code> — это команда, а не проверка</h4>
+                  <p>
+                    В математике знак равенства говорит, что левая и правая части равны. В Python
+                    один знак <code>=</code> означает присваивание: «пусть <code>x</code> теперь
+                    связано со значением <code>5</code>».
+                  </p>
+                </div>
+
+                <EqualityGraphic />
+
+                <p className="theory-footnote">
+                  Проверка на равенство записывается как <code>x == 5</code>. К ней вернёмся в
+                  главе про условия.
                 </p>
-                <div className="theory-split-example">
-                  <EditorFrame>
-                    <div className="theory-code is-static">
-                      <div><span>1</span><code>print(&quot;Счёт&quot;, 3)</code></div>
-                    </div>
-                  </EditorFrame>
-                  <div className="theory-console">
-                    <span>Вывод</span>
-                    <code><i>Счёт 3</i></code>
-                  </div>
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Что можно хранить</p>
+                  <h4>Основные типы данных Python</h4>
+                  <p>
+                    Тип определяет, что именно лежит в переменной и какие действия с этим значением
+                    разрешены.
+                  </p>
                 </div>
-                <ChoiceGroup
-                  label='Что выведет print("Привет", "мир")?'
-                  options={[
-                    { value: "together", label: "Приветмир" },
-                    { value: "space", label: "Привет мир" },
-                    { value: "quotes", label: '"Привет" "мир"' },
-                  ]}
-                  value={printChoice}
-                  correct="space"
-                  onChange={setPrintChoice}
-                />
-                <aside className="theory-note">
-                  По умолчанию <code>print</code> ставит пробел между значениями, разделёнными
-                  запятыми.
+
+                <DataTypesTable />
+
+                <div className="data-types-notes">
+                  <p><i>str</i> Строки всегда записываются в одинарных или двойных кавычках.</p>
+                  <p><i>bool</i> Значения <code>True</code> и <code>False</code> начинаются с заглавной буквы.</p>
+                </div>
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Важное различие</p>
+                  <h4>Одинаковый вид — разные значения для компьютера</h4>
+                  <p>
+                    Число <code>5</code> и строка <code>&quot;5&quot;</code> выглядят похоже, но
+                    Python воспринимает их совершенно по-разному.
+                  </p>
+                </div>
+
+                <TypeDifferenceGraphic />
+
+                <div className="print-note">
+                  <code>print(...)</code>
+                  <p>
+                    В примерах мы используем <strong>print</strong>, чтобы вывести значение на
+                    экран. Как устроены функции, разберём позже; пока достаточно знать, что
+                    <code> print</code> показывает результат.
+                  </p>
+                </div>
+
+                <aside className="theory-warning">
+                  <span>Запомни сейчас</span>
+                  <p>
+                    Тип данных очень важен. От него зависит, как ты сможешь взаимодействовать с
+                    переменной. В задачах ты ещё много раз встретишь разницу между
+                    <code> int</code> и <code> str</code>.
+                  </p>
                 </aside>
-                <LessonStatus
-                  id="print"
-                  completed={completedLessons.has("print")}
-                  ready={printChoice === "space"}
-                  onComplete={completeLesson}
-                />
-              </article>
 
-              <article className="theory-lesson" id="theory-errors">
-                <div className="theory-lesson-heading">
-                  <span>04</span>
-                  <div>
-                    <p className="eyebrow">Спокойно, это нормально</p>
-                    <h3>Ошибка объясняет, что произошло</h3>
-                  </div>
-                </div>
-                <p>
-                  Ошибка — не поражение, а сообщение Python. Начинайте читать его с последней
-                  строки: там находится тип ошибки и короткое объяснение.
-                </p>
-                <div className="theory-error-example">
-                  <EditorFrame>
-                    <div className="theory-code is-static">
-                      <div><span>1</span><code>print(hello)</code></div>
-                    </div>
-                  </EditorFrame>
-                  <div className="theory-traceback">
-                    <span>Traceback (most recent call last):</span>
-                    <span>File &quot;main.py&quot;, line 1</span>
-                    <strong>NameError: name &apos;hello&apos; is not defined</strong>
-                  </div>
-                </div>
-                <ChoiceGroup
-                  label="Что Python сообщает последней строкой?"
-                  options={[
-                    { value: "printer", label: "Команда print сломана" },
-                    { value: "unknown", label: "Он не знает имени hello" },
-                    { value: "internet", label: "Нет подключения к интернету" },
-                  ]}
-                  value={errorChoice}
-                  correct="unknown"
-                  onChange={setErrorChoice}
-                />
-                <aside className="theory-note is-accent">
-                  Хотели вывести текст? Нужны кавычки: <code>print(&quot;hello&quot;)</code>.
-                </aside>
                 <LessonStatus
-                  id="errors"
-                  completed={completedLessons.has("errors")}
-                  ready={errorChoice === "unknown"}
-                  onComplete={completeLesson}
-                />
-              </article>
-
-              <article className="theory-lesson" id="theory-indent">
-                <div className="theory-lesson-heading">
-                  <span>05</span>
-                  <div>
-                    <p className="eyebrow">Структура кода</p>
-                    <h3>Отступ показывает принадлежность</h3>
-                  </div>
-                </div>
-                <p>
-                  В Python отступы имеют смысл. Команды с одинаковым отступом относятся к одному
-                  блоку. После строки с двоеточием вложенный блок сдвигается вправо.
-                </p>
-                <div className="theory-compare-code">
-                  <div>
-                    <span className="compare-label is-right">Правильно</span>
-                    <pre><code>{`if 5 > 3:
-    print("Да")`}</code></pre>
-                  </div>
-                  <div>
-                    <span className="compare-label is-wrong">Неправильно</span>
-                    <pre><code>{`if 5 > 3:
-print("Да")`}</code></pre>
-                  </div>
-                </div>
-                <ChoiceGroup
-                  label="Где должен стоять print после строки с двоеточием?"
-                  options={[
-                    { value: "left", label: "В самом начале строки" },
-                    { value: "indent", label: "С отступом вправо" },
-                    { value: "random", label: "В любом месте" },
-                  ]}
-                  value={indentChoice}
-                  correct="indent"
-                  onChange={setIndentChoice}
-                />
-                <LessonStatus
-                  id="indent"
-                  completed={completedLessons.has("indent")}
-                  ready={indentChoice === "indent"}
+                  id="variables"
+                  completed={completedLessons.has("variables")}
                   onComplete={completeLesson}
                 />
               </article>
@@ -780,18 +820,18 @@ print("Да")`}</code></pre>
                   <PlanetSphere progress={progress} variant={0} complete={progress === 100} />
                 </div>
                 <div>
-                  <p className="eyebrow">{progress === 100 ? "Глава пройдена" : "Финиш близко"}</p>
+                  <p className="eyebrow">{progress === 100 ? "Глава пройдена" : "Остался один блок"}</p>
                   <h3>{progress === 100 ? "Планета заполнена" : `Пройдено ${progress}%`}</h3>
                   <p>
                     {progress === 100
-                      ? "Ракета уже переместилась к следующей планете. Старые вопросы будут возвращаться в будущих уровнях игры."
-                      : "Завершите оставшиеся смысловые блоки — одного пролистывания для прогресса недостаточно."}
+                      ? "Теперь ты знаешь, как компьютер выполняет программу и зачем нужны переменные."
+                      : "Заверши второй блок, чтобы полностью заполнить планету."}
                   </p>
                   {progress === 100 ? (
                     <button onClick={replayChapter}>Повторить главу</button>
                   ) : (
                     <button onClick={() => scrollToFirstIncomplete()}>
-                      К первому непройденному вопросу
+                      К непройденному блоку
                     </button>
                   )}
                 </div>
