@@ -4226,95 +4226,68 @@ footer {
   font-size: 8px;
 }
 
-.trainer-hand-shape {
-  height: 108px;
+.trainer-hand-visual {
+  color: var(--line-strong);
+  height: 104px;
   margin: 5px auto 0;
   position: relative;
   width: 104px;
 }
 
-.trainer-hand-right .trainer-hand-shape {
+.trainer-hand-left .trainer-hand-visual {
   transform: scaleX(-1);
 }
 
-.trainer-hand-shape b {
-  background: var(--surface-raised);
-  border: 1px solid var(--line-strong);
-  border-radius: 25px 25px 31px 31px;
-  border-top-color: transparent;
-  bottom: 5px;
-  height: 61px;
-  left: 23px;
+.trainer-hand-icon {
+  display: block;
+  height: 100%;
+  stroke: currentColor;
+  width: 100%;
+}
+
+.trainer-fingertip {
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 5px var(--accent-wash);
+  height: 8px;
+  opacity: 0;
   position: absolute;
-  width: 62px;
+  transform: translate(-50%, -50%) scale(0.25);
+  transition:
+    opacity 100ms ease-out,
+    transform 100ms ease-out;
+  width: 8px;
   z-index: 2;
 }
 
-.trainer-hand-shape i {
-  background: var(--surface-raised);
-  border: 1px solid var(--line-strong);
-  border-bottom: 0;
-  border-radius: 999px 999px 3px 3px;
-  bottom: 52px;
-  position: absolute;
-  transform-origin: bottom center;
-  transition:
-    background-color 130ms ease-out,
-    border-color 130ms ease-out;
-  width: 15px;
-  z-index: 1;
+.trainer-fingertip.is-active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
 
-.trainer-hand-shape .finger-little {
-  height: 39px;
-  left: 17px;
-  transform: rotate(-5deg);
+.trainer-fingertip.finger-little {
+  left: 83.5%;
+  top: 29%;
 }
 
-.trainer-hand-shape .finger-ring {
-  height: 48px;
-  left: 35px;
+.trainer-fingertip.finger-ring {
+  left: 66.5%;
+  top: 19%;
 }
 
-.trainer-hand-shape .finger-middle {
-  height: 53px;
-  left: 52px;
+.trainer-fingertip.finger-middle {
+  left: 50%;
+  top: 10%;
 }
 
-.trainer-hand-shape .finger-index {
-  height: 48px;
-  left: 69px;
-  transform: rotate(2deg);
+.trainer-fingertip.finger-index {
+  left: 33.5%;
+  top: 19%;
 }
 
-.trainer-hand-shape .finger-thumb {
-  bottom: 17px;
-  height: 40px;
-  left: 20px;
-  transform: rotate(-48deg);
-  transform-origin: bottom center;
-}
-
-.trainer-hand-shape i.is-active {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.trainer-hand-shape .finger-little.is-active {
-  transform: rotate(-5deg);
-}
-
-.trainer-hand-shape .finger-ring.is-active,
-.trainer-hand-shape .finger-middle.is-active {
-  transform: none;
-}
-
-.trainer-hand-shape .finger-index.is-active {
-  transform: rotate(2deg);
-}
-
-.trainer-hand-shape .finger-thumb.is-active {
-  transform: rotate(-48deg);
+.trainer-fingertip.finger-thumb {
+  left: 18.5%;
+  top: 61%;
 }
 
 .trainer-finger-guides {
@@ -4700,14 +4673,14 @@ footer {
     order: 1;
   }
 
-  .trainer-hand-shape {
-    height: 108px;
-    margin: 1px auto -20px;
+  .trainer-hand-visual {
+    height: 104px;
+    margin: 1px auto -21px;
     transform: scale(0.78);
     transform-origin: center top;
   }
 
-  .trainer-hand-right .trainer-hand-shape {
+  .trainer-hand-left .trainer-hand-visual {
     transform: scale(-0.78, 0.78);
   }
 

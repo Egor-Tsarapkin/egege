@@ -1,5 +1,6 @@
 "use client";
 
+import { Hand } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type TrainerMode = "python" | "russian" | "symbols";
@@ -396,14 +397,14 @@ function HandDiagram({
   return (
     <div className={`trainer-hand trainer-hand-${side}`}>
       <span className="trainer-hand-label">{side === "left" ? "Левая" : "Правая"}</span>
-      <div className="trainer-hand-shape" aria-hidden="true">
+      <div className="trainer-hand-visual" aria-hidden="true">
+        <Hand className="trainer-hand-icon" strokeWidth={1.45} />
         {fingers.map((finger) => (
           <i
-            className={`finger-${finger} ${activeFingers.has(finger) ? "is-active" : ""}`}
+            className={`trainer-fingertip finger-${finger} ${activeFingers.has(finger) ? "is-active" : ""}`}
             key={finger}
           />
         ))}
-        <b />
       </div>
     </div>
   );
