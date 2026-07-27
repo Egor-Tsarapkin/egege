@@ -4227,7 +4227,7 @@ footer {
 }
 
 .trainer-hand-visual {
-  color: var(--line-strong);
+  color: color-mix(in srgb, var(--text-soft) 38%, transparent);
   height: 104px;
   margin: 5px auto 0;
   position: relative;
@@ -4247,47 +4247,45 @@ footer {
 
 .trainer-fingertip {
   background: var(--accent);
-  border-radius: 50%;
-  box-shadow: 0 0 0 5px var(--accent-wash);
-  height: 8px;
+  border-radius: 999px;
+  box-shadow: 0 0 7px color-mix(in srgb, var(--accent) 34%, transparent);
+  height: 23px;
   opacity: 0;
   position: absolute;
-  transform: translate(-50%, -50%) scale(0.25);
-  transition:
-    opacity 100ms ease-out,
-    transform 100ms ease-out;
-  width: 8px;
+  transform: translateX(-50%) rotate(var(--finger-rotation, 0deg));
+  transform-origin: top center;
+  width: 9px;
   z-index: 2;
 }
 
 .trainer-fingertip.is-active {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
 }
 
 .trainer-fingertip.finger-little {
-  left: 83.5%;
-  top: 29%;
+  left: 83.33%;
+  top: 31.5%;
 }
 
 .trainer-fingertip.finger-ring {
-  left: 66.5%;
-  top: 19%;
+  left: 66.67%;
+  top: 23.5%;
 }
 
 .trainer-fingertip.finger-middle {
   left: 50%;
-  top: 10%;
+  top: 15%;
 }
 
 .trainer-fingertip.finger-index {
-  left: 33.5%;
-  top: 19%;
+  left: 33.33%;
+  top: 23.5%;
 }
 
 .trainer-fingertip.finger-thumb {
-  left: 18.5%;
-  top: 61%;
+  --finger-rotation: -48deg;
+  left: 19%;
+  top: 55.5%;
 }
 
 .trainer-finger-guides {
