@@ -52,6 +52,17 @@ const arithmeticLessonTitles: Record<ArithmeticLessonId, string> = {
   shortcuts: "Короткая запись",
 };
 
+const conditionLessonIds = ["branches", "chains", "indentation", "logic", "contains"] as const;
+type ConditionLessonId = (typeof conditionLessonIds)[number];
+
+const conditionLessonTitles: Record<ConditionLessonId, string> = {
+  branches: "if, else и elif",
+  chains: "Несколько if или одна цепочка",
+  indentation: "Отступы и границы блока",
+  logic: "Сравнения и логика",
+  contains: "Оператор in и частые ошибки",
+};
+
 function PlanetSphere({
   progress,
   variant = 0,
@@ -183,6 +194,27 @@ function ArithmeticLessonStatus({
     >
       <span aria-hidden="true">{completed ? "✓" : "→"}</span>
       {completed ? "Блок пройден" : id === "shortcuts" ? "Завершить главу" : "Завершить блок"}
+    </button>
+  );
+}
+
+function ConditionLessonStatus({
+  id,
+  completed,
+  onComplete,
+}: {
+  id: ConditionLessonId;
+  completed: boolean;
+  onComplete: (id: ConditionLessonId) => void;
+}) {
+  return (
+    <button
+      className={`theory-complete-button ${completed ? "is-complete" : ""}`}
+      disabled={completed}
+      onClick={() => onComplete(id)}
+    >
+      <span aria-hidden="true">{completed ? "✓" : "→"}</span>
+      {completed ? "Блок пройден" : id === "contains" ? "Завершить главу" : "Завершить блок"}
     </button>
   );
 }
@@ -710,13 +742,361 @@ function ArithmeticCheck() {
   );
 }
 
+function EverydayConditionsGraphic() {
+  const situations = [
+    ["идёт дождь", "взять зонт", "☂"],
+    ["опаздываешь", "ускорить шаг", "→"],
+    ["проголодался", "пойти есть", "○"],
+  ];
+
+  return (
+    <div className="everyday-conditions" aria-label="Повседневные условия: если произошло событие, выполняется действие">
+      <header>
+        <small>Условие в обычной жизни</small>
+        <strong>Сначала проверка — затем действие</strong>
+      </header>
+      <div className="everyday-condition-list">
+        {situations.map(([condition, action, symbol], index) => (
+          <div className={`everyday-condition condition-${index + 1}`} key={condition}>
+            <span className="condition-symbol" aria-hidden="true">{symbol}</span>
+            <div><small>если</small><strong>{condition}</strong></div>
+            <i aria-hidden="true">→</i>
+            <div><small>то</small><strong>{action}</strong></div>
+          </div>
+        ))}
+      </div>
+      <p>Программа делает то же самое, но проверку нужно записать абсолютно точно.</p>
+    </div>
+  );
+}
+
+function IfFlowGraphic() {
+  return (
+    <div className="if-flow-graphic" aria-label="Если x больше пяти, программа выводит Больше пяти">
+      <EditorFrame file="condition.py" className="if-flow-editor">
+        <div className="condition-code-lines">
+          <span><i>1</i><code>x = 10</code></span>
+          <span className="is-condition"><i>2</i><code><b>if</b> x &gt; 5:</code></span>
+          <span className="is-indented"><i>3</i><code>print(&quot;Больше пяти&quot;)</code></span>
+        </div>
+      </EditorFrame>
+      <div className="if-flow-map" aria-hidden="true">
+        <span className="flow-start">x = 10</span>
+        <i className="flow-arrow flow-arrow-one" />
+        <span className="flow-decision"><code>x &gt; 5?</code></span>
+        <span className="flow-true">True</span>
+        <span className="flow-false">False</span>
+        <i className="flow-arrow flow-arrow-true" />
+        <i className="flow-arrow flow-arrow-false" />
+        <span className="flow-action">вывести<br />«Больше пяти»</span>
+        <span className="flow-skip">пропустить блок</span>
+      </div>
+      <p><code>if</code> запускает вложенный блок только тогда, когда условие равно <code>True</code>.</p>
+    </div>
+  );
+}
+
+function BranchChoiceGraphic() {
+  return (
+    <div className="branch-choice-graphic" aria-label="Цепочка if elif else выбирает ровно одну ветку">
+      <div className="branch-value-cycle" aria-hidden="true">
+        <small>Текущее значение</small>
+        <span className="branch-value value-one">8</span>
+        <span className="branch-value value-two">5</span>
+        <span className="branch-value value-three">2</span>
+      </div>
+      <div className="branch-tree" aria-hidden="true">
+        <div className="branch-node branch-if"><code>if x &gt; 5</code><span>Больше пяти</span></div>
+        <div className="branch-node branch-elif"><code>elif x == 5</code><span>Ровно пять</span></div>
+        <div className="branch-node branch-else"><code>else</code><span>Меньше пяти</span></div>
+      </div>
+      <div className="branch-output">
+        <small>Вывод</small>
+        <strong className="branch-output-one">Больше пяти</strong>
+        <strong className="branch-output-two">Ровно пять</strong>
+        <strong className="branch-output-three">Меньше пяти</strong>
+      </div>
+      <p><code>elif</code> проверяется только если предыдущая ветка не сработала. В итоге выбирается одна ветка.</p>
+    </div>
+  );
+}
+
+function IndependentChecksGraphic() {
+  const conditions = [
+    ["x % 2 == 0", "делится на 2"],
+    ["x % 3 == 0", "делится на 3"],
+    ["x % 4 == 0", "делится на 4"],
+  ];
+
+  return (
+    <div className="independent-checks-graphic" aria-label="Несколько if могут сработать вместе, цепочка if elif выбирает первую подходящую ветку">
+      <header>
+        <small>Одинаковое число: x = 12</small>
+        <strong>Три независимые проверки или один выбор</strong>
+      </header>
+      <div className="checks-comparison">
+        <div className="check-system is-independent">
+          <div className="check-system-heading"><code>if · if · if</code><span>проверяем всё</span></div>
+          {conditions.map(([condition, output]) => (
+            <div className="check-row" key={condition}>
+              <code>{condition}</code><i>True</i><span>{output}</span>
+            </div>
+          ))}
+          <div className="check-output"><small>Вывод</small><strong>3 строки</strong></div>
+        </div>
+        <div className="check-system is-chain">
+          <div className="check-system-heading"><code>if · elif · elif</code><span>до первого True</span></div>
+          {conditions.map(([condition, output], index) => (
+            <div className={`check-row ${index > 0 ? "is-skipped" : ""}`} key={condition}>
+              <code>{condition}</code><i>{index === 0 ? "True" : "—"}</i><span>{output}</span>
+            </div>
+          ))}
+          <div className="check-output"><small>Вывод</small><strong>1 строка</strong></div>
+        </div>
+      </div>
+      <p><strong>Несколько <code>if</code></strong> независимы. <strong>Цепочка</strong> прекращает проверки после первой подходящей ветки.</p>
+    </div>
+  );
+}
+
+function IndentationCodeScope({
+  lines,
+  inside = false,
+}: {
+  lines: string[][];
+  inside?: boolean;
+}) {
+  return (
+    <div className={`indentation-example ${inside ? "is-inside" : "is-outside"}`}>
+      <EditorFrame file={inside ? "inside.py" : "outside.py"}>
+        <div className="indentation-code">
+          <span className="indent-guide" aria-hidden="true" />
+          {lines.map(([number, code, state]) => (
+            <div className={state} key={number}>
+              <i>{number}</i><code>{code}</code>
+            </div>
+          ))}
+        </div>
+      </EditorFrame>
+      <div className="indentation-result">
+        <div>
+          <small>x = 10</small>
+          <code>опа</code>
+          <code>конец</code>
+        </div>
+        <div>
+          <small>x = 5</small>
+          <code>ура</code>
+          {!inside && <code>конец</code>}
+        </div>
+        {inside && <span>обе строки принадлежат <b>else</b></span>}
+        {!inside && <span><b>конец</b> выполнится при любом x</span>}
+      </div>
+    </div>
+  );
+}
+
+function IndentationScopeGraphic() {
+  const outsideLines = [
+    ["1", "x = 10", ""],
+    ["2", "if x == 5:", "if"],
+    ["3", "    print('ура')", "inside"],
+    ["4", "else:", "else"],
+    ["5", "    print('опа')", "inside"],
+    ["6", "print('конец')", "always"],
+  ];
+  const insideLines = [
+    ["1", "x = 10", ""],
+    ["2", "if x == 5:", "if"],
+    ["3", "    print('ура')", "inside"],
+    ["4", "else:", "else"],
+    ["5", "    print('опа')", "inside"],
+    ["6", "    print('конец')", "inside-last"],
+  ];
+
+  return (
+    <div className="indentation-scope-graphic" aria-label="Отступ определяет, относится ли команда к else или выполняется всегда">
+      <header>
+        <small>Отступ — это граница блока</small>
+        <strong>Одна строка левее полностью меняет логику</strong>
+      </header>
+      <div className="indentation-comparison">
+        <IndentationCodeScope lines={outsideLines} />
+        <IndentationCodeScope lines={insideLines} inside />
+      </div>
+      <div className="indentation-legend">
+        <span><i className="legend-inside" />внутри условия</span>
+        <span><i className="legend-always" />выполняется всегда</span>
+      </div>
+    </div>
+  );
+}
+
+function IndentationErrorGraphic() {
+  return (
+    <div className="indentation-error-graphic">
+      <EditorFrame file="error.py">
+        <div className="indentation-error-code">
+          <span><i>1</i><code>x = 10</code></span>
+          <span><i>2</i><code><b>if</b> x &gt; 5:</code></span>
+          <span className="is-error"><i>3</i><code>print(&quot;Ошибка&quot;)</code></span>
+        </div>
+        <div className="indentation-console">
+          <small>Python</small>
+          <code>IndentationError: expected an indented block</code>
+          <span>Ожидался отступ после <b>if</b></span>
+        </div>
+      </EditorFrame>
+    </div>
+  );
+}
+
+const comparisonOperators = [
+  ["==", "x == 5", "равно"],
+  ["!=", "x != 2", "не равно"],
+  ["<", "x < 10", "меньше"],
+  [">", "x > 3", "больше"],
+  ["<=", "x <= 7", "меньше или равно"],
+  [">=", "x >= 0", "больше или равно"],
+];
+
+function ComparisonOperatorsTable() {
+  return (
+    <div className="comparison-operators" role="table" aria-label="Операторы сравнения Python">
+      <div className="comparison-row is-heading" role="row">
+        <span role="columnheader">Оператор</span>
+        <span role="columnheader">Пример</span>
+        <span role="columnheader">Вопрос</span>
+      </div>
+      {comparisonOperators.map(([operator, example, label]) => (
+        <div className="comparison-row" role="row" key={operator}>
+          <code role="cell">{operator}</code>
+          <code role="cell">{example}</code>
+          <span role="cell">{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BooleanLogicGraphic() {
+  return (
+    <div className="boolean-logic-graphic" aria-label="and требует два истинных условия, or хотя бы одно, not меняет результат на противоположный">
+      <div className="logic-gate is-and">
+        <header><code>and</code><span>оба условия</span></header>
+        <div><i>True</i><i>True</i><b>→</b><strong>True</strong></div>
+        <small><code>x &gt; 5 and x &lt; 10</code></small>
+      </div>
+      <div className="logic-gate is-or">
+        <header><code>or</code><span>хотя бы одно</span></header>
+        <div><i>True</i><i>False</i><b>→</b><strong>True</strong></div>
+        <small><code>x &lt; 0 or x &gt; 100</code></small>
+      </div>
+      <div className="logic-gate is-not">
+        <header><code>not</code><span>наоборот</span></header>
+        <div><i>True</i><b>→</b><strong>False</strong></div>
+        <small><code>not x == 5</code></small>
+      </div>
+    </div>
+  );
+}
+
+function ContainsGraphic() {
+  const letters = "информатика".split("");
+
+  return (
+    <div className="contains-graphic" aria-label="Подстрока фор находится внутри слова информатика">
+      <header>
+        <small>Поиск внутри строки</small>
+        <strong><code>&quot;фор&quot; in &quot;информатика&quot;</code></strong>
+      </header>
+      <div className="contains-word" aria-hidden="true">
+        {letters.map((letter, index) => (
+          <span className={index >= 2 && index <= 4 ? "is-match" : ""} key={`${letter}-${index}`}>
+            {letter}
+          </span>
+        ))}
+        <i className="contains-scanner" />
+      </div>
+      <div className="contains-result"><span>подстрока найдена</span><strong>True</strong></div>
+      <div className="contains-examples">
+        <span><code>&quot;а&quot; in &quot;мама&quot;</code><b>True</b></span>
+        <span><code>&quot;мам&quot; in &quot;мама&quot;</code><b>True</b></span>
+        <span><code>&quot;ко&quot; in &quot;мама&quot;</code><b>False</b></span>
+      </div>
+      <p><code>in</code> ищет символ, подстроку или элемент списка и всегда возвращает <code>True</code> либо <code>False</code>.</p>
+    </div>
+  );
+}
+
+function ConditionErrorsGraphic() {
+  return (
+    <div className="condition-errors">
+      <div className="condition-error-card">
+        <span>01</span>
+        <div><small>Нет отступа</small><code>if x &gt; 5:<br />print(&quot;Привет&quot;)</code></div>
+        <strong>IndentationError</strong>
+      </div>
+      <div className="condition-error-card">
+        <span>02</span>
+        <div><small>Одно равно</small><code>if x = 5:</code></div>
+        <strong>SyntaxError</strong>
+      </div>
+      <div className="condition-error-fix">
+        <small>Правильно</small>
+        <code>if x == 5:</code>
+        <span><b>=</b> присваивает, <b>==</b> сравнивает</span>
+      </div>
+    </div>
+  );
+}
+
+function IndentationCheck() {
+  const [answer, setAnswer] = useState<string | null>(null);
+  const options = ["Только «опа»", "«опа» и «конец»", "Только «конец»"];
+
+  return (
+    <div className="arithmetic-check condition-check">
+      <div>
+        <small>Быстрая проверка</small>
+        <strong>Что выведет код при x = 10?</strong>
+        <code>if x == 5:<br />&nbsp;&nbsp;&nbsp;&nbsp;print(&quot;ура&quot;)<br />else:<br />&nbsp;&nbsp;&nbsp;&nbsp;print(&quot;опа&quot;)<br />print(&quot;конец&quot;)</code>
+      </div>
+      <div className="arithmetic-check-options">
+        {options.map((option) => (
+          <button
+            className={`${answer === option ? "is-selected" : ""} ${
+              answer && option === "«опа» и «конец»" ? "is-correct" : ""
+            }`}
+            onClick={() => setAnswer(option)}
+            key={option}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+      {answer && (
+        <p className={answer === "«опа» и «конец»" ? "is-correct" : ""}>
+          {answer === "«опа» и «конец»"
+            ? "Верно: «опа» относится к else, а «конец» стоит без отступа и выполняется всегда."
+            : "Посмотри на отступ последней строки: она находится вне if–else."}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function TheorySpace({ userId }: TheorySpaceProps) {
   const storageKey = `egege-theory-progress-v2:${userId}`;
   const arithmeticStorageKey = `egege-theory-arithmetic-v1:${userId}`;
+  const conditionStorageKey = `egege-theory-conditions-v1:${userId}`;
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
   const [completedArithmeticLessons, setCompletedArithmeticLessons] = useState<
     Set<ArithmeticLessonId>
+  >(() => new Set());
+  const [completedConditionLessons, setCompletedConditionLessons] = useState<
+    Set<ConditionLessonId>
   >(() => new Set());
 
   useEffect(() => {
@@ -751,8 +1131,28 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     });
   }, [arithmeticStorageKey]);
 
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const saved = JSON.parse(
+          window.localStorage.getItem(conditionStorageKey) ?? "[]",
+        ) as string[];
+        setCompletedConditionLessons(
+          new Set(
+            saved.filter((item): item is ConditionLessonId =>
+              conditionLessonIds.includes(item as ConditionLessonId),
+            ),
+          ),
+        );
+      } catch {
+        setCompletedConditionLessons(new Set());
+      }
+    });
+  }, [conditionStorageKey]);
+
   const progress = completedLessons.size * 50;
   const arithmeticProgress = completedArithmeticLessons.size * 25;
+  const conditionProgress = completedConditionLessons.size * 20;
   const activePlanet = useMemo(
     () => planets.find((planet) => planet.id === selectedPlanet) ?? null,
     [selectedPlanet],
@@ -853,6 +1253,56 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     });
   };
 
+  const goToConditionLesson = (lessonId: ConditionLessonId, delay = 0) => {
+    window.setTimeout(() => {
+      document.getElementById(`theory-condition-${lessonId}`)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    }, delay);
+  };
+
+  const completeConditionLesson = (id: ConditionLessonId) => {
+    const updated = new Set(completedConditionLessons);
+    updated.add(id);
+    setCompletedConditionLessons(updated);
+    try {
+      window.localStorage.setItem(conditionStorageKey, JSON.stringify(Array.from(updated)));
+    } catch {
+      // Progress remains available for the current session.
+    }
+
+    const currentIndex = conditionLessonIds.indexOf(id);
+    const nextLesson = conditionLessonIds[currentIndex + 1];
+    if (nextLesson) {
+      goToConditionLesson(nextLesson, 160);
+    } else {
+      window.setTimeout(() => {
+        document.getElementById("theory-condition-finish")?.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+          block: "center",
+        });
+      }, 160);
+    }
+  };
+
+  const replayConditionChapter = () => {
+    setCompletedConditionLessons(new Set());
+    try {
+      window.localStorage.removeItem(conditionStorageKey);
+    } catch {
+      // The in-memory reset still works.
+    }
+    document.getElementById("theory-condition-intro")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   const scrollToFirstIncomplete = (completed = completedLessons) => {
     const firstIncomplete = lessonIds.find((lessonId) => !completed.has(lessonId));
     if (firstIncomplete) goToLesson(firstIncomplete, 360);
@@ -873,6 +1323,16 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
       );
       if (firstIncomplete) goToArithmeticLesson(firstIncomplete, 360);
     }
+    if (
+      planetId === 2 &&
+      completedConditionLessons.size > 0 &&
+      completedConditionLessons.size < conditionLessonIds.length
+    ) {
+      const firstIncomplete = conditionLessonIds.find(
+        (lessonId) => !completedConditionLessons.has(lessonId),
+      );
+      if (firstIncomplete) goToConditionLesson(firstIncomplete, 360);
+    }
   };
 
   return (
@@ -885,8 +1345,8 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
             <h1>Космос знаний</h1>
           </div>
           <div className="theory-overall-progress">
-            <span>{Math.round((progress + arithmeticProgress) / 2)}%</span>
-            <small>две главы</small>
+            <span>{Math.round((progress + arithmeticProgress + conditionProgress) / 3)}%</span>
+            <small>три главы</small>
           </div>
         </header>
 
@@ -895,20 +1355,21 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
           <span className="route-line route-line-two" aria-hidden="true" />
 
           {planets.map((planet) => {
-            const isAvailable = planet.id < 2;
             const planetProgress =
-              planet.id === 0 ? progress : planet.id === 1 ? arithmeticProgress : 0;
+              planet.id === 0
+                ? progress
+                : planet.id === 1
+                  ? arithmeticProgress
+                  : conditionProgress;
             const routePlanet =
               selectedPlanet ?? (progress < 100 ? 0 : arithmeticProgress < 100 ? 1 : 2);
             return (
               <button
                 className={`theory-planet theory-planet-${planet.id} ${
                   selectedPlanet === planet.id ? "is-selected" : ""
-                } ${isAvailable ? "is-current" : ""}`}
+                } is-current`}
                 onClick={() => openPlanet(planet.id)}
-                aria-label={`${planet.chapter}. ${planet.title}. ${
-                  isAvailable ? `Пройдено ${planetProgress}%` : "Глава готовится"
-                }`}
+                aria-label={`${planet.chapter}. ${planet.title}. Пройдено ${planetProgress}%`}
                 key={planet.id}
               >
                 <span className="theory-planet-visual">
@@ -922,7 +1383,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 <span className="theory-planet-label">
                   <small>{planet.chapter}</small>
                   <strong>{planet.title}</strong>
-                  <i>{isAvailable ? `${planetProgress}%` : "Скоро"}</i>
+                  <i>{planetProgress}%</i>
                 </span>
               </button>
             );
@@ -954,7 +1415,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                         ? progress
                         : activePlanet.id === 1
                           ? arithmeticProgress
-                          : 0
+                          : conditionProgress
                     }%`,
                   }}
                 />
@@ -964,19 +1425,306 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   ? `${progress}%`
                   : activePlanet.id === 1
                     ? `${arithmeticProgress}%`
-                    : "0%"}
+                    : `${conditionProgress}%`}
               </small>
             </div>
           </header>
 
           {activePlanet.id === 2 ? (
-            <div className="theory-coming-soon">
-              <PlanetSphere progress={0} variant={activePlanet.id} />
-              <p className="eyebrow">{activePlanet.chapter}</p>
-              <h2>{activePlanet.title}</h2>
-              <p>{activePlanet.description}</p>
-              <span>Глава готовится</span>
-              <small>Её можно будет открыть сразу — строгой блокировки по порядку не будет.</small>
+            <div className="theory-document theory-chapter-one theory-chapter-conditions">
+              <div className="theory-document-title">
+                <p className="eyebrow">Глава 3 · Выбор программы</p>
+                <h2>Условные конструкции</h2>
+                <p>
+                  Научим программу принимать решения: проверять условия, выбирать одну из веток и
+                  понимать, какие команды относятся к каждому блоку.
+                </p>
+                <div className="theory-document-meta">
+                  <span>Предисловие + 5 блоков</span>
+                  <span>≈ 22 минуты</span>
+                  <span>{completedConditionLessons.size}/5 пройдено</span>
+                </div>
+              </div>
+
+              <nav className="theory-document-nav" aria-label="Содержание главы">
+                <button
+                  onClick={() =>
+                    document.getElementById("theory-condition-intro")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    })
+                  }
+                >
+                  <span>0</span>
+                  Условия вокруг нас
+                </button>
+                {conditionLessonIds.map((lessonId, index) => (
+                  <button onClick={() => goToConditionLesson(lessonId)} key={lessonId}>
+                    <span>{completedConditionLessons.has(lessonId) ? "✓" : index + 1}</span>
+                    {conditionLessonTitles[lessonId]}
+                  </button>
+                ))}
+              </nav>
+
+              <section
+                className="theory-intro chapter-one-intro condition-chapter-intro"
+                id="theory-condition-intro"
+              >
+                <div className="theory-section-heading">
+                  <span>00</span>
+                  <div>
+                    <p className="eyebrow">Вступление из жизни</p>
+                    <h3>Ты принимаешь решения каждый день</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Если идёт дождь — берёшь зонт. Если опаздываешь — ускоряешь шаг. Если
+                    проголодался — идёшь есть. Ты сталкиваешься с условиями постоянно, даже не
+                    замечая этого.
+                  </p>
+                  <p>
+                    Программа рассуждает похожим образом: <strong>«если что-то произошло — сделай
+                    это, иначе — сделай другое»</strong>. Разница лишь в том, что компьютеру нужно
+                    записать проверку без намёков и двусмысленности.
+                  </p>
+                </div>
+                <EverydayConditionsGraphic />
+                <div className="theory-prose condition-use-cases">
+                  <p>В задачах ЕГЭ условия помогают проверить:</p>
+                  <ul className="subtask-list">
+                    <li>делится ли число на другое;</li>
+                    <li>чем заканчивается строка;</li>
+                    <li>есть ли элемент внутри списка;</li>
+                    <li>подходит ли значение под несколько правил.</li>
+                  </ul>
+                </div>
+              </section>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-condition-branches"
+              >
+                <div className="theory-lesson-heading">
+                  <span>01</span>
+                  <div>
+                    <p className="eyebrow">if, else и elif</p>
+                    <h3>Проверка выбирает маршрут</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Команда <code>if</code> говорит: «если условие истинно — выполни вложенный
+                    блок». Условие всегда даёт один из двух ответов: <code>True</code> или
+                    <code> False</code>.
+                  </p>
+                </div>
+                <IfFlowGraphic />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">А если условие ложно?</p>
+                  <h4><code>else</code> задаёт запасной маршрут</h4>
+                  <p>
+                    Ветка <code>else</code> выполняется вместо <code>if</code>, когда проверка дала
+                    <code> False</code>. Если вариантов больше двух, между ними добавляют
+                    <code> elif</code> — сокращение от «else if».
+                  </p>
+                </div>
+                <BranchChoiceGraphic />
+                <aside className="theory-warning">
+                  <span>Важно</span>
+                  <p>
+                    <code>elif</code> проверяется только тогда, когда все предыдущие условия в этой
+                    цепочке оказались ложными.
+                  </p>
+                </aside>
+                <ConditionLessonStatus
+                  id="branches"
+                  completed={completedConditionLessons.has("branches")}
+                  onComplete={completeConditionLesson}
+                />
+              </article>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-condition-chains"
+              >
+                <div className="theory-lesson-heading">
+                  <span>02</span>
+                  <div>
+                    <p className="eyebrow">Независимые проверки</p>
+                    <h3><code>if · if · if</code> или <code>if · elif · elif</code></h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Несколько отдельных <code>if</code> проверяются независимо, поэтому могут
+                    сработать сразу несколько блоков. Цепочка <code>if–elif–else</code> выбирает
+                    только первый подходящий вариант.
+                  </p>
+                </div>
+                <IndependentChecksGraphic />
+                <ConditionLessonStatus
+                  id="chains"
+                  completed={completedConditionLessons.has("chains")}
+                  onComplete={completeConditionLesson}
+                />
+              </article>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-condition-indentation"
+              >
+                <div className="theory-lesson-heading">
+                  <span>03</span>
+                  <div>
+                    <p className="eyebrow">Самое важное в Python</p>
+                    <h3>Отступ определяет границы блока</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    В Python нет фигурных скобок, которые показывают границы условия. Вместо них
+                    используется отступ — обычно четыре пробела. Всё, что сдвинуто вправо на один
+                    уровень, относится к соответствующей ветке.
+                  </p>
+                </div>
+                <IndentationScopeGraphic />
+                <IndentationCheck />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Если забыть отступ</p>
+                  <h4>Python сразу остановит программу</h4>
+                  <p>
+                    После строки с двоеточием Python ожидает вложенный блок. Если следующая команда
+                    осталась слева, программа не может определить, что нужно выполнить внутри
+                    условия.
+                  </p>
+                </div>
+                <IndentationErrorGraphic />
+                <aside className="theory-intro-insight">
+                  Если отступа нет — программа покажет ошибку. Если отступ стоит не там — программа
+                  может запуститься, но выполнить совсем не ту логику, которую ты задумал.
+                </aside>
+                <ConditionLessonStatus
+                  id="indentation"
+                  completed={completedConditionLessons.has("indentation")}
+                  onComplete={completeConditionLesson}
+                />
+              </article>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-condition-logic"
+              >
+                <div className="theory-lesson-heading">
+                  <span>04</span>
+                  <div>
+                    <p className="eyebrow">Сравнения и логика</p>
+                    <h3>Формулируем точный вопрос</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Внутри <code>if</code> обычно находится сравнение. Оно не изменяет значение, а
+                    задаёт вопрос и возвращает <code>True</code> либо <code>False</code>.
+                  </p>
+                </div>
+                <ComparisonOperatorsTable />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Собираем несколько проверок</p>
+                  <h4><code>and</code>, <code>or</code> и <code>not</code></h4>
+                  <p>
+                    <code>and</code> требует выполнения всех частей. <code>or</code> достаточно
+                    хотя бы одной истинной части. <code>not</code> меняет ответ на
+                    противоположный.
+                  </p>
+                </div>
+                <BooleanLogicGraphic />
+                <ConditionLessonStatus
+                  id="logic"
+                  completed={completedConditionLessons.has("logic")}
+                  onComplete={completeConditionLesson}
+                />
+              </article>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-condition-contains"
+              >
+                <div className="theory-lesson-heading">
+                  <span>05</span>
+                  <div>
+                    <p className="eyebrow">Оператор in</p>
+                    <h3>Есть ли объект внутри другого?</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Для строк оператор <code>in</code> отвечает на вопрос: «есть ли здесь символ
+                    или целая подстрока?». Он также работает со списками и другими коллекциями.
+                  </p>
+                </div>
+                <ContainsGraphic />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Не наступай на эти грабли</p>
+                  <h4>Две частые ошибки в условиях</h4>
+                  <p>
+                    Чаще всего в начале забывают отступ или пишут один знак <code>=</code> вместо
+                    двух. Вспомни прошлую главу: один знак присваивает значение, а два сравнивают.
+                  </p>
+                </div>
+                <ConditionErrorsGraphic />
+                <ConditionLessonStatus
+                  id="contains"
+                  completed={completedConditionLessons.has("contains")}
+                  onComplete={completeConditionLesson}
+                />
+              </article>
+
+              <section
+                className={`theory-finish ${conditionProgress === 100 ? "is-ready" : ""}`}
+                id="theory-condition-finish"
+              >
+                <div className="theory-finish-planet">
+                  <PlanetSphere
+                    progress={conditionProgress}
+                    variant={2}
+                    complete={conditionProgress === 100}
+                  />
+                </div>
+                <div>
+                  <p className="eyebrow">
+                    {conditionProgress === 100 ? "Глава пройдена" : "Продолжай маршрут"}
+                  </p>
+                  <h3>
+                    {conditionProgress === 100
+                      ? "Планета заполнена"
+                      : `Пройдено ${conditionProgress}%`}
+                  </h3>
+                  <p>
+                    {conditionProgress === 100
+                      ? "Теперь ты умеешь строить ветвления, читать отступы и соединять несколько логических проверок."
+                      : "Заверши оставшиеся блоки, чтобы полностью заполнить планету."}
+                  </p>
+                  {conditionProgress === 100 ? (
+                    <button onClick={replayConditionChapter}>Повторить главу</button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const firstIncomplete = conditionLessonIds.find(
+                          (lessonId) => !completedConditionLessons.has(lessonId),
+                        );
+                        if (firstIncomplete) goToConditionLesson(firstIncomplete);
+                      }}
+                    >
+                      К непройденному блоку
+                    </button>
+                  )}
+                </div>
+              </section>
             </div>
           ) : activePlanet.id === 1 ? (
             <div className="theory-document theory-chapter-one theory-chapter-arithmetic">
