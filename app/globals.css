@@ -4302,7 +4302,7 @@ footer {
 }
 
 .trainer-hand-right .trainer-fingertip.finger-thumb {
-  left: 14.2%;
+  left: calc(14.2% - 3px);
 }
 
 .trainer-finger-guides {
