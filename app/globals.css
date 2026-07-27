@@ -2315,6 +2315,1199 @@ footer {
   max-width: 520px;
 }
 
+.tasks-shell.is-theory-shell {
+  max-width: none;
+  padding: 0;
+}
+
+.tasks-page:has(.tasks-shell.is-theory-shell) > footer {
+  display: none;
+}
+
+.theory-loading {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: calc(100dvh - 72px);
+  justify-content: center;
+}
+
+.theory-loading span {
+  color: var(--accent);
+  letter-spacing: 0.22em;
+}
+
+.theory-loading p {
+  font-size: 12px;
+  margin: 0;
+}
+
+.theory-space {
+  background: var(--bg);
+  display: grid;
+  height: calc(100dvh - 72px);
+  min-height: 620px;
+  overflow: hidden;
+  position: relative;
+  transition: grid-template-columns 420ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.theory-space.is-chapter-open {
+  grid-template-columns: minmax(340px, 41%) minmax(520px, 59%);
+}
+
+.theory-map {
+  background:
+    radial-gradient(circle at 17% 26%, var(--accent-wash) 0 1px, transparent 2px),
+    radial-gradient(circle at 72% 18%, var(--line-strong) 0 1px, transparent 2px),
+    radial-gradient(circle at 84% 72%, var(--line-strong) 0 1px, transparent 2px),
+    radial-gradient(circle at 33% 82%, var(--accent-wash-strong) 0 1px, transparent 2px),
+    var(--bg);
+  background-size: 132px 132px, 173px 173px, 211px 211px, 263px 263px, auto;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.theory-stars {
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--accent) 65%, transparent) 0 1px, transparent 1.5px)
+      22px 18px / 164px 164px,
+    radial-gradient(circle, var(--line-strong) 0 1px, transparent 1.5px)
+      72px 61px / 211px 211px;
+  inset: 0;
+  opacity: 0.52;
+  pointer-events: none;
+  position: absolute;
+}
+
+.theory-map::after {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  border-radius: 50%;
+  content: "";
+  filter: blur(58px);
+  height: 36vw;
+  left: -14vw;
+  max-height: 440px;
+  max-width: 440px;
+  min-height: 260px;
+  min-width: 260px;
+  pointer-events: none;
+  position: absolute;
+  top: 36%;
+  width: 36vw;
+}
+
+.theory-map-header {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  left: clamp(24px, 4vw, 64px);
+  position: absolute;
+  right: clamp(24px, 4vw, 64px);
+  top: clamp(26px, 5vh, 54px);
+  z-index: 2;
+}
+
+.theory-map-header .eyebrow {
+  color: var(--accent);
+  margin: 0 0 10px;
+}
+
+.theory-map-header h1 {
+  font-size: clamp(2.5rem, 5vw, 5rem);
+  font-weight: 640;
+  letter-spacing: -0.065em;
+  line-height: 0.95;
+  margin: 0;
+  transition: font-size 360ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.theory-overall-progress {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
+  gap: 4px;
+}
+
+.theory-overall-progress span {
+  color: var(--accent);
+  font-size: clamp(1.6rem, 3vw, 2.7rem);
+  font-weight: 620;
+  letter-spacing: -0.05em;
+}
+
+.theory-overall-progress small {
+  color: var(--dim);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.theory-route {
+  height: 100%;
+  position: relative;
+  width: 100%;
+  z-index: 1;
+}
+
+.route-line {
+  border-top: 1px dashed color-mix(in srgb, var(--accent) 28%, var(--line));
+  height: 1px;
+  position: absolute;
+  transform-origin: left center;
+}
+
+.route-line-one {
+  left: 24%;
+  top: 52%;
+  transform: rotate(-19deg);
+  width: 30%;
+}
+
+.route-line-two {
+  left: 53%;
+  top: 42%;
+  transform: rotate(24deg);
+  width: 26%;
+}
+
+.theory-planet {
+  align-items: center;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 10px;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 190px;
+  z-index: 2;
+}
+
+.theory-planet:active {
+  transform: translate(-50%, -50%) scale(0.96);
+}
+
+.theory-planet-0 {
+  left: 20%;
+  top: 57%;
+}
+
+.theory-planet-1 {
+  left: 51%;
+  top: 39%;
+}
+
+.theory-planet-2 {
+  left: 78%;
+  top: 61%;
+}
+
+.theory-planet-sphere {
+  background: var(--surface-raised);
+  border-radius: 50%;
+  box-shadow:
+    inset -18px -20px 32px color-mix(in srgb, #000 18%, transparent),
+    inset 8px 10px 20px color-mix(in srgb, #fff 5%, transparent),
+    0 0 0 1px var(--line-strong),
+    0 18px 36px color-mix(in srgb, #000 18%, transparent);
+  display: block;
+  height: 112px;
+  overflow: hidden;
+  position: relative;
+  transform: rotate(-8deg);
+  transition:
+    box-shadow 180ms ease-out,
+    scale 180ms ease-out;
+  width: 112px;
+}
+
+.theory-planet-0 .theory-planet-sphere {
+  height: 142px;
+  width: 142px;
+}
+
+.theory-planet:hover .theory-planet-sphere,
+.theory-planet.is-selected .theory-planet-sphere {
+  box-shadow:
+    inset -18px -20px 32px color-mix(in srgb, #000 18%, transparent),
+    inset 8px 10px 20px color-mix(in srgb, #fff 7%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--accent) 36%, var(--line)),
+    0 18px 40px color-mix(in srgb, var(--accent) 12%, transparent);
+  scale: 1.045;
+}
+
+.theory-planet-liquid {
+  background: var(--accent);
+  bottom: 0;
+  display: block;
+  height: var(--planet-progress);
+  left: 0;
+  overflow: visible;
+  position: absolute;
+  transition: height 720ms cubic-bezier(0.2, 0, 0, 1);
+  width: 100%;
+}
+
+.theory-planet-liquid::before {
+  background:
+    radial-gradient(ellipse at 50% 100%, var(--accent) 0 58%, transparent 60%)
+    0 0 / 34px 11px repeat-x;
+  content: "";
+  height: 12px;
+  left: -17px;
+  opacity: 0.88;
+  position: absolute;
+  top: -8px;
+  width: calc(100% + 34px);
+}
+
+.planet-crater {
+  border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+  border-radius: 50%;
+  box-shadow: inset 2px 2px 4px color-mix(in srgb, #000 12%, transparent);
+  height: 17%;
+  opacity: 0.56;
+  position: absolute;
+  width: 23%;
+}
+
+.crater-one {
+  left: 19%;
+  top: 23%;
+}
+
+.crater-two {
+  height: 12%;
+  right: 16%;
+  top: 48%;
+  width: 17%;
+}
+
+.crater-three {
+  bottom: 16%;
+  left: 38%;
+}
+
+.theory-planet-sphere.is-complete {
+  box-shadow:
+    inset -18px -20px 32px color-mix(in srgb, #000 14%, transparent),
+    inset 8px 10px 20px color-mix(in srgb, #fff 9%, transparent),
+    0 0 0 5px var(--bg),
+    0 0 0 6px color-mix(in srgb, var(--accent) 48%, transparent),
+    0 18px 45px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.theory-planet-label {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: center;
+}
+
+.theory-planet-label small {
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.theory-planet:not(.is-current) .theory-planet-label small {
+  color: var(--dim);
+}
+
+.theory-planet-label strong {
+  font-size: 12px;
+  font-weight: 590;
+  line-height: 1.3;
+}
+
+.theory-planet-label i {
+  color: var(--dim);
+  font-size: 8px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.theory-rocket {
+  height: 58px;
+  left: 30%;
+  position: absolute;
+  top: 49%;
+  transform: translate(-50%, -50%) rotate(42deg);
+  transition:
+    left 900ms cubic-bezier(0.2, 0, 0, 1),
+    top 900ms cubic-bezier(0.2, 0, 0, 1),
+    transform 900ms cubic-bezier(0.2, 0, 0, 1);
+  width: 36px;
+  z-index: 3;
+}
+
+.theory-rocket.is-at-next {
+  left: 41%;
+  top: 35%;
+  transform: translate(-50%, -50%) rotate(57deg);
+}
+
+.rocket-body {
+  background: var(--text-soft);
+  border-radius: 50% 50% 32% 32% / 62% 62% 24% 24%;
+  box-shadow: 0 0 0 1px var(--line-strong);
+  display: block;
+  height: 43px;
+  left: 7px;
+  position: absolute;
+  top: 0;
+  width: 22px;
+}
+
+.rocket-window {
+  align-items: center;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 7px;
+  display: flex;
+  gap: 3px;
+  height: 14px;
+  justify-content: center;
+  left: 4px;
+  position: absolute;
+  top: 12px;
+  width: 14px;
+}
+
+.rocket-window i {
+  background: var(--accent);
+  border-radius: 50%;
+  height: 2px;
+  width: 2px;
+}
+
+.rocket-fin {
+  background: var(--accent);
+  bottom: 14px;
+  height: 15px;
+  position: absolute;
+  width: 9px;
+}
+
+.rocket-fin-left {
+  border-radius: 8px 2px 3px 7px;
+  left: 1px;
+  transform: rotate(-16deg);
+}
+
+.rocket-fin-right {
+  border-radius: 2px 8px 7px 3px;
+  right: 1px;
+  transform: rotate(16deg);
+}
+
+.rocket-flame {
+  background: var(--accent);
+  border-radius: 50% 50% 70% 70%;
+  bottom: 0;
+  height: 14px;
+  left: 15px;
+  opacity: 0.72;
+  position: absolute;
+  width: 6px;
+}
+
+.theory-map-hint {
+  bottom: 24px;
+  color: var(--dim);
+  font-size: 9px;
+  left: 50%;
+  margin: 0;
+  position: absolute;
+  text-align: center;
+  transform: translateX(-50%);
+  width: min(420px, calc(100% - 40px));
+  z-index: 2;
+}
+
+.theory-space.is-chapter-open .theory-map-header h1 {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+}
+
+.theory-space.is-chapter-open .theory-map-header {
+  left: 32px;
+  right: 32px;
+}
+
+.theory-space.is-chapter-open .theory-overall-progress small {
+  display: none;
+}
+
+.theory-space.is-chapter-open .theory-planet {
+  width: 150px;
+}
+
+.theory-space.is-chapter-open .theory-planet-0 {
+  left: 29%;
+  top: 58%;
+}
+
+.theory-space.is-chapter-open .theory-planet-1 {
+  left: 69%;
+  top: 38%;
+}
+
+.theory-space.is-chapter-open .theory-planet-2 {
+  left: 65%;
+  top: 74%;
+}
+
+.theory-space.is-chapter-open .theory-planet-0 .theory-planet-sphere {
+  height: 112px;
+  width: 112px;
+}
+
+.theory-space.is-chapter-open .theory-planet-sphere {
+  height: 86px;
+  width: 86px;
+}
+
+.theory-space.is-chapter-open .route-line-one {
+  left: 35%;
+  top: 54%;
+  transform: rotate(-22deg);
+  width: 34%;
+}
+
+.theory-space.is-chapter-open .route-line-two {
+  left: 69%;
+  top: 44%;
+  transform: rotate(89deg);
+  width: 25%;
+}
+
+.theory-space.is-chapter-open .theory-rocket {
+  left: 45%;
+  top: 50%;
+}
+
+.theory-space.is-chapter-open .theory-rocket.is-at-next {
+  left: 57%;
+  top: 33%;
+}
+
+.theory-chapter {
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  position: relative;
+  scrollbar-color: var(--surface-soft) transparent;
+  z-index: 4;
+}
+
+.theory-chapter-header {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  height: 64px;
+  justify-content: space-between;
+  padding: 0 clamp(20px, 3vw, 42px);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.theory-close {
+  align-items: center;
+  background: transparent;
+  border-radius: 10px;
+  color: var(--muted);
+  display: flex;
+  font-size: 11px;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 10px;
+  transition:
+    background-color 140ms ease-out,
+    color 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.theory-close:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.theory-close:active {
+  transform: scale(0.96);
+}
+
+.theory-close span:first-child {
+  font-size: 16px;
+}
+
+.theory-chapter-progress {
+  align-items: center;
+  display: flex;
+  font-variant-numeric: tabular-nums;
+  gap: 10px;
+}
+
+.theory-chapter-progress > span {
+  background: var(--surface-raised);
+  border-radius: 999px;
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  width: 90px;
+}
+
+.theory-chapter-progress i {
+  background: var(--accent);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  transition: width 500ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.theory-chapter-progress small {
+  color: var(--muted);
+  font-size: 9px;
+  min-width: 27px;
+  text-align: right;
+}
+
+.theory-document {
+  margin: 0 auto;
+  max-width: 760px;
+  padding: clamp(48px, 7vw, 82px) clamp(24px, 6vw, 74px) 100px;
+}
+
+.theory-document-title .eyebrow {
+  color: var(--accent);
+  margin: 0 0 16px;
+}
+
+.theory-document-title h2 {
+  font-size: clamp(2.6rem, 5vw, 4.8rem);
+  font-weight: 640;
+  letter-spacing: -0.065em;
+  line-height: 0.95;
+  margin: 0;
+}
+
+.theory-document-title > p:last-of-type {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+  margin: 24px 0 0;
+  max-width: 620px;
+}
+
+.theory-document-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 26px;
+}
+
+.theory-document-meta span {
+  background: var(--surface-raised);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 9px;
+  padding: 7px 10px;
+}
+
+.theory-document-nav {
+  background: color-mix(in srgb, var(--surface-raised) 75%, transparent);
+  border-radius: 18px;
+  display: grid;
+  gap: 2px;
+  margin-top: 46px;
+  padding: 9px;
+}
+
+.theory-document-nav a {
+  align-items: center;
+  border-radius: 11px;
+  color: var(--text-soft);
+  display: flex;
+  font-size: 11px;
+  gap: 10px;
+  min-height: 40px;
+  padding: 7px 10px;
+  text-decoration: none;
+  transition:
+    background-color 140ms ease-out,
+    color 140ms ease-out;
+}
+
+.theory-document-nav a:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.theory-document-nav a span {
+  align-items: center;
+  background: var(--surface-soft);
+  border-radius: 7px;
+  color: var(--accent);
+  display: flex;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.theory-lesson {
+  scroll-margin-top: 90px;
+  padding: 76px 0 12px;
+}
+
+.theory-lesson-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 14px;
+}
+
+.theory-lesson-heading > span {
+  color: var(--dim);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  padding-top: 4px;
+}
+
+.theory-lesson-heading .eyebrow {
+  color: var(--accent);
+  margin: 0 0 9px;
+}
+
+.theory-lesson-heading h3 {
+  font-size: clamp(1.75rem, 3.7vw, 2.75rem);
+  font-weight: 620;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+  margin: 0;
+}
+
+.theory-lesson-heading h3 code {
+  color: var(--accent);
+  font-family: var(--font-geist-mono);
+  font-size: 0.88em;
+  font-weight: 580;
+}
+
+.theory-lesson > p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.75;
+  margin: 22px 0 0;
+}
+
+.theory-lesson > p code,
+.theory-note code {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: 0.94em;
+}
+
+.theory-execution,
+.theory-error-example {
+  background: var(--bg);
+  border-radius: 20px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(130px, 0.8fr);
+  margin-top: 28px;
+  padding: 12px;
+}
+
+.theory-code {
+  display: grid;
+  gap: 4px;
+}
+
+.theory-code > div {
+  align-items: center;
+  border-radius: 9px;
+  color: var(--muted);
+  display: grid;
+  font-size: 11px;
+  grid-template-columns: 23px 1fr 20px;
+  min-height: 38px;
+  padding: 0 8px;
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.theory-code > div > span {
+  color: var(--dim);
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.theory-code code {
+  font-family: var(--font-geist-mono);
+  white-space: nowrap;
+}
+
+.theory-code > div > i {
+  color: var(--accent);
+  font-style: normal;
+  text-align: right;
+}
+
+.theory-code > div.is-running {
+  background: var(--accent-wash-strong);
+  color: var(--text);
+}
+
+.theory-code > div.is-done {
+  color: var(--text-soft);
+}
+
+.theory-code.is-static > div {
+  background: var(--surface);
+  color: var(--text-soft);
+  grid-template-columns: 23px 1fr;
+}
+
+.theory-console {
+  background: var(--surface);
+  border-radius: 12px;
+  min-height: 100px;
+  padding: 13px;
+}
+
+.theory-console > span {
+  color: var(--dim);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  margin-bottom: 11px;
+  text-transform: uppercase;
+}
+
+.theory-console > small {
+  color: var(--dim);
+  font-size: 9px;
+}
+
+.theory-console code {
+  display: grid;
+  font-family: var(--font-geist-mono);
+  font-size: 10px;
+  gap: 5px;
+}
+
+.theory-console code i {
+  color: var(--text-soft);
+  font-style: normal;
+}
+
+.theory-run-button {
+  background: var(--accent);
+  border-radius: 11px;
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-weight: 620;
+  grid-column: 1 / -1;
+  min-height: 42px;
+  padding: 0 16px;
+  transition:
+    background-color 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.theory-run-button:hover {
+  background: var(--accent-hover);
+}
+
+.theory-run-button:active {
+  transform: scale(0.96);
+}
+
+.theory-note {
+  background: var(--surface-raised);
+  border-radius: 14px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 18px;
+  padding: 15px 16px;
+}
+
+.theory-note.is-accent {
+  background: var(--accent-wash);
+  color: var(--text-soft);
+}
+
+.theory-complete-button {
+  align-items: center;
+  background: transparent;
+  border-radius: 11px;
+  color: var(--accent);
+  display: flex;
+  font-size: 10px;
+  font-weight: 600;
+  gap: 9px;
+  margin-top: 22px;
+  min-height: 44px;
+  padding: 0 12px;
+  transition:
+    background-color 140ms ease-out,
+    color 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.theory-complete-button span {
+  align-items: center;
+  background: var(--accent-wash-strong);
+  border-radius: 7px;
+  display: flex;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.theory-complete-button:hover:not(:disabled) {
+  background: var(--accent-wash);
+}
+
+.theory-complete-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.theory-complete-button:disabled {
+  color: var(--dim);
+  cursor: default;
+}
+
+.theory-complete-button.is-complete {
+  color: var(--muted);
+}
+
+.theory-sequence {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  margin-top: 28px;
+}
+
+.theory-sequence > span {
+  align-items: center;
+  background: var(--bg);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-soft);
+  display: flex;
+  flex-direction: column;
+  font-size: 9px;
+  gap: 8px;
+  justify-content: center;
+  min-height: 86px;
+  padding: 10px;
+  text-align: center;
+}
+
+.theory-sequence > span i {
+  align-items: center;
+  background: var(--accent-wash-strong);
+  border-radius: 50%;
+  color: var(--accent);
+  display: flex;
+  font-size: 8px;
+  font-style: normal;
+  height: 22px;
+  justify-content: center;
+  width: 22px;
+}
+
+.theory-sequence > b {
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.theory-choice-block {
+  margin-top: 25px;
+}
+
+.theory-choice-block > p {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 570;
+  margin: 0 0 11px;
+}
+
+.theory-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.theory-choices button {
+  background: var(--surface-raised);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 10px;
+  min-height: 42px;
+  padding: 0 14px;
+  transition:
+    background-color 140ms ease-out,
+    box-shadow 140ms ease-out,
+    color 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.theory-choices button:hover {
+  color: var(--text);
+}
+
+.theory-choices button:active {
+  transform: scale(0.96);
+}
+
+.theory-choices button.is-selected {
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  color: var(--text);
+}
+
+.theory-choices button.is-correct {
+  background: var(--accent-wash-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 42%, transparent);
+  color: var(--accent);
+}
+
+.theory-choice-block > small {
+  display: block;
+  font-size: 9px;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
+.theory-choice-block > small.is-correct {
+  color: var(--accent);
+}
+
+.theory-choice-block > small.is-wrong {
+  color: var(--muted);
+}
+
+.theory-split-example {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(130px, 0.8fr);
+  margin-top: 28px;
+}
+
+.theory-error-example {
+  grid-template-columns: 1fr;
+}
+
+.theory-traceback {
+  background: var(--surface);
+  border-radius: 12px;
+  display: grid;
+  font-family: var(--font-geist-mono);
+  font-size: 9px;
+  gap: 7px;
+  line-height: 1.55;
+  padding: 15px;
+}
+
+.theory-traceback span {
+  color: var(--dim);
+}
+
+.theory-traceback strong {
+  color: var(--accent);
+  font-weight: 520;
+}
+
+.theory-compare-code {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 28px;
+}
+
+.theory-compare-code > div {
+  background: var(--bg);
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 12px;
+}
+
+.compare-label {
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 8px;
+  gap: 5px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.compare-label::before {
+  background: currentColor;
+  border-radius: 50%;
+  content: "";
+  height: 5px;
+  margin-top: 2px;
+  width: 5px;
+}
+
+.compare-label.is-right {
+  color: var(--accent);
+}
+
+.theory-compare-code pre {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: 10px;
+  line-height: 1.7;
+  margin: 0;
+  overflow-x: auto;
+  padding: 4px;
+}
+
+.theory-finish {
+  align-items: center;
+  background: var(--bg);
+  border-radius: 22px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  display: grid;
+  gap: 28px;
+  grid-template-columns: 120px 1fr;
+  margin-top: 80px;
+  overflow: hidden;
+  padding: 24px;
+  position: relative;
+}
+
+.theory-finish.is-ready {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, var(--line)),
+    0 18px 42px color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.theory-finish-planet {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.theory-finish-planet .theory-planet-sphere {
+  height: 92px;
+  width: 92px;
+}
+
+.theory-finish .eyebrow {
+  color: var(--accent);
+  margin: 0 0 8px;
+}
+
+.theory-finish h3 {
+  font-size: 1.65rem;
+  font-weight: 620;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+.theory-finish p:not(.eyebrow) {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+  margin: 10px 0 0;
+}
+
+.theory-finish button {
+  background: var(--surface-raised);
+  border-radius: 10px;
+  color: var(--text-soft);
+  font-size: 9px;
+  margin-top: 16px;
+  min-height: 40px;
+  padding: 0 13px;
+  transition:
+    background-color 140ms ease-out,
+    color 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.theory-finish button:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.theory-finish button:active {
+  transform: scale(0.96);
+}
+
+.theory-coming-soon {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  max-width: 520px;
+  min-height: calc(100% - 64px);
+  padding: clamp(60px, 10vh, 120px) clamp(28px, 6vw, 72px);
+}
+
+.theory-coming-soon .theory-planet-sphere {
+  height: 112px;
+  margin-bottom: 42px;
+  width: 112px;
+}
+
+.theory-coming-soon .eyebrow {
+  color: var(--accent);
+  margin: 0 0 13px;
+}
+
+.theory-coming-soon h2 {
+  font-size: clamp(2.6rem, 6vw, 4.8rem);
+  font-weight: 640;
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+  margin: 0;
+}
+
+.theory-coming-soon > p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 21px 0 0;
+}
+
+.theory-coming-soon > span {
+  background: var(--accent-wash);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 620;
+  margin-top: 28px;
+  padding: 8px 11px;
+  text-transform: uppercase;
+}
+
+.theory-coming-soon > small {
+  color: var(--dim);
+  font-size: 9px;
+  line-height: 1.6;
+  margin-top: 16px;
+}
+
 .gate-overlay {
   align-items: center;
   animation: gate-overlay-in 180ms ease-out both;
@@ -5388,9 +6581,210 @@ footer {
   }
 }
 
+@media (max-width: 980px) {
+  .theory-space.is-chapter-open {
+    display: block;
+  }
+
+  .theory-space.is-chapter-open .theory-map {
+    visibility: hidden;
+  }
+
+  .theory-space.is-chapter-open .theory-chapter {
+    border-left: 0;
+    inset: 0;
+    position: absolute;
+    visibility: visible;
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .theory-space {
+    min-height: 600px;
+  }
+
+  .theory-map-header {
+    left: 20px;
+    right: 20px;
+    top: 25px;
+  }
+
+  .theory-map-header h1 {
+    font-size: clamp(2.5rem, 13vw, 3.8rem);
+  }
+
+  .theory-overall-progress span {
+    font-size: 1.65rem;
+  }
+
+  .theory-planet {
+    padding: 8px;
+    width: 132px;
+  }
+
+  .theory-planet-0 {
+    left: 28%;
+    top: 51%;
+  }
+
+  .theory-planet-1 {
+    left: 72%;
+    top: 38%;
+  }
+
+  .theory-planet-2 {
+    left: 62%;
+    top: 72%;
+  }
+
+  .theory-planet-0 .theory-planet-sphere {
+    height: 108px;
+    width: 108px;
+  }
+
+  .theory-planet-sphere {
+    height: 80px;
+    width: 80px;
+  }
+
+  .theory-planet-label strong {
+    font-size: 10px;
+  }
+
+  .route-line-one {
+    left: 34%;
+    top: 49%;
+    transform: rotate(-20deg);
+    width: 34%;
+  }
+
+  .route-line-two {
+    left: 72%;
+    top: 44%;
+    transform: rotate(96deg);
+    width: 23%;
+  }
+
+  .theory-rocket {
+    left: 44%;
+    top: 45%;
+    scale: 0.86;
+  }
+
+  .theory-rocket.is-at-next {
+    left: 59%;
+    top: 34%;
+  }
+
+  .theory-map-hint {
+    bottom: 18px;
+  }
+
+  .theory-chapter-header {
+    height: 58px;
+    padding: 0 14px;
+  }
+
+  .theory-chapter-progress > span {
+    width: 72px;
+  }
+
+  .theory-document {
+    padding: 44px 18px 76px;
+  }
+
+  .theory-document-title h2 {
+    font-size: clamp(2.7rem, 14vw, 4rem);
+  }
+
+  .theory-document-title > p:last-of-type {
+    font-size: 13px;
+  }
+
+  .theory-document-nav {
+    margin-top: 35px;
+  }
+
+  .theory-lesson {
+    padding-top: 64px;
+  }
+
+  .theory-lesson-heading h3 {
+    font-size: 1.9rem;
+  }
+
+  .theory-lesson > p {
+    font-size: 13px;
+  }
+
+  .theory-execution,
+  .theory-split-example {
+    grid-template-columns: 1fr;
+  }
+
+  .theory-console {
+    min-height: 84px;
+  }
+
+  .theory-sequence {
+    gap: 5px;
+  }
+
+  .theory-sequence > span {
+    font-size: 8px;
+    min-height: 78px;
+    padding: 7px;
+  }
+
+  .theory-choices {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .theory-choices button {
+    min-height: 46px;
+    text-align: left;
+  }
+
+  .theory-compare-code {
+    grid-template-columns: 1fr;
+  }
+
+  .theory-finish {
+    gap: 18px;
+    grid-template-columns: 86px 1fr;
+    margin-top: 64px;
+    padding: 18px;
+  }
+
+  .theory-finish-planet .theory-planet-sphere {
+    height: 72px;
+    width: 72px;
+  }
+
+  .theory-finish h3 {
+    font-size: 1.35rem;
+  }
+
+  .theory-coming-soon {
+    padding: 54px 24px;
+  }
+}
+
+@media (max-width: 600px) {
+  .theory-space {
+    height: calc(100dvh - 62px);
+  }
+}
+
 @media (hover: none) {
   .dock-item {
     transform: none !important;
+  }
+
+  .theory-planet:hover .theory-planet-sphere {
+    scale: 1;
   }
 }
 
@@ -5432,5 +6826,11 @@ footer {
   .preview-theory-card:first-of-type {
     opacity: 1;
     transform: none;
+  }
+
+  .theory-planet-liquid,
+  .theory-rocket,
+  .theory-chapter-progress i {
+    transition-duration: 0.01ms !important;
   }
 }

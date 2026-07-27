@@ -5,6 +5,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 const TypingTrainer = lazy(() => import("./typing-trainer"));
+const TheorySpace = lazy(() => import("./theory-space"));
 
 type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "dashboard";
 type GateSection = Extract<Section, "theory" | "game" | "trainer" | "dashboard">;
@@ -2006,7 +2007,11 @@ export default function Home() {
         profile={profile}
       />
 
-      <div className={`tasks-shell ${section === "trainer" ? "is-trainer-shell" : ""}`}>
+      <div
+        className={`tasks-shell ${section === "trainer" ? "is-trainer-shell" : ""} ${
+          section === "theory" ? "is-theory-shell" : ""
+        }`}
+      >
         {section === "tasks" && (
           <>
             <PageHeading
@@ -2153,7 +2158,18 @@ export default function Home() {
           </>
         )}
 
-        {section === "theory" && <PremiumPlaceholder section="theory" />}
+        {section === "theory" && user && (
+          <Suspense
+            fallback={
+              <div className="theory-loading" role="status">
+                <span>•••</span>
+                <p>Готовим космос знаний</p>
+              </div>
+            }
+          >
+            <TheorySpace userId={user.id} />
+          </Suspense>
+        )}
 
         {section === "game" && <PremiumPlaceholder section="game" />}
 
