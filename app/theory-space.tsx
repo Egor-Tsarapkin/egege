@@ -23,14 +23,14 @@ const planets: Planet[] = [
   {
     id: 1,
     chapter: "Глава 2",
-    title: "Условия и логика",
-    description: "Как код принимает решения и выбирает маршрут.",
+    title: "Арифметические операции",
+    description: "Как Python считает, делит и соединяет данные.",
   },
   {
     id: 2,
     chapter: "Глава 3",
-    title: "Циклы и повторения",
-    description: "Как поручить программе повторяющуюся работу.",
+    title: "Условные конструкции",
+    description: "Как код сравнивает значения и выбирает маршрут.",
   },
 ];
 
@@ -40,6 +40,16 @@ type LessonId = (typeof lessonIds)[number];
 const lessonTitles: Record<LessonId, string> = {
   program: "Как работает программа",
   variables: "Переменные: коробки с именами",
+};
+
+const arithmeticLessonIds = ["basics", "division", "strings", "shortcuts"] as const;
+type ArithmeticLessonId = (typeof arithmeticLessonIds)[number];
+
+const arithmeticLessonTitles: Record<ArithmeticLessonId, string> = {
+  basics: "Операции с числами",
+  division: "Деление, // и %",
+  strings: "Строки и разные типы",
+  shortcuts: "Короткая запись",
 };
 
 function PlanetSphere({
@@ -152,6 +162,27 @@ function LessonStatus({
         : id === "program"
           ? "Завершить блок"
           : "Завершить главу"}
+    </button>
+  );
+}
+
+function ArithmeticLessonStatus({
+  id,
+  completed,
+  onComplete,
+}: {
+  id: ArithmeticLessonId;
+  completed: boolean;
+  onComplete: (id: ArithmeticLessonId) => void;
+}) {
+  return (
+    <button
+      className={`theory-complete-button ${completed ? "is-complete" : ""}`}
+      disabled={completed}
+      onClick={() => onComplete(id)}
+    >
+      <span aria-hidden="true">{completed ? "✓" : "→"}</span>
+      {completed ? "Блок пройден" : id === "shortcuts" ? "Завершить главу" : "Завершить блок"}
     </button>
   );
 }
@@ -389,10 +420,304 @@ function TypeDifferenceGraphic() {
   );
 }
 
+const arithmeticOperations = [
+  { operator: "+", example: "2 + 3", result: "5", label: "сложение" },
+  { operator: "−", example: "5 - 1", result: "4", label: "вычитание" },
+  { operator: "×", example: "4 * 6", result: "24", label: "умножение" },
+  { operator: "÷", example: "10 / 2", result: "5.0", label: "деление" },
+  { operator: "xⁿ", example: "2 ** 3", result: "8", label: "степень" },
+];
+
+function ArithmeticIntroGraphic() {
+  return (
+    <div className="arithmetic-intro-graphic" aria-label="Один оператор плюс по-разному работает с числами и строками">
+      <div className="arithmetic-calculator" aria-hidden="true">
+        <span className="calculator-display">
+          <small>Калькулятор</small>
+          <strong>5 + 3</strong>
+          <b>= 8</b>
+        </span>
+        <span className="calculator-keys">
+          {["7", "8", "9", "+", "4", "5", "6", "−", "1", "2", "3", "="].map((key) => (
+            <i key={key}>{key}</i>
+          ))}
+        </span>
+      </div>
+      <div className="arithmetic-data-flow" aria-hidden="true">
+        <div className="data-flow-row is-number">
+          <code>5</code><span>+</span><code>3</code><i>→</i><strong>8</strong>
+          <small>числа складываются</small>
+        </div>
+        <div className="data-flow-row is-string">
+          <code>&quot;Привет&quot;</code><span>+</span><code>&quot;Мир&quot;</code><i>→</i>
+          <strong>&quot;ПриветМир&quot;</strong>
+          <small>строки соединяются</small>
+        </div>
+      </div>
+      <p>Один и тот же знак <code>+</code> выполняет разные действия — всё зависит от типа данных.</p>
+    </div>
+  );
+}
+
+function ArithmeticOperationsTable() {
+  return (
+    <div className="arithmetic-operations" role="table" aria-label="Арифметические операции Python">
+      <div className="arithmetic-operation is-heading" role="row">
+        <span role="columnheader">Знак</span>
+        <span role="columnheader">Пример</span>
+        <span role="columnheader">Результат</span>
+        <span role="columnheader">Действие</span>
+      </div>
+      {arithmeticOperations.map((operation) => (
+        <div className="arithmetic-operation" role="row" key={operation.example}>
+          <strong role="cell">{operation.operator}</strong>
+          <code role="cell">{operation.example}</code>
+          <b role="cell">{operation.result}</b>
+          <span role="cell">{operation.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LongDivisionGraphic() {
+  return (
+    <div className="long-division-graphic" aria-label="123 делим на 7 столбиком: целая часть 17, остаток 4">
+      <header>
+        <div>
+          <small>Деление столбиком</small>
+          <strong>Что именно возвращают <code>{"//"}</code> и <code>%</code></strong>
+        </div>
+        <span>анимация повторяется</span>
+      </header>
+      <div className="long-division-stage">
+        <div className="long-division-paper" aria-hidden="true">
+          <span className="division-number">123</span>
+          <span className="division-bracket" />
+          <span className="division-divisor">7</span>
+          <span className="division-answer">17</span>
+          <span className="division-step division-step-one">− 7</span>
+          <span className="division-step division-step-two">53</span>
+          <span className="division-step division-step-three">− 49</span>
+          <span className="division-remainder">4</span>
+        </div>
+        <div className="division-meaning">
+          <div className="division-result is-whole">
+            <span>Сколько раз поместилось</span>
+            <code>123 // 7</code>
+            <strong>17</strong>
+            <small>целая часть</small>
+          </div>
+          <div className="division-result is-rest">
+            <span>Что осталось</span>
+            <code>123 % 7</code>
+            <strong>4</strong>
+            <small>остаток</small>
+          </div>
+        </div>
+      </div>
+      <p><code>123 = 7 × 17 + 4</code> — целая часть и остаток вместе полностью описывают деление.</p>
+    </div>
+  );
+}
+
+function DivisionCodeGraphic() {
+  const rows = [
+    ["x = 7", ""],
+    ["y = 3", ""],
+    ["print(x / y)", "2.333…"],
+    ["print(x // y)", "2"],
+    ["print(x % y)", "1"],
+  ];
+
+  return (
+    <div className="division-code-graphic">
+      <EditorFrame file="division.py">
+        <div className="theory-code division-code-lines">
+          {rows.map(([line, result], index) => (
+            <div key={line} className={`division-code-line division-code-line-${index + 1}`}>
+              <span>{index + 1}</span>
+              <code>{line}</code>
+              <i>{result}</i>
+            </div>
+          ))}
+        </div>
+      </EditorFrame>
+      <div className="division-rule-cards">
+        <div><code>/</code><span>обычное деление</span><strong>результат — float</strong></div>
+        <div><code>{"//"}</code><span>целочисленное</span><strong>не округляет</strong></div>
+        <div><code>%</code><span>остаток</span><strong>после деления</strong></div>
+      </div>
+    </div>
+  );
+}
+
+function StringOperationsGraphic() {
+  return (
+    <div className="string-operations-graphic" aria-label="Числа складываются, строки соединяются">
+      <header>
+        <small>Один знак — разные действия</small>
+        <strong>Python сначала смотрит на тип</strong>
+      </header>
+      <div className="string-operation-lanes">
+        <div className="string-operation-lane is-number" aria-hidden="true">
+          <span className="operand-card"><small>int</small><code>5</code></span>
+          <b>+</b>
+          <span className="operand-card"><small>int</small><code>3</code></span>
+          <i>→</i>
+          <span className="operation-result"><small>сложение</small><code>8</code></span>
+        </div>
+        <div className="string-operation-lane is-text" aria-hidden="true">
+          <span className="operand-card"><small>str</small><code>&quot;Привет&quot;</code></span>
+          <b>+</b>
+          <span className="operand-card"><small>str</small><code>&quot;Мир&quot;</code></span>
+          <i>→</i>
+          <span className="operation-result"><small>конкатенация</small><code>&quot;ПриветМир&quot;</code></span>
+        </div>
+      </div>
+      <p>Кавычки не декор: именно они говорят Python, что перед ним текст.</p>
+    </div>
+  );
+}
+
+function StringRepeatEditor() {
+  return (
+    <EditorFrame file="strings.py" className="string-repeat-editor">
+      <div className="theory-code is-static">
+        {[
+          ["1", 'text = "ха"'],
+          ["2", "print(text * 3)"],
+        ].map(([line, code]) => (
+          <div key={line}>
+            <span>{line}</span>
+            <code>{code}</code>
+          </div>
+        ))}
+      </div>
+      <div className="string-repeat-output">
+        <span>Вывод</span>
+        <code>хахаха</code>
+      </div>
+    </EditorFrame>
+  );
+}
+
+function TypeMismatchGraphic() {
+  return (
+    <div className="type-mismatch-graphic" aria-label="Строку и число нельзя сложить напрямую">
+      <div className="mismatch-equation" aria-hidden="true">
+        <span className="mismatch-value is-string"><small>str</small><code>&quot;5&quot;</code></span>
+        <b>+</b>
+        <span className="mismatch-value is-number"><small>int</small><code>3</code></span>
+        <i>→</i>
+        <span className="mismatch-error"><strong>TypeError</strong><small>разные типы</small></span>
+      </div>
+      <div className="mismatch-rails" aria-hidden="true"><i /><i /></div>
+      <p><strong>Нельзя сложить напрямую.</strong> Сначала данные нужно привести к одному типу — это разберём дальше.</p>
+    </div>
+  );
+}
+
+const shortcutOperations = [
+  ["x = x + 2", "x += 2", "прибавить 2"],
+  ["x = x - 3", "x -= 3", "вычесть 3"],
+  ["x = x * 4", "x *= 4", "умножить на 4"],
+  ["x = x / 5", "x /= 5", "разделить на 5"],
+  ["x = x ** 2", "x **= 2", "возвести в квадрат"],
+  ["x = x % 3", "x %= 3", "оставить остаток"],
+];
+
+function ShortcutGraphic() {
+  return (
+    <div className="shortcut-graphic">
+      <div className="shortcut-editors">
+        <EditorFrame file="full.py">
+          <div className="shortcut-code">
+            <span>1</span><code>x = 5</code>
+            <span>2</span><code>x = x - 1</code>
+            <span>3</span><code>print(x) <i># 4</i></code>
+          </div>
+        </EditorFrame>
+        <span className="shortcut-equals">то же самое</span>
+        <EditorFrame file="short.py">
+          <div className="shortcut-code">
+            <span>1</span><code>x = 5</code>
+            <span>2</span><code>x -= 1</code>
+            <span>3</span><code>print(x) <i># 4</i></code>
+          </div>
+        </EditorFrame>
+      </div>
+      <div className="shortcut-steps">
+        <span><i>1</i>взять текущее <code>x</code></span>
+        <span><i>2</i>вычесть <code>1</code></span>
+        <span><i>3</i>записать обратно</span>
+      </div>
+    </div>
+  );
+}
+
+function ShortcutTable() {
+  return (
+    <div className="shortcut-table" role="table" aria-label="Сокращённая запись операций">
+      <div className="shortcut-row is-heading" role="row">
+        <span role="columnheader">Полная запись</span>
+        <span role="columnheader">Короткая</span>
+        <span role="columnheader">Что делает</span>
+      </div>
+      {shortcutOperations.map(([full, short, label]) => (
+        <div className="shortcut-row" role="row" key={short}>
+          <code role="cell">{full}</code>
+          <code role="cell">{short}</code>
+          <span role="cell">{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ArithmeticCheck() {
+  const [answer, setAnswer] = useState<string | null>(null);
+  const options = ["ха3", "хахаха", "Ошибка"];
+
+  return (
+    <div className="arithmetic-check">
+      <div>
+        <small>Быстрая проверка</small>
+        <strong>Что выведет программа?</strong>
+        <code>print(&quot;ха&quot; * 3)</code>
+      </div>
+      <div className="arithmetic-check-options">
+        {options.map((option) => (
+          <button
+            className={`${answer === option ? "is-selected" : ""} ${
+              answer && option === "хахаха" ? "is-correct" : ""
+            }`}
+            onClick={() => setAnswer(option)}
+            key={option}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+      {answer && (
+        <p className={answer === "хахаха" ? "is-correct" : ""}>
+          {answer === "хахаха"
+            ? "Верно: строка повторяется три раза."
+            : "Почти. Умножение строки повторяет её указанное число раз."}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function TheorySpace({ userId }: TheorySpaceProps) {
   const storageKey = `egege-theory-progress-v2:${userId}`;
+  const arithmeticStorageKey = `egege-theory-arithmetic-v1:${userId}`;
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
+  const [completedArithmeticLessons, setCompletedArithmeticLessons] = useState<
+    Set<ArithmeticLessonId>
+  >(() => new Set());
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -407,7 +732,27 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     });
   }, [storageKey]);
 
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const saved = JSON.parse(
+          window.localStorage.getItem(arithmeticStorageKey) ?? "[]",
+        ) as string[];
+        setCompletedArithmeticLessons(
+          new Set(
+            saved.filter((item): item is ArithmeticLessonId =>
+              arithmeticLessonIds.includes(item as ArithmeticLessonId),
+            ),
+          ),
+        );
+      } catch {
+        setCompletedArithmeticLessons(new Set());
+      }
+    });
+  }, [arithmeticStorageKey]);
+
   const progress = completedLessons.size * 50;
+  const arithmeticProgress = completedArithmeticLessons.size * 25;
   const activePlanet = useMemo(
     () => planets.find((planet) => planet.id === selectedPlanet) ?? null,
     [selectedPlanet],
@@ -448,6 +793,43 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     }
   };
 
+  const goToArithmeticLesson = (lessonId: ArithmeticLessonId, delay = 0) => {
+    window.setTimeout(() => {
+      document.getElementById(`theory-arithmetic-${lessonId}`)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    }, delay);
+  };
+
+  const completeArithmeticLesson = (id: ArithmeticLessonId) => {
+    const updated = new Set(completedArithmeticLessons);
+    updated.add(id);
+    setCompletedArithmeticLessons(updated);
+    try {
+      window.localStorage.setItem(arithmeticStorageKey, JSON.stringify(Array.from(updated)));
+    } catch {
+      // Progress remains available for the current session.
+    }
+
+    const currentIndex = arithmeticLessonIds.indexOf(id);
+    const nextLesson = arithmeticLessonIds[currentIndex + 1];
+    if (nextLesson) {
+      goToArithmeticLesson(nextLesson, 160);
+    } else {
+      window.setTimeout(() => {
+        document.getElementById("theory-arithmetic-finish")?.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+          block: "center",
+        });
+      }, 160);
+    }
+  };
+
   const replayChapter = () => {
     setCompletedLessons(new Set());
     try {
@@ -456,6 +838,19 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
       // The in-memory reset still works.
     }
     document.getElementById("theory-intro")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const replayArithmeticChapter = () => {
+    setCompletedArithmeticLessons(new Set());
+    try {
+      window.localStorage.removeItem(arithmeticStorageKey);
+    } catch {
+      // The in-memory reset still works.
+    }
+    document.getElementById("theory-arithmetic-intro")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
   const scrollToFirstIncomplete = (completed = completedLessons) => {
@@ -467,6 +862,16 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     setSelectedPlanet(planetId);
     if (planetId === 0 && completedLessons.size > 0 && completedLessons.size < lessonIds.length) {
       scrollToFirstIncomplete();
+    }
+    if (
+      planetId === 1 &&
+      completedArithmeticLessons.size > 0 &&
+      completedArithmeticLessons.size < arithmeticLessonIds.length
+    ) {
+      const firstIncomplete = arithmeticLessonIds.find(
+        (lessonId) => !completedArithmeticLessons.has(lessonId),
+      );
+      if (firstIncomplete) goToArithmeticLesson(firstIncomplete, 360);
     }
   };
 
@@ -480,8 +885,8 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
             <h1>Космос знаний</h1>
           </div>
           <div className="theory-overall-progress">
-            <span>{progress}%</span>
-            <small>первая глава</small>
+            <span>{Math.round((progress + arithmeticProgress) / 2)}%</span>
+            <small>две главы</small>
           </div>
         </header>
 
@@ -490,16 +895,19 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
           <span className="route-line route-line-two" aria-hidden="true" />
 
           {planets.map((planet) => {
-            const isCurrent = planet.id === 0;
-            const planetProgress = isCurrent ? progress : 0;
+            const isAvailable = planet.id < 2;
+            const planetProgress =
+              planet.id === 0 ? progress : planet.id === 1 ? arithmeticProgress : 0;
+            const routePlanet =
+              selectedPlanet ?? (progress < 100 ? 0 : arithmeticProgress < 100 ? 1 : 2);
             return (
               <button
                 className={`theory-planet theory-planet-${planet.id} ${
                   selectedPlanet === planet.id ? "is-selected" : ""
-                } ${isCurrent ? "is-current" : ""}`}
+                } ${isAvailable ? "is-current" : ""}`}
                 onClick={() => openPlanet(planet.id)}
                 aria-label={`${planet.chapter}. ${planet.title}. ${
-                  isCurrent ? `Пройдено ${progress}%` : "Глава готовится"
+                  isAvailable ? `Пройдено ${planetProgress}%` : "Глава готовится"
                 }`}
                 key={planet.id}
               >
@@ -509,13 +917,12 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                     variant={planet.id}
                     complete={planetProgress === 100}
                   />
-                  {((progress < 100 && planet.id === 0) ||
-                    (progress === 100 && planet.id === 1)) && <MascotRocket />}
+                  {routePlanet === planet.id && <MascotRocket />}
                 </span>
                 <span className="theory-planet-label">
                   <small>{planet.chapter}</small>
                   <strong>{planet.title}</strong>
-                  <i>{isCurrent ? `${progress}%` : "Скоро"}</i>
+                  <i>{isAvailable ? `${planetProgress}%` : "Скоро"}</i>
                 </span>
               </button>
             );
@@ -539,12 +946,30 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
               <span>К карте</span>
             </button>
             <div className="theory-chapter-progress">
-              <span><i style={{ width: `${activePlanet.id === 0 ? progress : 0}%` }} /></span>
-              <small>{activePlanet.id === 0 ? `${progress}%` : "0%"}</small>
+              <span>
+                <i
+                  style={{
+                    width: `${
+                      activePlanet.id === 0
+                        ? progress
+                        : activePlanet.id === 1
+                          ? arithmeticProgress
+                          : 0
+                    }%`,
+                  }}
+                />
+              </span>
+              <small>
+                {activePlanet.id === 0
+                  ? `${progress}%`
+                  : activePlanet.id === 1
+                    ? `${arithmeticProgress}%`
+                    : "0%"}
+              </small>
             </div>
           </header>
 
-          {activePlanet.id !== 0 ? (
+          {activePlanet.id === 2 ? (
             <div className="theory-coming-soon">
               <PlanetSphere progress={0} variant={activePlanet.id} />
               <p className="eyebrow">{activePlanet.chapter}</p>
@@ -552,6 +977,268 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
               <p>{activePlanet.description}</p>
               <span>Глава готовится</span>
               <small>Её можно будет открыть сразу — строгой блокировки по порядку не будет.</small>
+            </div>
+          ) : activePlanet.id === 1 ? (
+            <div className="theory-document theory-chapter-one theory-chapter-arithmetic">
+              <div className="theory-document-title">
+                <p className="eyebrow">Глава 2 · Работа с данными</p>
+                <h2>Арифметические операции</h2>
+                <p>
+                  Разберёмся, как Python считает числа, чем обычное деление отличается от
+                  целочисленного и почему знак <code>+</code> по-разному работает с числами и
+                  строками.
+                </p>
+                <div className="theory-document-meta">
+                  <span>Предисловие + 4 блока</span>
+                  <span>≈ 16 минут</span>
+                  <span>{completedArithmeticLessons.size}/4 пройдено</span>
+                </div>
+              </div>
+
+              <nav className="theory-document-nav" aria-label="Содержание главы">
+                <button
+                  onClick={() =>
+                    document.getElementById("theory-arithmetic-intro")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    })
+                  }
+                >
+                  <span>0</span>
+                  Зачем нужны операции
+                </button>
+                {arithmeticLessonIds.map((lessonId, index) => (
+                  <button onClick={() => goToArithmeticLesson(lessonId)} key={lessonId}>
+                    <span>{completedArithmeticLessons.has(lessonId) ? "✓" : index + 1}</span>
+                    {arithmeticLessonTitles[lessonId]}
+                  </button>
+                ))}
+              </nav>
+
+              <section
+                className="theory-intro chapter-one-intro arithmetic-chapter-intro"
+                id="theory-arithmetic-intro"
+              >
+                <div className="theory-section-heading">
+                  <span>00</span>
+                  <div>
+                    <p className="eyebrow">Вступление из жизни</p>
+                    <h3>Данные тоже умеют взаимодействовать</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Представь калькулятор: вводишь <code>5</code> и <code>3</code>, нажимаешь
+                    <code> +</code> и получаешь <code>8</code>. В Python с переменными можно делать
+                    то же самое — складывать, вычитать, умножать, делить и сравнивать.
+                  </p>
+                  <p>
+                    Но есть важная деталь: <strong>разные типы данных ведут себя по-разному</strong>.
+                    Числа складываются, а две строки соединяются в одну.
+                  </p>
+                </div>
+                <ArithmeticIntroGraphic />
+              </section>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-arithmetic-basics"
+              >
+                <div className="theory-lesson-heading">
+                  <span>01</span>
+                  <div>
+                    <p className="eyebrow">Операции с числами</p>
+                    <h3>Знакомые знаки — точные команды</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Для базовых вычислений Python использует привычные математические операции.
+                    Умножение записывается звёздочкой <code>*</code>, а степень — двумя
+                    звёздочками <code>**</code>.
+                  </p>
+                </div>
+                <ArithmeticOperationsTable />
+                <aside className="theory-intro-insight">
+                  Результат обычного деления <code>/</code> — дробное число типа
+                  <code> float</code>, даже если деление получилось без остатка:
+                  <code> 10 / 2 → 5.0</code>.
+                </aside>
+                <ArithmeticLessonStatus
+                  id="basics"
+                  completed={completedArithmeticLessons.has("basics")}
+                  onComplete={completeArithmeticLesson}
+                />
+              </article>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-arithmetic-division"
+              >
+                <div className="theory-lesson-heading">
+                  <span>02</span>
+                  <div>
+                    <p className="eyebrow">Самые важные операции</p>
+                    <h3>Целая часть <code>{"//"}</code> и остаток <code>%</code></h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Эти две операции встречаются почти в каждой большой теме ЕГЭ. Чтобы понять их,
+                    достаточно вспомнить обычное деление столбиком.
+                  </p>
+                </div>
+                <LongDivisionGraphic />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">В чём отличие</p>
+                  <h4><code>/</code> делит, <code>{"//"}</code> берёт целую часть</h4>
+                  <p>
+                    Обычное деление сохраняет дробную часть: <code>19 / 5 → 3.8</code>.
+                    Целочисленное деление возвращает количество целых пятёрок:
+                    <code> 19 // 5 → 3</code>.
+                  </p>
+                </div>
+                <DivisionCodeGraphic />
+                <aside className="theory-warning arithmetic-division-warning">
+                  <span>Запомни</span>
+                  <p>
+                    <code>{"//"}</code> не округляет число по математическому правилу. Для положительных
+                    чисел оно просто оставляет целую часть результата деления.
+                  </p>
+                </aside>
+                <ArithmeticLessonStatus
+                  id="division"
+                  completed={completedArithmeticLessons.has("division")}
+                  onComplete={completeArithmeticLesson}
+                />
+              </article>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-arithmetic-strings"
+              >
+                <div className="theory-lesson-heading">
+                  <span>03</span>
+                  <div>
+                    <p className="eyebrow">Операции со строками</p>
+                    <h3>Не сложение, а соединение</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Строки нельзя складывать как числа, но их можно соединять. Такое действие
+                    называется <strong>конкатенацией</strong>.
+                  </p>
+                </div>
+                <StringOperationsGraphic />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Повторение строки</p>
+                  <h4>Умножаем текст на число</h4>
+                  <p>
+                    Операция <code>*</code> повторяет строку указанное количество раз. Это короткая
+                    и вполне буквальная команда.
+                  </p>
+                </div>
+                <StringRepeatEditor />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Несовместимые типы</p>
+                  <h4>Строка <code>+</code> число не сработает</h4>
+                  <p>
+                    Python не будет угадывать, хочешь ты получить число <code>8</code> или строку
+                    <code>&quot;53&quot;</code>. Поэтому такая операция заканчивается ошибкой.
+                  </p>
+                </div>
+                <TypeMismatchGraphic />
+                <ArithmeticCheck />
+                <ArithmeticLessonStatus
+                  id="strings"
+                  completed={completedArithmeticLessons.has("strings")}
+                  onComplete={completeArithmeticLesson}
+                />
+              </article>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-arithmetic-shortcuts"
+              >
+                <div className="theory-lesson-heading">
+                  <span>04</span>
+                  <div>
+                    <p className="eyebrow">Короткая запись</p>
+                    <h3>Изменяем переменную и записываем обратно</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Часто новое значение переменной зависит от её текущего значения. Запись
+                    <code> x = x - 1</code> читается так: взять текущее <code>x</code>, вычесть
+                    единицу и связать имя <code>x</code> с новым результатом.
+                  </p>
+                </div>
+                <ShortcutGraphic />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Один принцип</p>
+                  <h4>Сокращение работает с разными операциями</h4>
+                  <p>
+                    Сначала пишется знак нужной операции, затем <code>=</code>. Это только
+                    сокращённая запись — результат будет тем же.
+                  </p>
+                </div>
+                <ShortcutTable />
+                <ArithmeticLessonStatus
+                  id="shortcuts"
+                  completed={completedArithmeticLessons.has("shortcuts")}
+                  onComplete={completeArithmeticLesson}
+                />
+              </article>
+
+              <section
+                className={`theory-finish ${
+                  arithmeticProgress === 100 ? "is-ready" : ""
+                }`}
+                id="theory-arithmetic-finish"
+              >
+                <div className="theory-finish-planet">
+                  <PlanetSphere
+                    progress={arithmeticProgress}
+                    variant={1}
+                    complete={arithmeticProgress === 100}
+                  />
+                </div>
+                <div>
+                  <p className="eyebrow">
+                    {arithmeticProgress === 100 ? "Глава пройдена" : "Продолжай маршрут"}
+                  </p>
+                  <h3>
+                    {arithmeticProgress === 100
+                      ? "Планета заполнена"
+                      : `Пройдено ${arithmeticProgress}%`}
+                  </h3>
+                  <p>
+                    {arithmeticProgress === 100
+                      ? "Теперь ты умеешь считать, работать с остатком, соединять строки и сокращать операции."
+                      : "Заверши оставшиеся блоки, чтобы полностью заполнить планету."}
+                  </p>
+                  {arithmeticProgress === 100 ? (
+                    <button onClick={replayArithmeticChapter}>Повторить главу</button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const firstIncomplete = arithmeticLessonIds.find(
+                          (lessonId) => !completedArithmeticLessons.has(lessonId),
+                        );
+                        if (firstIncomplete) goToArithmeticLesson(firstIncomplete);
+                      }}
+                    >
+                      К непройденному блоку
+                    </button>
+                  )}
+                </div>
+              </section>
             </div>
           ) : (
             <div className="theory-document theory-chapter-one">
