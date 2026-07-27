@@ -5218,6 +5218,10 @@ footer {
 }
 
 @media (min-width: 701px) {
+  .tasks-page:has(.tasks-shell.is-trainer-shell) > footer {
+    display: none;
+  }
+
   .tasks-shell.is-trainer-shell {
     max-width: 1540px;
     min-height: calc(100dvh - 72px);
