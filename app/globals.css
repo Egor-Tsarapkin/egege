@@ -5331,7 +5331,16 @@ footer {
 
   .trainer-key {
     border-radius: 7px;
+    min-width: 0;
     height: 34px;
+  }
+
+  .trainer-key-medium {
+    flex-grow: 1.55;
+  }
+
+  .trainer-key-wide {
+    flex-grow: 2.15;
   }
 
   .trainer-hands {
