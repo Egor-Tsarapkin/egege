@@ -4301,6 +4301,10 @@ footer {
   top: 56%;
 }
 
+.trainer-hand-right .trainer-fingertip.finger-thumb {
+  left: 15%;
+}
+
 .trainer-finger-guides {
   border-top: 1px solid var(--line);
   display: flex;
