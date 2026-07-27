@@ -150,7 +150,7 @@ function LessonStatus({
       {completed
         ? "Блок пройден"
         : id === "program"
-          ? "Завершить блок · заполнить планету на 50%"
+          ? "Завершить блок"
           : "Завершить главу"}
     </button>
   );
@@ -240,7 +240,7 @@ function TaskConstructorGraphic() {
             aria-hidden="true"
           >
             <small>Задача №{crateIndex + 1}</small>
-            <div>
+            <div className="crate-payload">
               {parts.map((part, partIndex) => (
                 <i className={part} key={`${part}-${partIndex}`} />
               ))}
@@ -647,22 +647,6 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   решить бесчисленное количество больших задач, которые из них состоят.
                 </aside>
 
-                <div className="learning-outcomes">
-                  <p className="eyebrow">В этой главе ты выучишь</p>
-                  <div>
-                    <span><i>1</i>как называются разные действия;</span>
-                    <span><i>2</i>как они записываются в коде — это синтаксис;</span>
-                    <span><i>3</i>как собирать действия в правильном порядке.</span>
-                  </div>
-                  <strong>
-                    Если ты поймёшь эти принципы, то сможешь решить даже новую задачу.
-                  </strong>
-                </div>
-
-                <button className="theory-start-button" onClick={() => goToLesson("program")}>
-                  Перейти к первому блоку
-                  <span aria-hidden="true">↓</span>
-                </button>
               </section>
 
               <article className="theory-lesson chapter-one-block" id="theory-program">
