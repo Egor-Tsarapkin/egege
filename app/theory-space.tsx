@@ -2046,7 +2046,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     queueMicrotask(() => {
       try {
         const saved = Number(window.localStorage.getItem(splitStorageKey));
-        if (Number.isFinite(saved) && saved >= 24 && saved <= 60) {
+        if (Number.isFinite(saved) && saved >= 16 && saved <= 78) {
           splitPercentRef.current = saved;
           setSplitPercent(saved);
         }
@@ -2380,10 +2380,10 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     if (!container) return;
 
     const bounds = container.getBoundingClientRect();
-    const minimumMapWidth = Math.min(280, bounds.width * 0.32);
-    const minimumChapterWidth = Math.min(430, bounds.width * 0.48);
-    const minimumPercent = Math.max(24, (minimumMapWidth / bounds.width) * 100);
-    const maximumPercent = Math.min(60, 100 - (minimumChapterWidth / bounds.width) * 100);
+    const minimumMapWidth = Math.min(220, bounds.width * 0.22);
+    const minimumChapterWidth = Math.min(320, bounds.width * 0.36);
+    const minimumPercent = Math.max(16, (minimumMapWidth / bounds.width) * 100);
+    const maximumPercent = Math.min(78, 100 - (minimumChapterWidth / bounds.width) * 100);
     const next = Math.min(
       Math.max(((clientX - bounds.left) / bounds.width) * 100, minimumPercent),
       Math.max(minimumPercent, maximumPercent),
@@ -2404,14 +2404,14 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
 
   const changeSplitWithKeyboard = (event: React.KeyboardEvent<HTMLDivElement>) => {
     let next = splitPercentRef.current;
-    if (event.key === "ArrowLeft") next -= 2;
-    else if (event.key === "ArrowRight") next += 2;
-    else if (event.key === "Home") next = 24;
-    else if (event.key === "End") next = 60;
+    if (event.key === "ArrowLeft") next -= 1;
+    else if (event.key === "ArrowRight") next += 1;
+    else if (event.key === "Home") next = 16;
+    else if (event.key === "End") next = 78;
     else return;
 
     event.preventDefault();
-    next = Math.min(60, Math.max(24, next));
+    next = Math.min(78, Math.max(16, next));
     splitPercentRef.current = next;
     setSplitPercent(next);
     try {
@@ -2523,8 +2523,8 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
             role="separator"
             aria-label="Изменить ширину карты и теории"
             aria-orientation="vertical"
-            aria-valuemin={24}
-            aria-valuemax={60}
+            aria-valuemin={16}
+            aria-valuemax={78}
             aria-valuenow={Math.round(splitPercent)}
             tabIndex={0}
             onKeyDown={changeSplitWithKeyboard}

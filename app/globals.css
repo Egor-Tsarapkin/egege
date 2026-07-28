@@ -2363,6 +2363,7 @@ footer {
 .theory-space.is-resizing {
   cursor: col-resize;
   user-select: none;
+  transition: none;
 }
 
 .theory-map {
@@ -2469,41 +2470,64 @@ footer {
   z-index: 1;
 }
 
-.theory-route::before {
-  border-left: 1px dashed color-mix(in srgb, var(--accent) 28%, var(--line));
-  content: "";
-  height: 1280px;
-  left: 50%;
-  position: absolute;
-  top: 290px;
-}
-
 .route-line {
-  border-top: 1px dashed color-mix(in srgb, var(--accent) 28%, var(--line));
-  height: 1px;
+  --route-color: color-mix(in srgb, var(--accent) 27%, var(--line));
+  background-repeat: no-repeat;
+  pointer-events: none;
   position: absolute;
-  transform: none;
-  width: var(--route-offset);
+  z-index: 0;
 }
 
 .route-line-one {
+  background-image: linear-gradient(
+    to bottom right,
+    transparent calc(50% - 0.5px),
+    var(--route-color) 50%,
+    transparent calc(50% + 0.5px)
+  );
+  height: 320px;
   left: calc(50% - var(--route-offset));
-  top: 1570px;
+  top: 1260px;
+  width: calc(var(--route-offset) + var(--route-offset));
 }
 
 .route-line-two {
-  left: 50%;
-  top: 1250px;
+  background-image: linear-gradient(
+    to bottom left,
+    transparent calc(50% - 0.5px),
+    var(--route-color) 50%,
+    transparent calc(50% + 0.5px)
+  );
+  height: 300px;
+  left: calc(50% - var(--route-offset));
+  top: 960px;
+  width: calc(var(--route-offset) + var(--route-offset));
 }
 
 .route-line-three {
+  background-image: linear-gradient(
+    to bottom right,
+    transparent calc(50% - 0.5px),
+    var(--route-color) 50%,
+    transparent calc(50% + 0.5px)
+  );
+  height: 340px;
   left: calc(50% - var(--route-offset));
-  top: 930px;
+  top: 620px;
+  width: calc(var(--route-offset) + var(--route-offset));
 }
 
 .route-line-four {
+  background-image: linear-gradient(
+    to bottom left,
+    transparent calc(50% - 0.5px),
+    var(--route-color) 50%,
+    transparent calc(50% + 0.5px)
+  );
+  height: 325px;
   left: 50%;
-  top: 610px;
+  top: 295px;
+  width: var(--route-offset);
 }
 
 .theory-planet {
@@ -2525,27 +2549,27 @@ footer {
 
 .theory-planet-0 {
   left: calc(50% - var(--route-offset));
-  top: 1570px;
+  top: 1580px;
 }
 
 .theory-planet-1 {
   left: calc(50% + var(--route-offset));
-  top: 1250px;
+  top: 1260px;
 }
 
 .theory-planet-2 {
   left: calc(50% - var(--route-offset));
-  top: 930px;
+  top: 960px;
 }
 
 .theory-planet-3 {
   left: calc(50% + var(--route-offset));
-  top: 610px;
+  top: 620px;
 }
 
 .theory-planet-4 {
   left: 50%;
-  top: 290px;
+  top: 295px;
 }
 
 .theory-planet-visual {
@@ -13124,27 +13148,27 @@ footer {
 
   .theory-planet-0 {
     left: calc(50% - var(--route-offset));
-    top: 1570px;
+    top: 1580px;
   }
 
   .theory-planet-1 {
     left: calc(50% + var(--route-offset));
-    top: 1250px;
+    top: 1260px;
   }
 
   .theory-planet-2 {
     left: calc(50% - var(--route-offset));
-    top: 930px;
+    top: 960px;
   }
 
   .theory-planet-3 {
     left: calc(50% + var(--route-offset));
-    top: 610px;
+    top: 620px;
   }
 
   .theory-planet-4 {
     left: 50%;
-    top: 290px;
+    top: 295px;
   }
 
   .theory-planet-0 .theory-planet-sphere,
