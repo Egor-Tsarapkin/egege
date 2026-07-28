@@ -1308,6 +1308,105 @@ const sliceWindows = [
   { expression: "s[3:7]", result: "орма", selected: [3, 4, 5, 6], stop: 7 },
 ] as const;
 
+function SliceBoundaryStrip({
+  word,
+  selected,
+}: {
+  word: string;
+  selected: number[];
+}) {
+  return (
+    <div
+      className="slice-boundary-strip"
+      style={{ gridTemplateColumns: `repeat(${word.length}, minmax(0, 1fr))` }}
+      aria-hidden="true"
+    >
+      {Array.from(word).map((character, index) => (
+        <span className={selected.includes(index) ? "is-selected" : ""} key={`${character}-${index}`}>
+          <i>{index}</i>
+          <b>{character}</b>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function SliceBoundaryGraphic() {
+  const word = "алгоритм";
+  const groups = [
+    {
+      kind: "is-from-start",
+      eyebrow: "Не написали начало",
+      title: "Начинаем с самого первого символа",
+      rule: "s[:до]",
+      explanation:
+        "Пустое место слева от двоеточия означает индекс 0. Правая граница по-прежнему не входит.",
+      examples: [
+        { expression: "s[:2]", result: "ал", selected: [0, 1] },
+        { expression: "s[:4]", result: "алго", selected: [0, 1, 2, 3] },
+        { expression: "s[:6]", result: "алгори", selected: [0, 1, 2, 3, 4, 5] },
+      ],
+    },
+    {
+      kind: "is-to-end",
+      eyebrow: "Не написали конец",
+      title: "Продолжаем до последнего символа",
+      rule: "s[от:]",
+      explanation:
+        "Пустое место справа от двоеточия означает: не останавливайся, иди до конца строки.",
+      examples: [
+        { expression: "s[2:]", result: "горитм", selected: [2, 3, 4, 5, 6, 7] },
+        { expression: "s[4:]", result: "ритм", selected: [4, 5, 6, 7] },
+        { expression: "s[-3:]", result: "итм", selected: [5, 6, 7] },
+      ],
+    },
+  ];
+
+  return (
+    <div
+      className="slice-boundary-graphic"
+      aria-label="Примеры срезов от начала строки и до конца строки"
+    >
+      <header>
+        <div>
+          <small>Пустая граница — это команда</small>
+          <strong>Python сам подставляет край строки</strong>
+        </div>
+        <code>s = &quot;алгоритм&quot;</code>
+      </header>
+      {groups.map((group, groupIndex) => (
+        <section className={group.kind} key={group.rule}>
+          <div className="slice-boundary-copy">
+            <span>0{groupIndex + 1}</span>
+            <div>
+              <small>{group.eyebrow}</small>
+              <h4>{group.title}</h4>
+              <code>{group.rule}</code>
+              <p>{group.explanation}</p>
+            </div>
+          </div>
+          <div className="slice-boundary-examples">
+            {group.examples.map((example) => (
+              <div className="slice-boundary-example" key={example.expression}>
+                <div>
+                  <code>{example.expression}</code>
+                  <i>→</i>
+                  <strong>&quot;{example.result}&quot;</strong>
+                </div>
+                <SliceBoundaryStrip word={word} selected={example.selected} />
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+      <p>
+        Запомни чтение: <code>s[:4]</code> — «от начала до 4», а <code>s[4:]</code> — «от 4 до
+        конца». Двоеточие показывает, что мы берём фрагмент, а не один символ.
+      </p>
+    </div>
+  );
+}
+
 function SliceWindowGraphic() {
   return (
     <div className="slice-window-graphic" aria-label="Срез берёт символы от левой границы до правой, не включая правую">
@@ -1404,10 +1503,16 @@ function SliceStepGraphic() {
 
 function StringNumberGraphic() {
   const examples = [
-    ['"3" + "4"', '"34"', "строки соединяются"],
-    ["3 + 4", "7", "числа складываются"],
-    ['"3" * 2', '"33"', "строка повторяется"],
-    ["3 * 2", "6", "числа умножаются"],
+    { expression: '"3" + "4"', result: '"34"', label: "строки соединяются", kind: "is-string" },
+    { expression: "3 + 4", result: "7", label: "числа складываются", kind: "is-number" },
+    { expression: '"3" * 2', result: '"33"', label: "строка повторяется два раза", kind: "is-string" },
+    { expression: "3 * 2", result: "6", label: "числа умножаются", kind: "is-number" },
+    {
+      expression: '"3" * "2"',
+      result: "TypeError",
+      label: "нельзя умножить строку на строку: количество повторений должно быть целым числом",
+      kind: "is-error",
+    },
   ];
 
   return (
@@ -1419,12 +1524,12 @@ function StringNumberGraphic() {
         </div>
       </header>
       <div>
-        {examples.map(([expression, result, label], index) => (
-          <span className={index % 2 === 0 ? "is-string" : "is-number"} key={expression}>
-            <code>{expression}</code>
+        {examples.map((example) => (
+          <span className={example.kind} key={example.expression}>
+            <code>{example.expression}</code>
             <i>→</i>
-            <b>{result}</b>
-            <small>{label}</small>
+            <b>{example.result}</b>
+            <small>{example.label}</small>
           </span>
         ))}
       </div>
@@ -1433,36 +1538,66 @@ function StringNumberGraphic() {
 }
 
 function StringSliceCheck() {
-  const [answer, setAnswer] = useState<string | null>(null);
-  const options = ["форм", "орма", "ормат"];
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const questions = [
+    {
+      id: "planet",
+      word: "планета",
+      expression: "s[1:5]",
+      answer: "лане",
+      options: ["лан", "лане", "анет"],
+      success: "Верно: берём символы с индексами 1, 2, 3 и 4. Индекс 5 уже не входит.",
+      retry: "Начни с индекса 1 и остановись прямо перед индексом 5.",
+    },
+    {
+      id: "computer",
+      word: "компьютер",
+      expression: "s[3:]",
+      answer: "пьютер",
+      options: ["мпьютер", "пьютер", "пьюте"],
+      success: "Верно: начинаем с символа под индексом 3 и идём до самого конца строки.",
+      retry: "Правая граница пустая — значит после индекса 3 нужно взять все оставшиеся символы.",
+    },
+  ];
 
   return (
-    <div className="arithmetic-check string-slice-check">
-      <div>
-        <small>Быстрая проверка</small>
-        <strong>Что вернёт этот срез?</strong>
-        <code>s = &quot;информатика&quot;<br />print(s[3:7])</code>
-      </div>
-      <div className="arithmetic-check-options">
-        {options.map((option) => (
-          <button
-            className={`${answer === option ? "is-selected" : ""} ${
-              answer && option === "орма" ? "is-correct" : ""
-            }`}
-            onClick={() => setAnswer(option)}
-            key={option}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
-      {answer && (
-        <p className={answer === "орма" ? "is-correct" : ""}>
-          {answer === "орма"
-            ? "Верно: берём индексы 3, 4, 5 и 6. Символ с индексом 7 уже не входит."
-            : "Проверь границы: начало входит, конец с индексом 7 — нет."}
-        </p>
-      )}
+    <div className="string-slice-check-list">
+      {questions.map((question, index) => {
+        const answer = answers[question.id];
+        return (
+          <div className="arithmetic-check string-slice-check" key={question.id}>
+            <div>
+              <small>Проверка {index + 1} из {questions.length}</small>
+              <strong>Что вернёт этот срез?</strong>
+              <code>
+                s = &quot;{question.word}&quot;
+                <br />
+                print({question.expression})
+              </code>
+            </div>
+            <div className="arithmetic-check-options">
+              {question.options.map((option) => (
+                <button
+                  className={`${answer === option ? "is-selected" : ""} ${
+                    answer && option === question.answer ? "is-correct" : ""
+                  }`}
+                  onClick={() =>
+                    setAnswers((current) => ({ ...current, [question.id]: option }))
+                  }
+                  key={option}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            {answer && (
+              <p className={answer === question.answer ? "is-correct" : ""}>
+                {answer === question.answer ? question.success : question.retry}
+              </p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -2189,7 +2324,20 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 <div className="theory-prose">
                   <p>
                     Индекс возвращает один символ, а срез — новую строку из нескольких символов.
-                    Формат записи: <code>s[от:до]</code>.
+                    В срезе можно указать обе границы или оставить одну из них пустой. Разберём
+                    каждый вариант отдельно, а уже потом соберём полную запись
+                    <code> s[от:до]</code>.
+                  </p>
+                </div>
+                <SliceBoundaryGraphic />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Указали обе границы</p>
+                  <h4>Теперь берём от одной позиции до другой</h4>
+                  <p>
+                    Когда написаны и начало, и конец, Python начинает с индекса
+                    <code> от</code> и останавливается прямо перед индексом <code>до</code>.
+                    Поэтому правая граница никогда не попадает в результат.
                   </p>
                 </div>
                 <SliceWindowGraphic />

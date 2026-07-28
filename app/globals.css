@@ -11095,6 +11095,7 @@ footer {
 
 .string-index-graphic,
 .negative-index-graphic,
+.slice-boundary-graphic,
 .slice-window-graphic,
 .slice-step-graphic,
 .string-number-graphic {
@@ -11110,6 +11111,7 @@ footer {
 
 .string-index-graphic > header,
 .negative-index-graphic > header,
+.slice-boundary-graphic > header,
 .slice-window-graphic > header,
 .slice-step-graphic > header,
 .string-number-graphic > header {
@@ -11122,6 +11124,7 @@ footer {
 
 .string-index-graphic > header div,
 .negative-index-graphic > header,
+.slice-boundary-graphic > header div,
 .slice-window-graphic > header div,
 .slice-step-graphic > header,
 .string-number-graphic > header {
@@ -11132,6 +11135,8 @@ footer {
 .string-index-graphic > header strong,
 .negative-index-graphic > header small,
 .negative-index-graphic > header strong,
+.slice-boundary-graphic > header small,
+.slice-boundary-graphic > header strong,
 .slice-window-graphic > header small,
 .slice-window-graphic > header strong,
 .slice-step-graphic > header small,
@@ -11143,6 +11148,7 @@ footer {
 
 .string-index-graphic > header small,
 .negative-index-graphic > header small,
+.slice-boundary-graphic > header small,
 .slice-window-graphic > header small,
 .slice-step-graphic > header small,
 .string-number-graphic > header small {
@@ -11154,6 +11160,7 @@ footer {
 
 .string-index-graphic > header strong,
 .negative-index-graphic > header strong,
+.slice-boundary-graphic > header strong,
 .slice-window-graphic > header strong,
 .slice-step-graphic > header strong,
 .string-number-graphic > header strong {
@@ -11171,6 +11178,187 @@ footer {
   font-size: 8px;
   padding: 9px 11px;
   white-space: nowrap;
+}
+
+.slice-boundary-graphic > header > code {
+  background: var(--surface);
+  border-radius: 10px;
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: 8px;
+  padding: 9px 11px;
+  white-space: nowrap;
+}
+
+.slice-boundary-graphic > section {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: minmax(180px, 0.38fr) minmax(0, 1fr);
+  padding: 22px 18px;
+}
+
+.slice-boundary-graphic > section + section {
+  border-top: 1px solid var(--line);
+}
+
+.slice-boundary-copy {
+  align-content: start;
+  display: grid;
+  gap: 11px;
+  grid-template-columns: 28px minmax(0, 1fr);
+}
+
+.slice-boundary-copy > span {
+  color: var(--dim);
+  font-family: var(--font-geist-mono);
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+  padding-top: 2px;
+}
+
+.slice-boundary-copy small {
+  color: var(--accent);
+  display: block;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.slice-boundary-copy h4 {
+  color: var(--text-soft);
+  font-size: clamp(13px, 2.5cqw, 17px);
+  font-weight: 610;
+  line-height: 1.25;
+  margin: 7px 0 11px;
+  text-wrap: balance;
+}
+
+.slice-boundary-copy code {
+  background: var(--accent-wash-strong);
+  border-radius: 9px;
+  color: var(--accent);
+  display: inline-block;
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  padding: 8px 10px;
+}
+
+.slice-boundary-copy p {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.6;
+  margin: 12px 0 0;
+  text-wrap: pretty;
+}
+
+.slice-boundary-examples {
+  display: grid;
+  gap: 10px;
+}
+
+.slice-boundary-example {
+  align-items: center;
+  background: var(--surface);
+  border-radius: 14px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(115px, 0.3fr) minmax(0, 1fr);
+  padding: 13px 14px;
+}
+
+.slice-boundary-example > div:first-child {
+  align-items: center;
+  display: grid;
+  gap: 7px;
+  grid-template-columns: auto 12px auto;
+}
+
+.slice-boundary-example code,
+.slice-boundary-example strong {
+  font-family: var(--font-geist-mono);
+  font-size: 9px;
+}
+
+.slice-boundary-example code {
+  color: var(--text-soft);
+}
+
+.slice-boundary-example i {
+  color: var(--dim);
+  font-style: normal;
+}
+
+.slice-boundary-example strong {
+  color: var(--accent);
+  font-weight: 610;
+}
+
+.slice-boundary-strip {
+  display: grid;
+  min-width: 0;
+}
+
+.slice-boundary-strip > span {
+  align-items: center;
+  aspect-ratio: 1.15;
+  background: var(--bg);
+  border-block: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  position: relative;
+}
+
+.slice-boundary-strip > span:first-child {
+  border-radius: 9px 0 0 9px;
+}
+
+.slice-boundary-strip > span:last-child {
+  border-radius: 0 9px 9px 0;
+  border-right: 1px solid var(--line);
+}
+
+.slice-boundary-strip > span i {
+  color: var(--dim);
+  font-size: 6px;
+  font-style: normal;
+  left: 50%;
+  position: absolute;
+  top: 2px;
+  translate: -50% 0;
+}
+
+.slice-boundary-strip > span b {
+  color: var(--dim);
+  font-family: var(--font-geist-mono);
+  font-size: clamp(8px, 1.8cqw, 11px);
+  font-weight: 540;
+}
+
+.slice-boundary-strip > span.is-selected {
+  background: var(--accent-wash-strong);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+.slice-boundary-strip > span.is-selected b {
+  color: var(--accent);
+}
+
+.slice-boundary-graphic > p {
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.6;
+  margin: 0;
+  padding: 14px 18px;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.slice-boundary-graphic > p code {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
 }
 
 .string-index-stage {
@@ -11729,6 +11917,15 @@ footer {
   margin-top: 20px;
 }
 
+.string-slice-check-list {
+  display: grid;
+  gap: 14px;
+}
+
+.string-slice-check-list .string-slice-check + .string-slice-check {
+  margin-top: 0;
+}
+
 .string-slice-check > div:first-child > code {
   line-height: 1.55;
 }
@@ -11866,6 +12063,16 @@ footer {
   padding: 15px;
 }
 
+.string-number-graphic > div > span.is-error {
+  background: color-mix(in srgb, #ff6d7d 6%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #ff6d7d 22%, var(--line));
+  grid-column: 1 / -1;
+}
+
+.string-number-graphic > div > span.is-error b {
+  color: color-mix(in srgb, #ff6d7d 76%, var(--text-soft));
+}
+
 .string-number-graphic code,
 .string-number-graphic b {
   font-family: var(--font-geist-mono);
@@ -11927,6 +12134,7 @@ footer {
   .shortcut-graphic,
   .string-index-graphic,
   .negative-index-graphic,
+  .slice-boundary-graphic,
   .slice-window-graphic,
   .slice-step-graphic,
   .string-number-graphic,
@@ -11981,6 +12189,10 @@ footer {
   .long-division-stage,
   .division-code-graphic,
   .string-operation-lane {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .slice-boundary-graphic > section {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -12042,6 +12254,7 @@ footer {
   }
 
   .string-index-graphic > header,
+  .slice-boundary-graphic > header,
   .slice-window-graphic > header {
     align-items: flex-start;
     flex-direction: column;
@@ -12061,6 +12274,10 @@ footer {
 
   .slice-window-code {
     justify-content: start;
+  }
+
+  .slice-boundary-example {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
