@@ -3667,21 +3667,22 @@ footer {
 }
 
 .theory-code {
+  background: var(--bg);
   display: grid;
-  gap: 4px;
+  gap: 0;
   min-height: 100px;
-  padding: 10px;
+  padding: 8px 10px;
 }
 
 .theory-code > div {
   align-items: center;
-  border-radius: 9px;
+  border-radius: 0;
   color: var(--muted);
   display: grid;
   font-size: 11px;
   grid-template-columns: 23px 1fr 20px;
-  min-height: 38px;
-  padding: 0 8px;
+  min-height: 42px;
+  padding: 0 10px;
   transition:
     background-color 160ms ease-out,
     color 160ms ease-out;
@@ -3694,8 +3695,22 @@ footer {
 }
 
 .theory-code code {
+  display: block;
   font-family: var(--font-geist-mono);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
   white-space: nowrap;
+}
+
+.theory-code code::-webkit-scrollbar {
+  display: none;
+}
+
+.theory-code > div.is-indented > code {
+  border-left: 1px solid color-mix(in srgb, var(--accent) 52%, var(--line));
+  margin-left: 3px;
+  padding-left: 22px;
 }
 
 .theory-code > div > i {
@@ -3714,7 +3729,7 @@ footer {
 }
 
 .theory-code.is-static > div {
-  background: var(--bg);
+  background: transparent;
   color: var(--text-soft);
   grid-template-columns: 23px 1fr;
 }
@@ -10104,15 +10119,16 @@ footer {
 }
 
 .condition-code-lines {
+  background: var(--bg);
   display: grid;
-  gap: 5px;
-  padding: 16px 12px;
+  gap: 0;
+  padding: 8px 12px;
 }
 
 .condition-code-lines > span,
 .indentation-error-code > span {
   align-items: center;
-  border-radius: 9px;
+  border-radius: 0;
   display: grid;
   grid-template-columns: 24px 1fr;
   min-height: 42px;
@@ -10147,8 +10163,14 @@ footer {
 
 .condition-code-lines .is-indented {
   animation: if-code-action 5.4s ease-in-out infinite;
-  border-left: 2px solid var(--accent);
-  margin-left: 22px;
+  margin-left: 0;
+}
+
+.condition-code-lines .is-indented code,
+.indentation-error-code .is-indented code {
+  border-left: 1px solid color-mix(in srgb, var(--accent) 52%, var(--line));
+  margin-left: 3px;
+  padding-left: 22px;
 }
 
 @keyframes if-code-condition {
@@ -10614,15 +10636,16 @@ footer {
 }
 
 .indentation-code {
+  background: var(--bg);
   display: grid;
-  gap: 3px;
+  gap: 0;
   padding: 12px;
   position: relative;
 }
 
 .indentation-code > div {
   align-items: center;
-  border-radius: 7px;
+  border-radius: 0;
   display: grid;
   grid-template-columns: 22px 1fr;
   min-height: 32px;
@@ -10645,12 +10668,12 @@ footer {
 
 .indentation-code > div.inside,
 .indentation-code > div.inside-last {
-  background: var(--accent-wash-strong);
+  background: transparent;
 }
 
 .indentation-code > div.always {
-  background: var(--surface-raised);
-  box-shadow: inset 2px 0 0 color-mix(in srgb, #70a7ff 72%, var(--text-soft));
+  background: transparent;
+  box-shadow: none;
 }
 
 .indent-guide {
@@ -12584,16 +12607,11 @@ footer {
 
 .while-repeat-code > div {
   align-items: center;
-  border-bottom: 1px solid var(--line);
   display: grid;
   gap: 12px;
   grid-template-columns: 20px minmax(0, 1fr);
   min-height: 43px;
   padding: 7px 12px;
-}
-
-.while-repeat-code > div:last-child {
-  border-bottom: 0;
 }
 
 .while-repeat-code span {
@@ -12656,7 +12674,7 @@ footer {
 
 .while-purpose-panel .theory-code .is-active {
   background: var(--accent-wash);
-  border-radius: 9px;
+  border-radius: 0;
 }
 
 .while-purpose-panel .theory-code .is-active b {
@@ -12664,7 +12682,7 @@ footer {
 }
 
 .while-purpose-panel .theory-code .is-indented {
-  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: none;
 }
 
 .while-value-track {

@@ -1803,8 +1803,8 @@ function WhileTraceGraphic() {
           <div className="theory-code is-static">
             <div><span>1</span><code>x = 0</code></div>
             <div><span>2</span><code><b>while</b> x &lt; 5:</code></div>
-            <div><span>3</span><code>    x += 1</code></div>
-            <div><span>4</span><code>    print(x)</code></div>
+            <div className="is-indented"><span>3</span><code>x += 1</code></div>
+            <div className="is-indented"><span>4</span><code>print(x)</code></div>
           </div>
         </EditorFrame>
         <div className="while-trace-output">
@@ -1870,7 +1870,11 @@ function WhileIndentGraphic() {
               <div className="theory-code is-static">
                 {example.lines.map((line, index) => (
                   <div
-                    className={index > 1 && line.startsWith("    ") ? "is-in-loop" : ""}
+                    className={
+                      index > 1 && line.startsWith("    ")
+                        ? "is-indented is-in-loop"
+                        : ""
+                    }
                     key={`${line}-${index}`}
                   >
                     <span>{index + 1}</span><code>{line}</code>
@@ -1908,7 +1912,7 @@ function InfiniteWhileGraphic() {
           <div className="theory-code is-static">
             <div><span>1</span><code>x = 5</code></div>
             <div><span>2</span><code><b>while</b> x &gt; 0:</code></div>
-            <div><span>3</span><code>    print(x)</code></div>
+            <div className="is-indented"><span>3</span><code>print(x)</code></div>
           </div>
         </EditorFrame>
         <div className="while-infinite-loop" aria-hidden="true">
