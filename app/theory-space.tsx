@@ -1933,6 +1933,8 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const whileTheoryStorageKey = `egege-theory-while-v1:${userId}`;
   const splitStorageKey = `egege-theory-split-v1:${userId}`;
   const theorySpaceRef = useRef<HTMLElement | null>(null);
+  const theoryMapRef = useRef<HTMLDivElement | null>(null);
+  const hasPositionedMapRef = useRef(false);
   const splitPercentRef = useRef(41);
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
   const [splitPercent, setSplitPercent] = useState(41);
@@ -2053,6 +2055,18 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
       }
     });
   }, [splitStorageKey]);
+
+  useEffect(() => {
+    const map = theoryMapRef.current;
+    if (!map || hasPositionedMapRef.current) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      map.scrollTop = map.scrollHeight;
+      hasPositionedMapRef.current = true;
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   const progress = completedLessons.size * 50;
   const arithmeticProgress = completedArithmeticLessons.size * 25;
@@ -2419,7 +2433,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
         } as React.CSSProperties
       }
     >
-      <div className="theory-map">
+      <div ref={theoryMapRef} className="theory-map">
         <div className="theory-stars" aria-hidden="true" />
         <header className="theory-map-header">
           <div>
