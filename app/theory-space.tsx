@@ -1779,121 +1779,205 @@ function WhileFlowGraphic() {
   );
 }
 
-function WhileTraceGraphic() {
-  const steps = [
-    ["Старт", "0", "0 < 5", "—"],
-    ["1-й круг", "1", "1 < 5", "1"],
-    ["2-й круг", "2", "2 < 5", "2"],
-    ["3-й круг", "3", "3 < 5", "3"],
-    ["4-й круг", "4", "4 < 5", "4"],
-    ["5-й круг", "5", "5 < 5", "5"],
-    ["Стоп", "5", "False", "—"],
-  ];
+type WhileDebugNode = "start" | "condition" | "increment" | "print" | "end";
 
-  return (
-    <div className="while-trace-graphic">
-      <header>
-        <div>
-          <small>Трассировка программы</small>
-          <strong>Следим за x после каждого полного круга</strong>
-        </div>
-      </header>
-      <div className="while-trace-main">
-        <EditorFrame file="counter.py">
-          <div className="theory-code is-static">
-            <div><span>1</span><code>x = 0</code></div>
-            <div><span>2</span><code><b>while</b> x &lt; 5:</code></div>
-            <div className="is-indented"><span>3</span><code>x += 1</code></div>
-            <div className="is-indented"><span>4</span><code>print(x)</code></div>
-          </div>
-        </EditorFrame>
-        <div className="while-trace-output">
-          <small>Вывод</small>
-          <div>{["1", "2", "3", "4", "5"].map((value) => <span key={value}>{value}</span>)}</div>
-          <p>Печать находится внутри цикла, поэтому срабатывает на каждом круге.</p>
-        </div>
-      </div>
-      <div className="while-trace-table">
-        <div className="is-heading">
-          <span>Этап</span><span>Новое x</span><span>Следующая проверка</span><span>Напечатано</span>
-        </div>
-        {steps.map(([step, value, check, output], index) => (
-          <div style={{ "--trace-index": index } as React.CSSProperties} key={step}>
-            <span>{step}</span><code>{value}</code><code>{check}</code><strong>{output}</strong>
-          </div>
-        ))}
-      </div>
-      <p className="while-trace-summary">
-        Важно: сначала выполняется <code>x += 1</code>, и только потом <code>print(x)</code>.
-        Поэтому первым выводится <code>1</code>, а не <code>0</code>.
-      </p>
-    </div>
-  );
+type WhileDebugPhase = {
+  line: number;
+  node: WhileDebugNode;
+  x: number;
+  condition: boolean | null;
+  output: number[];
+};
+
+function createWhileDebugPhases(printInside: boolean): WhileDebugPhase[] {
+  const phases: WhileDebugPhase[] = [
+    { line: 1, node: "start", x: 0, condition: null, output: [] },
+  ];
+  const output: number[] = [];
+
+  for (let value = 0; value < 5; value += 1) {
+    phases.push({
+      line: 2,
+      node: "condition",
+      x: value,
+      condition: true,
+      output: [...output],
+    });
+    phases.push({
+      line: 3,
+      node: "increment",
+      x: value + 1,
+      condition: true,
+      output: [...output],
+    });
+    if (printInside) {
+      output.push(value + 1);
+      phases.push({
+        line: 4,
+        node: "print",
+        x: value + 1,
+        condition: true,
+        output: [...output],
+      });
+    }
+  }
+
+  phases.push({
+    line: 2,
+    node: "condition",
+    x: 5,
+    condition: false,
+    output: [...output],
+  });
+
+  if (printInside) {
+    phases.push({ line: 2, node: "end", x: 5, condition: false, output: [...output] });
+  } else {
+    phases.push({ line: 4, node: "print", x: 5, condition: false, output: [5] });
+    phases.push({ line: 4, node: "end", x: 5, condition: false, output: [5] });
+  }
+
+  return phases;
 }
 
-function WhileIndentGraphic() {
-  const examples = [
-    {
-      kind: "is-inside",
-      title: "print с отступом",
-      label: "Команда повторяется",
-      lines: ["x = 0", "while x < 5:", "    x += 1", "    print(x)"],
-      output: ["1", "2", "3", "4", "5"],
-      note: "На каждом круге меняем x и сразу печатаем новое значение.",
-    },
-    {
-      kind: "is-outside",
-      title: "print без отступа",
-      label: "Команда выполняется после цикла",
-      lines: ["x = 0", "while x < 5:", "    x += 1", "print(x)"],
-      output: ["5"],
-      note: "Цикл пять раз меняет x, а печать запускается один раз — уже после остановки.",
-    },
-  ];
+function WhileDebuggerGraphic({ printInside }: { printInside: boolean }) {
+  const phases = useMemo(() => createWhileDebugPhases(printInside), [printInside]);
+  const [phaseIndex, setPhaseIndex] = useState(0);
+  const phase = phases[phaseIndex] ?? phases[0];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setPhaseIndex((current) => (current + 1) % phases.length);
+    }, 720);
+    return () => window.clearInterval(timer);
+  }, [phases]);
+
+  const lines = printInside
+    ? [
+        ["x = 0", false],
+        ["while x < 5:", false],
+        ["x += 1", true],
+        ["print(x)", true],
+      ] as const
+    : [
+        ["x = 0", false],
+        ["while x < 5:", false],
+        ["x += 1", true],
+        ["print(x)", false],
+      ] as const;
+
+  const truePathActive =
+    phase.condition === true && ["condition", "increment", "print"].includes(phase.node);
+  const falsePathActive = phase.condition === false;
 
   return (
-    <div className="while-indent-graphic">
+    <div
+      className={`while-debugger-graphic ${printInside ? "is-print-inside" : "is-print-outside"}`}
+      aria-label={
+        printInside
+          ? "Отладка программы: print находится внутри while и выполняется на каждой итерации"
+          : "Отладка программы: print находится после while и выполняется один раз"
+      }
+    >
       <header>
         <div>
-          <small>Одна строка — два разных поведения</small>
-          <strong>Отступ определяет границу повторяемого блока</strong>
+          <small>{printInside ? "print с отступом" : "print без отступа"}</small>
+          <strong>
+            {printInside
+              ? "Печать выполняется на каждом круге"
+              : "Печать выполняется один раз после цикла"}
+          </strong>
         </div>
+        <span className="while-debugger-status">
+          x = <b>{phase.x}</b>
+        </span>
       </header>
-      <div className="while-indent-comparison">
-        {examples.map((example) => (
-          <section className={example.kind} key={example.title}>
-            <div className="while-indent-title">
-              <small>{example.label}</small>
-              <h4>{example.title}</h4>
+
+      <div className="while-debugger-stage">
+        <div className="while-debugger-code">
+          <EditorFrame file={printInside ? "inside.py" : "outside.py"}>
+            <div className="theory-code is-static">
+              {lines.map(([line, indented], index) => (
+                <div
+                  className={`${indented ? "is-indented" : ""} ${
+                    phase.line === index + 1 ? "is-debug-active" : ""
+                  }`}
+                  key={line}
+                >
+                  <span>{index + 1}</span>
+                  <code>
+                    {index === 1 ? <><b>while</b> x &lt; 5:</> : line}
+                  </code>
+                  {phase.line === index + 1 && <i>▶</i>}
+                </div>
+              ))}
             </div>
-            <EditorFrame file={example.kind === "is-inside" ? "inside.py" : "outside.py"}>
-              <div className="theory-code is-static">
-                {example.lines.map((line, index) => (
-                  <div
-                    className={
-                      index > 1 && line.startsWith("    ")
-                        ? "is-indented is-in-loop"
-                        : ""
-                    }
-                    key={`${line}-${index}`}
-                  >
-                    <span>{index + 1}</span><code>{line}</code>
-                  </div>
-                ))}
-              </div>
-            </EditorFrame>
-            <div className="while-indent-output">
-              <small>Вывод</small>
-              <div>{example.output.map((value) => <code key={value}>{value}</code>)}</div>
+          </EditorFrame>
+          <p>
+            Акцентная строка — следующая команда, которую сейчас выполняет Python.
+          </p>
+        </div>
+
+        <div className="while-debug-flow" aria-hidden="true">
+          <span className={`debug-flow-node is-start ${phase.node === "start" ? "is-active" : ""}`}>
+            <small>Старт</small><code>x = 0</code>
+          </span>
+          <i className="debug-flow-arrow">↓</i>
+          <span className={`debug-flow-diamond ${phase.node === "condition" ? "is-active" : ""}`}>
+            <code>x &lt; 5?</code>
+          </span>
+          <div className="debug-flow-results">
+            <span className={truePathActive ? "is-active" : ""}>
+              <small>ДА</small><b>True</b>
+            </span>
+            <span className={falsePathActive ? "is-active" : ""}>
+              <small>НЕТ</small><b>False</b>
+            </span>
+          </div>
+          <div className="debug-flow-paths">
+            <div className="debug-flow-true-path">
+              <span className={`debug-flow-node ${phase.node === "increment" ? "is-active" : ""}`}>
+                <small>Изменить x</small><code>x += 1</code>
+              </span>
+              {printInside && (
+                <span className={`debug-flow-node ${phase.node === "print" ? "is-active" : ""}`}>
+                  <small>Напечатать</small><code>print(x)</code>
+                </span>
+              )}
+              <b>↩ к проверке</b>
             </div>
-            <p>{example.note}</p>
-          </section>
-        ))}
+            <div className="debug-flow-false-path">
+              {!printInside && (
+                <span className={`debug-flow-node ${phase.node === "print" ? "is-active" : ""}`}>
+                  <small>После цикла</small><code>print(x)</code>
+                </span>
+              )}
+              <span className={`debug-flow-node is-end ${phase.node === "end" ? "is-active" : ""}`}>
+                <small>Дальше</small><strong>Цикл закончен</strong>
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
-      <aside>
-        <strong>Мысленно проведи вертикальную линию по отступу.</strong>
-        <p>Всё, что сдвинуто вправо после <code>while</code>, принадлежит циклу и повторяется. Первая строка без этого отступа продолжает программу после цикла.</p>
-      </aside>
+
+      <div className="while-debug-output">
+        <small>ВЫВОД</small>
+        <div>
+          {phase.output.length > 0 ? (
+            phase.output.map((value, index) => (
+              <code key={`${value}-${index}`}>{value}</code>
+            ))
+          ) : (
+            <span>пока пусто</span>
+          )}
+          <i aria-hidden="true" />
+        </div>
+        <p>
+          {printInside
+            ? "print стоит с отступом и входит в повторяемый блок."
+            : "print стоит без отступа и запускается только после первого False."}
+        </p>
+      </div>
     </div>
   );
 }
@@ -2772,7 +2856,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                     она возвращается к строке <code>while</code>.
                   </p>
                 </div>
-                <WhileTraceGraphic />
+                <WhileDebuggerGraphic printInside />
                 <WhileCheck />
                 <WhileTheoryLessonStatus
                   id="trace"
@@ -2801,7 +2885,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                     <code> x</code>, а печать выполняется один раз после завершения цикла.
                   </p>
                 </div>
-                <WhileIndentGraphic />
+                <WhileDebuggerGraphic printInside={false} />
                 <WhileTheoryLessonStatus
                   id="indentation"
                   completed={completedWhileTheoryLessons.has("indentation")}

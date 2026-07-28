@@ -12927,6 +12927,344 @@ footer {
   color: var(--accent);
 }
 
+.while-debugger-graphic {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  margin-top: 28px;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+.while-debugger-graphic > header {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: clamp(17px, 2.8cqi, 26px);
+}
+
+.while-debugger-graphic > header small,
+.while-debugger-graphic > header strong {
+  display: block;
+}
+
+.while-debugger-graphic > header small {
+  color: var(--accent);
+  font-size: clamp(9px, 1.2cqi, 11px);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.while-debugger-graphic > header strong {
+  color: var(--text-soft);
+  font-size: clamp(14px, 2cqi, 19px);
+  font-weight: 610;
+  margin-top: 6px;
+}
+
+.while-debugger-status {
+  background: var(--surface);
+  border-radius: 11px;
+  color: var(--muted);
+  flex: none;
+  font-family: var(--font-geist-mono);
+  font-size: clamp(11px, 1.5cqi, 14px);
+  padding: 10px 13px;
+}
+
+.while-debugger-status b {
+  color: var(--accent);
+  font-size: 1.2em;
+}
+
+.while-debugger-stage {
+  display: grid;
+  gap: clamp(16px, 2.5cqi, 26px);
+  grid-template-columns: minmax(250px, 0.95fr) minmax(280px, 1.05fr);
+  padding: clamp(18px, 3cqi, 30px);
+}
+
+.while-debugger-code {
+  align-self: center;
+  min-width: 0;
+}
+
+.while-debugger-code .theory-editor {
+  margin: 0;
+}
+
+.while-debugger-code .theory-code {
+  min-height: 250px;
+  padding-block: 24px;
+}
+
+.while-debugger-code .theory-code > div {
+  grid-template-columns: 23px minmax(0, 1fr) 18px;
+  min-height: 50px;
+}
+
+.while-debugger-code .theory-code > div.is-debug-active {
+  background: var(--accent-wash-strong);
+  box-shadow: inset 3px 0 0 var(--accent);
+  color: var(--text);
+}
+
+.while-debugger-code .theory-code > div.is-debug-active > span,
+.while-debugger-code .theory-code > div.is-debug-active > i {
+  color: var(--accent);
+}
+
+.while-debugger-code .theory-code code b {
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.while-debugger-code .theory-code > div > i {
+  font-size: 10px;
+}
+
+.while-debugger-code > p {
+  color: var(--dim);
+  font-size: clamp(9px, 1.2cqi, 11px);
+  line-height: 1.5;
+  margin: 12px 0 0;
+}
+
+.while-debug-flow {
+  align-content: start;
+  background: var(--surface);
+  border-radius: 18px;
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+  padding: clamp(16px, 2.6cqi, 25px);
+}
+
+.debug-flow-node {
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: grid;
+  gap: 5px;
+  justify-items: center;
+  min-height: 58px;
+  padding: 10px 15px;
+  text-align: center;
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out,
+    box-shadow 160ms ease-out,
+    color 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+.debug-flow-node small {
+  color: var(--dim);
+  font-size: 8px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.debug-flow-node code,
+.debug-flow-node strong {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: clamp(10px, 1.4cqi, 13px);
+  font-weight: 540;
+}
+
+.debug-flow-node.is-active {
+  background: var(--accent-wash-strong);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+  transform: translateY(-2px);
+}
+
+.debug-flow-node.is-active small,
+.debug-flow-node.is-active code,
+.debug-flow-node.is-active strong {
+  color: var(--accent);
+}
+
+.debug-flow-node.is-start {
+  min-width: 132px;
+}
+
+.debug-flow-arrow {
+  color: var(--dim);
+  font-size: 20px;
+  font-style: normal;
+  height: 26px;
+}
+
+.debug-flow-diamond {
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  display: flex;
+  height: 84px;
+  justify-content: center;
+  margin: 7px 0 12px;
+  rotate: 45deg;
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out,
+    box-shadow 160ms ease-out,
+    scale 160ms ease-out;
+  width: 84px;
+}
+
+.debug-flow-diamond code {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: clamp(11px, 1.5cqi, 14px);
+  rotate: -45deg;
+}
+
+.debug-flow-diamond.is-active {
+  background: var(--accent-wash-strong);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 9%, transparent);
+  scale: 1.04;
+}
+
+.debug-flow-diamond.is-active code {
+  color: var(--accent);
+}
+
+.debug-flow-results {
+  display: grid;
+  gap: clamp(28px, 7cqi, 72px);
+  grid-template-columns: repeat(2, minmax(82px, 1fr));
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.debug-flow-results > span {
+  align-items: baseline;
+  border-radius: 10px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 8px;
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.debug-flow-results small {
+  color: var(--dim);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.debug-flow-results b {
+  color: var(--muted);
+  font-family: var(--font-geist-mono);
+  font-size: clamp(16px, 2.7cqi, 24px);
+}
+
+.debug-flow-results > span.is-active {
+  background: var(--accent-wash-strong);
+}
+
+.debug-flow-results > span.is-active small,
+.debug-flow-results > span.is-active b {
+  color: var(--accent);
+}
+
+.debug-flow-paths {
+  display: grid;
+  gap: clamp(14px, 2cqi, 22px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+.debug-flow-true-path,
+.debug-flow-false-path {
+  align-content: start;
+  display: grid;
+  gap: 9px;
+}
+
+.debug-flow-true-path > b {
+  color: var(--dim);
+  font-size: 9px;
+  font-weight: 520;
+  margin-top: 2px;
+  text-align: center;
+}
+
+.debug-flow-false-path .is-end {
+  min-height: 58px;
+}
+
+.while-debug-output {
+  align-items: center;
+  background: var(--surface-raised);
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: auto minmax(160px, 1fr) minmax(180px, 0.75fr);
+  padding: clamp(16px, 2.6cqi, 24px) clamp(18px, 3cqi, 30px);
+}
+
+.while-debug-output > small {
+  color: var(--accent);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.while-debug-output > div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-height: 38px;
+}
+
+.while-debug-output code {
+  align-items: center;
+  background: var(--accent-wash-strong);
+  border-radius: 8px;
+  color: var(--accent);
+  display: inline-flex;
+  font-family: var(--font-geist-mono);
+  font-size: 12px;
+  height: 32px;
+  justify-content: center;
+  min-width: 32px;
+  padding: 0 8px;
+}
+
+.while-debug-output > div > span {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.while-debug-output > div > i {
+  animation: while-debug-cursor 800ms step-end infinite;
+  background: var(--accent);
+  height: 20px;
+  width: 2px;
+}
+
+@keyframes while-debug-cursor {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.while-debug-output > p {
+  color: var(--muted);
+  font-size: clamp(9px, 1.25cqi, 11px);
+  line-height: 1.5;
+  margin: 0;
+}
+
 .while-trace-main {
   display: grid;
   gap: 14px;
@@ -13383,6 +13721,16 @@ footer {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .while-debugger-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .while-debugger-code {
+    margin-inline: auto;
+    max-width: 620px;
+    width: 100%;
+  }
+
   .while-purpose-switch {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     text-align: left;
@@ -13424,6 +13772,19 @@ footer {
   .while-flow-graphic > header {
     align-items: flex-start;
     gap: 14px;
+  }
+
+  .while-debugger-graphic > header {
+    align-items: flex-start;
+  }
+
+  .while-debug-output {
+    align-items: start;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .while-debug-output > p {
+    grid-column: 1 / -1;
   }
 
   .while-flow-graphic > header > code {
