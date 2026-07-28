@@ -99,6 +99,21 @@ type ClaimResult = {
 const PREFERENCES_KEY = "egege-preferences-v1";
 const PREMIUM_KEY = "egege-premium-demo-v1";
 const PENDING_ACCESS_KEY = "egege-pending-access-v1";
+const sectionPaths: Record<Section, string> = {
+  home: "/",
+  tasks: "/tasks",
+  variants: "/variants",
+  theory: "/theory",
+  game: "/game",
+  trainer: "/trainer",
+  dashboard: "/dashboard",
+};
+
+function sectionFromPath(pathname: string): Section {
+  const segment = pathname.split("/").filter(Boolean)[0] ?? "";
+  return (Object.entries(sectionPaths).find(([, path]) => path === `/${segment}`)?.[0] as Section) ??
+    "home";
+}
 const XP_PER_ANSWER = 10;
 const defaultPreferences: Preferences = {
   theme: "dark",
@@ -386,6 +401,7 @@ function AppHeader({
   rattlingSection: GateSection | null;
   profile: React.ReactNode;
 }) {
+  const navRef = useRef<HTMLElement | null>(null);
   const navItems: Array<{
     section: Exclude<Section, "home">;
     label: string;
@@ -405,6 +421,12 @@ function AppHeader({
     { section: "dashboard", label: "Дашборд", locked: !isRegistered },
   ];
 
+  useEffect(() => {
+    navRef.current
+      ?.querySelector<HTMLElement>(".nav-active")
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [section]);
+
   return (
     <header className="topbar">
       <button className="wordmark" onClick={() => navigate("home")}>
@@ -413,7 +435,7 @@ function AppHeader({
         <small className="wordmark-by">by Tsarapkin</small>
       </button>
       <div className="topbar-actions">
-        <nav aria-label="Разделы">
+        <nav ref={navRef} aria-label="Разделы">
           {navItems.map((item) => (
             <button
               className={`${section === item.section ? "nav-active" : ""} ${
@@ -1440,6 +1462,13 @@ export default function Home() {
   const isRegistered = Boolean(user);
 
   useEffect(() => {
+    const syncSectionFromUrl = () => setSection(sectionFromPath(window.location.pathname));
+    syncSectionFromUrl();
+    window.addEventListener("popstate", syncSectionFromUrl);
+    return () => window.removeEventListener("popstate", syncSectionFromUrl);
+  }, []);
+
+  useEffect(() => {
     let restored = defaultPreferences;
 
     try {
@@ -1669,6 +1698,10 @@ export default function Home() {
       return;
     }
     setSection(nextSection);
+    const nextPath = sectionPaths[nextSection];
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({ section: nextSection }, "", nextPath);
+    }
     setProfileOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

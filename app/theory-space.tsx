@@ -2449,7 +2449,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const theoryMapRef = useRef<HTMLDivElement | null>(null);
   const hasPositionedMapRef = useRef(false);
   const splitPercentRef = useRef(41);
+  const closeChapterTimerRef = useRef<number | null>(null);
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
+  const [chapterReady, setChapterReady] = useState(false);
   const [splitPercent, setSplitPercent] = useState(41);
   const [isResizing, setIsResizing] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
@@ -2590,6 +2592,18 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
       }
     });
   }, [splitStorageKey]);
+
+  useEffect(() => {
+    if (selectedPlanet === null) return;
+    const frame = window.requestAnimationFrame(() => setChapterReady(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedPlanet]);
+
+  useEffect(() => {
+    return () => {
+      if (closeChapterTimerRef.current) window.clearTimeout(closeChapterTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const map = theoryMapRef.current;
@@ -2913,6 +2927,11 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   };
 
   const openPlanet = (planetId: number) => {
+    if (closeChapterTimerRef.current) {
+      window.clearTimeout(closeChapterTimerRef.current);
+      closeChapterTimerRef.current = null;
+    }
+    if (selectedPlanet === null) setChapterReady(false);
     setSelectedPlanet(planetId);
     if (planetId === 0 && completedLessons.size > 0 && completedLessons.size < lessonIds.length) {
       scrollToFirstIncomplete();
@@ -2969,6 +2988,14 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     }
   };
 
+  const closePlanet = () => {
+    setChapterReady(false);
+    closeChapterTimerRef.current = window.setTimeout(() => {
+      setSelectedPlanet(null);
+      closeChapterTimerRef.current = null;
+    }, 300);
+  };
+
   const updateSplitFromPointer = (clientX: number) => {
     const container = theorySpaceRef.current;
     if (!container) return;
@@ -3019,6 +3046,8 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     <section
       ref={theorySpaceRef}
       className={`theory-space ${activePlanet ? "is-chapter-open" : ""} ${
+        chapterReady ? "is-chapter-ready" : ""
+      } ${
         isResizing ? "is-resizing" : ""
       }`}
       style={
@@ -3152,7 +3181,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
           <header className="theory-chapter-header">
             <button
               className="theory-close"
-              onClick={() => setSelectedPlanet(null)}
+              onClick={closePlanet}
               aria-label="Вернуться к карте"
             >
               <span aria-hidden="true">←</span>

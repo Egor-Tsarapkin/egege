@@ -3798,27 +3798,25 @@ footer {
 }
 
 .theory-chapter {
-  animation: theory-chapter-enter 420ms cubic-bezier(0.2, 0, 0, 1) both;
   background: var(--surface);
   container-name: theory-panel;
   container-type: inline-size;
   min-width: 0;
+  opacity: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   position: relative;
   scrollbar-color: var(--surface-soft) transparent;
+  transform: translateX(36px);
+  transition:
+    opacity 220ms ease-out 70ms,
+    transform 420ms cubic-bezier(0.2, 0, 0, 1);
   z-index: 4;
 }
 
-@keyframes theory-chapter-enter {
-  from {
-    opacity: 0;
-    transform: translateX(34px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.theory-space.is-chapter-ready .theory-chapter {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .theory-splitter {
@@ -7248,8 +7246,7 @@ footer {
   }
 
   .trainer-guidance {
-    display: block;
-    margin-top: 10px;
+    display: none;
   }
 
   .trainer-hands {
@@ -7634,10 +7631,13 @@ footer {
   }
 
   .topbar-actions nav {
-    justify-content: flex-end;
+    justify-content: flex-start;
     min-width: 0;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
     scrollbar-width: none;
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
   }
 
   .topbar-actions nav::-webkit-scrollbar {
@@ -14602,8 +14602,13 @@ footer {
     border-left: 0;
     inset: 0;
     position: absolute;
+    transform: translateX(100%);
     visibility: visible;
     width: 100%;
+  }
+
+  .theory-space.is-chapter-ready .theory-chapter {
+    transform: translateX(0);
   }
 }
 
@@ -14614,8 +14619,10 @@ footer {
 
   .theory-map-header {
     left: 20px;
+    min-height: 178px;
+    padding-top: 18px;
     right: 20px;
-    top: 25px;
+    top: 0;
   }
 
   .theory-map-header h1 {
