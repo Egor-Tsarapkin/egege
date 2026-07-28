@@ -26,6 +26,590 @@
     0 12px 34px rgba(7, 6, 4, 0.21);
 }
 
+/* Chapter 6: for */
+.theory-chapter-for {
+  --for-panel: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+}
+
+.for-debugger,
+.range-anatomy,
+.loop-comparison {
+  background: color-mix(in srgb, var(--surface) 92%, #000);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  margin: 36px 0;
+  overflow: hidden;
+}
+
+.for-debugger-head,
+.loop-comparison-head {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  padding: 24px 28px;
+}
+
+.for-debugger-head > div,
+.loop-comparison-head > div {
+  display: grid;
+  gap: 7px;
+}
+
+.for-debugger-head small,
+.loop-comparison-head small,
+.range-formula small {
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.for-debugger-head strong,
+.loop-comparison-head strong {
+  color: var(--text);
+  font-size: clamp(1rem, 2.2cqi, 1.28rem);
+}
+
+.for-debugger-head > span,
+.loop-comparison-head > span {
+  background: var(--surface-raised);
+  border-radius: 999px;
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: 12px;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+.for-debugger-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+  padding: 28px;
+}
+
+.for-code {
+  align-self: stretch;
+  margin: 0;
+}
+
+.for-code pre,
+.loop-compare-card pre {
+  margin: 0;
+  padding: 24px 18px;
+}
+
+.for-code code,
+.loop-compare-card pre code {
+  display: grid;
+  gap: 9px;
+}
+
+.for-code code > span,
+.loop-compare-card code > span {
+  border-left: 3px solid transparent;
+  border-radius: 10px;
+  color: var(--text);
+  display: block;
+  font-family: var(--font-geist-mono);
+  font-size: clamp(0.9rem, 2.1cqi, 1.08rem);
+  line-height: 1.65;
+  min-height: 48px;
+  padding: 10px 12px 10px 50px;
+  position: relative;
+  transition: background 180ms ease-out, border-color 180ms ease-out;
+  white-space: pre;
+}
+
+.for-code code > span:empty {
+  display: none;
+}
+
+.for-code code > span i,
+.loop-compare-card code > span i {
+  color: var(--dim);
+  font-size: 11px;
+  font-style: normal;
+  left: 14px;
+  position: absolute;
+  top: 13px;
+}
+
+.for-code code > span b,
+.loop-compare-card code > span b {
+  color: var(--accent);
+  font-weight: 720;
+}
+
+.for-code code > span.is-indented,
+.loop-compare-card code > span.is-indented {
+  padding-left: 86px;
+}
+
+.for-code code > span.is-indented::before,
+.loop-compare-card code > span.is-indented::before {
+  background: color-mix(in srgb, var(--accent) 62%, var(--line));
+  content: "";
+  height: 62%;
+  left: 64px;
+  position: absolute;
+  top: 19%;
+  width: 2px;
+}
+
+.for-code code > span.is-active,
+.loop-compare-card code > span.is-active {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-raised));
+  border-left-color: var(--accent);
+}
+
+.for-flow {
+  display: grid;
+  gap: 14px;
+  grid-template-rows: auto auto auto 1fr;
+}
+
+.for-source {
+  background: var(--for-panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  transition: border-color 180ms ease-out;
+}
+
+.for-source small {
+  color: var(--text-soft);
+  display: block;
+  font-family: var(--font-geist-mono);
+  margin-bottom: 12px;
+}
+
+.for-source > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.for-source span,
+.for-debugger-output span,
+.loop-shared-output span {
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text-soft);
+  display: inline-flex;
+  font-family: var(--font-geist-mono);
+  height: 38px;
+  justify-content: center;
+  min-width: 38px;
+  transition: all 180ms ease-out;
+}
+
+.for-source span.is-current,
+.for-source.is-active {
+  border-color: var(--accent);
+}
+
+.for-source span.is-current {
+  background: var(--accent);
+  color: var(--accent-ink);
+  transform: translateY(-3px);
+}
+
+.for-source span.is-used {
+  opacity: 0.4;
+}
+
+.for-decision {
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  color: var(--text-soft);
+  display: flex;
+  height: 108px;
+  justify-content: center;
+  justify-self: center;
+  margin: 10px 0;
+  rotate: 45deg;
+  transition: background 180ms ease-out, border-color 180ms ease-out;
+  width: 108px;
+}
+
+.for-decision span {
+  font-size: 12px;
+  max-width: 94px;
+  rotate: -45deg;
+  text-align: center;
+}
+
+.for-decision.is-active {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  border-color: var(--accent);
+}
+
+.for-flow-branches {
+  display: flex;
+  justify-content: space-between;
+}
+
+.for-flow-branches span {
+  color: var(--dim);
+  font-size: 13px;
+  transition: color 180ms ease-out;
+}
+
+.for-flow-branches span.is-active {
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.for-flow-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.for-flow-actions > div {
+  background: var(--for-panel);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  display: grid;
+  gap: 8px;
+  min-height: 108px;
+  padding: 15px;
+  transition: background 180ms ease-out, border-color 180ms ease-out;
+}
+
+.for-flow-actions > div.is-active {
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface-raised));
+  border-color: var(--accent);
+}
+
+.for-flow-actions small {
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.for-flow-actions strong {
+  align-self: end;
+  color: var(--text);
+  font-family: var(--font-geist-mono);
+  font-size: 13px;
+}
+
+.for-debugger-output {
+  align-items: center;
+  background: var(--for-panel);
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto auto 1fr;
+  padding: 20px 28px;
+}
+
+.for-debugger-output small,
+.loop-shared-output small {
+  color: var(--dim);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.for-debugger-output > div {
+  display: flex;
+  gap: 6px;
+}
+
+.for-debugger-output span,
+.loop-shared-output span {
+  opacity: 0.18;
+}
+
+.for-debugger-output span.is-visible,
+.loop-shared-output span.is-visible {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-raised));
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+  color: var(--accent);
+  opacity: 1;
+}
+
+.for-debugger-output p {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+  text-align: right;
+}
+
+.range-anatomy {
+  padding: 30px;
+}
+
+.range-formula {
+  display: grid;
+  gap: 16px;
+  text-align: center;
+}
+
+.range-formula > strong {
+  color: var(--text);
+  font-family: var(--font-geist-mono);
+  font-size: clamp(1.75rem, 5cqi, 3.1rem);
+}
+
+.range-formula > strong i {
+  color: var(--accent);
+  font-style: normal;
+}
+
+.range-formula > div {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.range-formula > div span {
+  background: var(--for-panel);
+  border-radius: 12px;
+  color: var(--text-soft);
+  padding: 14px;
+}
+
+.range-formula > div b {
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.range-live-example {
+  align-items: center;
+  animation: for-example-enter 320ms ease-out both;
+  background: var(--for-panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: auto auto 1fr;
+  margin-top: 24px;
+  padding: 24px;
+}
+
+.range-live-example > code {
+  color: var(--text);
+  font-size: clamp(1rem, 2.7cqi, 1.35rem);
+}
+
+.range-live-example > span {
+  color: var(--accent);
+  font-size: 1.7rem;
+}
+
+.range-live-example > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.range-live-example i {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface-raised));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  border-radius: 10px;
+  color: var(--accent);
+  display: inline-flex;
+  font-family: var(--font-geist-mono);
+  font-style: normal;
+  height: 42px;
+  justify-content: center;
+  min-width: 42px;
+}
+
+.range-live-example p {
+  color: var(--text-soft);
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.range-rules {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 14px;
+}
+
+.range-rules span {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--text-soft);
+  padding: 15px;
+}
+
+.range-rules b {
+  color: var(--text);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.loop-comparison {
+  padding-bottom: 24px;
+}
+
+.loop-comparison-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 24px;
+}
+
+.loop-compare-card {
+  background: var(--for-panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  min-width: 0;
+  padding: 18px;
+}
+
+.loop-compare-card h4 {
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0 0 16px;
+}
+
+.loop-compare-card h4 code {
+  color: var(--accent);
+}
+
+.loop-compare-card .theory-editor {
+  margin: 0;
+}
+
+.loop-compare-card p {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 16px 3px 0;
+}
+
+.loop-shared-output {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  padding: 0 24px 18px;
+}
+
+.loop-shared-output small {
+  margin-right: 8px;
+}
+
+.loop-comparison > aside {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised));
+  border-left: 3px solid var(--accent);
+  margin: 0 24px;
+  padding: 18px 20px;
+}
+
+.loop-comparison > aside strong {
+  color: var(--accent);
+}
+
+.loop-comparison > aside p {
+  color: var(--text-soft);
+  line-height: 1.55;
+  margin: 7px 0 0;
+}
+
+@keyframes for-example-enter {
+  from { opacity: 0.35; transform: translateY(6px); }
+}
+
+@container theory-chapter (max-width: 780px) {
+  .for-debugger-grid,
+  .loop-comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .for-debugger-output {
+    grid-template-columns: auto 1fr;
+  }
+
+  .for-debugger-output p {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .range-formula > div,
+  .range-rules {
+    grid-template-columns: 1fr;
+  }
+}
+
+@container theory-chapter (max-width: 560px) {
+  .for-debugger,
+  .range-anatomy,
+  .loop-comparison {
+    border-radius: 20px;
+  }
+
+  .for-debugger-head,
+  .loop-comparison-head {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .for-debugger-head > span,
+  .loop-comparison-head > span {
+    white-space: normal;
+  }
+
+  .for-debugger-grid,
+  .loop-comparison-grid {
+    padding: 16px;
+  }
+
+  .for-flow-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .for-code code > span,
+  .loop-compare-card code > span {
+    font-size: 12px;
+    overflow-x: auto;
+    padding-left: 38px;
+  }
+
+  .for-code code > span.is-indented,
+  .loop-compare-card code > span.is-indented {
+    padding-left: 62px;
+  }
+
+  .for-code code > span.is-indented::before,
+  .loop-compare-card code > span.is-indented::before {
+    left: 48px;
+  }
+
+  .for-debugger-output {
+    padding: 18px;
+  }
+
+  .range-anatomy {
+    padding: 18px;
+  }
+
+  .range-live-example {
+    grid-template-columns: 1fr auto;
+    padding: 18px;
+  }
+
+  .range-live-example > div {
+    grid-column: 1 / -1;
+  }
+}
+
 [data-theme="light"] {
   --bg: #f5f1e9;
   --surface: #fffdf8;
@@ -2462,9 +3046,9 @@ footer {
 
 .theory-route {
   --route-offset: min(28cqw, 180px);
-  height: 1800px;
+  height: 2150px;
   margin-top: -18px;
-  min-height: 1800px;
+  min-height: 2150px;
   position: relative;
   width: 100%;
   z-index: 1;
@@ -2487,7 +3071,7 @@ footer {
   );
   height: 320px;
   left: calc(50% - var(--route-offset));
-  top: 1260px;
+  top: 1610px;
   width: calc(var(--route-offset) + var(--route-offset));
 }
 
@@ -2500,7 +3084,7 @@ footer {
   );
   height: 300px;
   left: calc(50% - var(--route-offset));
-  top: 960px;
+  top: 1310px;
   width: calc(var(--route-offset) + var(--route-offset));
 }
 
@@ -2513,7 +3097,7 @@ footer {
   );
   height: 340px;
   left: calc(50% - var(--route-offset));
-  top: 620px;
+  top: 970px;
   width: calc(var(--route-offset) + var(--route-offset));
 }
 
@@ -2525,9 +3109,22 @@ footer {
     transparent calc(50% + 0.5px)
   );
   height: 325px;
-  left: 50%;
-  top: 295px;
-  width: var(--route-offset);
+  left: calc(50% - var(--route-offset));
+  top: 645px;
+  width: calc(var(--route-offset) + var(--route-offset));
+}
+
+.route-line-five {
+  background-image: linear-gradient(
+    to bottom right,
+    transparent calc(50% - 0.5px),
+    var(--route-color) 50%,
+    transparent calc(50% + 0.5px)
+  );
+  height: 345px;
+  left: calc(50% - var(--route-offset));
+  top: 300px;
+  width: calc(var(--route-offset) + var(--route-offset));
 }
 
 .theory-planet {
@@ -2549,27 +3146,32 @@ footer {
 
 .theory-planet-0 {
   left: calc(50% - var(--route-offset));
-  top: 1580px;
+  top: 1930px;
 }
 
 .theory-planet-1 {
   left: calc(50% + var(--route-offset));
-  top: 1260px;
+  top: 1610px;
 }
 
 .theory-planet-2 {
   left: calc(50% - var(--route-offset));
-  top: 960px;
+  top: 1310px;
 }
 
 .theory-planet-3 {
   left: calc(50% + var(--route-offset));
-  top: 620px;
+  top: 970px;
 }
 
 .theory-planet-4 {
-  left: 50%;
-  top: 295px;
+  left: calc(50% - var(--route-offset));
+  top: 645px;
+}
+
+.theory-planet-5 {
+  left: calc(50% + var(--route-offset));
+  top: 300px;
 }
 
 .theory-planet-visual {
@@ -2633,6 +3235,13 @@ footer {
   animation-duration: 7.4s;
   background: color-mix(in srgb, var(--surface-raised) 90%, var(--accent) 10%);
   border-radius: 54% 46% 49% 51%;
+}
+
+.theory-planet-5 .theory-planet-sphere {
+  animation-delay: -5.1s;
+  animation-duration: 7.8s;
+  background: color-mix(in srgb, var(--surface-raised) 87%, var(--accent) 13%);
+  border-radius: 47% 53% 55% 45%;
 }
 
 .theory-planet-0 .theory-planet-sphere {
@@ -2720,11 +3329,40 @@ footer {
 .planet-data-pattern,
 .planet-logic-pattern,
 .planet-string-pattern,
-.planet-loop-pattern {
+.planet-loop-pattern,
+.planet-for-pattern {
   inset: 0;
   position: absolute;
   z-index: 2;
 }
+
+.planet-for-pattern {
+  display: grid;
+  place-items: center;
+}
+
+.planet-for-pattern::before {
+  border: 1px dashed color-mix(in srgb, var(--accent) 56%, var(--text-soft));
+  border-radius: 50%;
+  content: "";
+  height: 66%;
+  position: absolute;
+  transform: rotate(-24deg);
+  width: 66%;
+}
+
+.planet-for-pattern i {
+  color: color-mix(in srgb, var(--accent) 75%, var(--text));
+  font-family: var(--font-geist-mono);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 700;
+  position: absolute;
+}
+
+.planet-for-pattern i:first-child { left: 18%; top: 28%; }
+.planet-for-pattern i:nth-child(2) { font-size: 17px; left: 47%; top: 40%; }
+.planet-for-pattern i:last-child { bottom: 24%; right: 12%; }
 
 .planet-loop-pattern {
   display: grid;
@@ -13965,27 +14603,32 @@ footer {
 
   .theory-planet-0 {
     left: calc(50% - var(--route-offset));
-    top: 1580px;
+    top: 1930px;
   }
 
   .theory-planet-1 {
     left: calc(50% + var(--route-offset));
-    top: 1260px;
+    top: 1610px;
   }
 
   .theory-planet-2 {
     left: calc(50% - var(--route-offset));
-    top: 960px;
+    top: 1310px;
   }
 
   .theory-planet-3 {
     left: calc(50% + var(--route-offset));
-    top: 620px;
+    top: 970px;
   }
 
   .theory-planet-4 {
-    left: 50%;
-    top: 295px;
+    left: calc(50% - var(--route-offset));
+    top: 645px;
+  }
+
+  .theory-planet-5 {
+    left: calc(50% + var(--route-offset));
+    top: 300px;
   }
 
   .theory-planet-0 .theory-planet-sphere,

@@ -44,6 +44,12 @@ const planets: Planet[] = [
     title: "Цикл while",
     description: "Как повторять команды, пока условие истинно.",
   },
+  {
+    id: 5,
+    chapter: "Глава 6",
+    title: "Цикл for",
+    description: "Как перебирать элементы и заранее известные диапазоны.",
+  },
 ];
 
 const lessonIds = ["program", "variables"] as const;
@@ -93,6 +99,16 @@ const whileTheoryLessonTitles: Record<WhileTheoryLessonId, string> = {
   trace: "Итерации шаг за шагом",
   indentation: "Что повторяется, а что нет",
   infinite: "Как остановить цикл",
+};
+
+const forTheoryLessonIds = ["iteration", "range", "step", "comparison"] as const;
+type ForTheoryLessonId = (typeof forTheoryLessonIds)[number];
+
+const forTheoryLessonTitles: Record<ForTheoryLessonId, string> = {
+  iteration: "Перебор элементов",
+  range: "Как устроен range",
+  step: "От, до и шаг",
+  comparison: "for или while",
 };
 
 function PlanetSphere({
@@ -148,6 +164,13 @@ function PlanetSphere({
           <i>while</i>
           <i>↻</i>
           <i>?</i>
+        </span>
+      )}
+      {variant === 5 && (
+        <span className="planet-for-pattern">
+          <i>for</i>
+          <i>→</i>
+          <i>range</i>
         </span>
       )}
     </span>
@@ -304,6 +327,27 @@ function WhileTheoryLessonStatus({
     >
       <span aria-hidden="true">{completed ? "✓" : "→"}</span>
       {completed ? "Блок пройден" : id === "infinite" ? "Завершить главу" : "Завершить блок"}
+    </button>
+  );
+}
+
+function ForTheoryLessonStatus({
+  id,
+  completed,
+  onComplete,
+}: {
+  id: ForTheoryLessonId;
+  completed: boolean;
+  onComplete: (id: ForTheoryLessonId) => void;
+}) {
+  return (
+    <button
+      className={`theory-complete-button ${completed ? "is-complete" : ""}`}
+      disabled={completed}
+      onClick={() => onComplete(id)}
+    >
+      <span aria-hidden="true">{completed ? "✓" : "→"}</span>
+      {completed ? "Блок пройден" : id === "comparison" ? "Завершить главу" : "Завершить блок"}
     </button>
   );
 }
@@ -2062,12 +2106,344 @@ function WhileCheck() {
   );
 }
 
+type ForDebugMode = "string" | "range";
+
+function ForDebuggerGraphic({ mode }: { mode: ForDebugMode }) {
+  const items = mode === "string" ? ["е", "г", "э"] : ["0", "1", "2", "3", "4"];
+  const [phase, setPhase] = useState(0);
+  const phasesPerItem = 3;
+  const totalPhases = 1 + items.length * phasesPerItem + 1;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setPhase((current) => (current + 1) % totalPhases);
+    }, 900);
+    return () => window.clearInterval(timer);
+  }, [totalPhases]);
+
+  const normalized = Math.max(0, phase - 1);
+  const itemIndex = Math.min(items.length - 1, Math.floor(normalized / phasesPerItem));
+  const itemPhase = normalized % phasesPerItem;
+  const isStart = phase === 0;
+  const isDone = phase === totalPhases - 1;
+  const activeNode = isStart ? "source" : isDone ? "done" : ["check", "assign", "print"][itemPhase];
+  const printedCount = isStart
+    ? 0
+    : isDone
+      ? items.length
+      : itemIndex + (itemPhase === 2 ? 1 : 0);
+  const activeLine = isStart ? 1 : itemPhase === 2 ? 3 : 2;
+  const variableName = mode === "string" ? "letter" : "i";
+  const source = mode === "string" ? '"егэ"' : "range(5)";
+
+  return (
+    <div className="for-debugger" aria-label="Автоматическая трассировка цикла for">
+      <div className="for-debugger-head">
+        <div>
+          <small>Режим отладки</small>
+          <strong>
+            {mode === "string" ? "Python берёт символы по одному" : "range передаёт числа по одному"}
+          </strong>
+        </div>
+        <span>{isDone ? "Перебор завершён" : `Шаг ${Math.min(itemIndex + 1, items.length)}`}</span>
+      </div>
+
+      <div className="for-debugger-grid">
+        <EditorFrame file={mode === "string" ? "letters.py" : "numbers.py"} className="for-code">
+          <pre>
+            <code>
+              <span className={activeLine === 1 ? "is-active" : ""}>
+                <i>1</i>{mode === "string" ? 'word = "егэ"' : ""}
+              </span>
+              <span className={activeLine === 2 ? "is-active" : ""}>
+                <i>{mode === "string" ? "2" : "1"}</i>
+                <b>for</b> {variableName} <b>in</b> {mode === "string" ? "word" : "range(5)"}:
+              </span>
+              <span className={activeLine === 3 ? "is-active is-indented" : "is-indented"}>
+                <i>{mode === "string" ? "3" : "2"}</i>print({variableName})
+              </span>
+            </code>
+          </pre>
+        </EditorFrame>
+
+        <div className="for-flow">
+          <div className={`for-source ${activeNode === "source" ? "is-active" : ""}`}>
+            <small>Последовательность {source}</small>
+            <div>
+              {items.map((item, index) => (
+                <span
+                  className={`${index === itemIndex && !isStart && !isDone ? "is-current" : ""} ${
+                    index < printedCount ? "is-used" : ""
+                  }`}
+                  key={`${mode}-${item}-${index}`}
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className={`for-decision ${activeNode === "check" ? "is-active" : ""}`}>
+            <span>Есть следующий элемент?</span>
+          </div>
+          <div className="for-flow-branches">
+            <span className={activeNode === "assign" || activeNode === "print" ? "is-active" : ""}>
+              Да · True
+            </span>
+            <span className={activeNode === "done" ? "is-active" : ""}>Нет · False</span>
+          </div>
+          <div className="for-flow-actions">
+            <div className={activeNode === "assign" ? "is-active" : ""}>
+              <small>Записать во временную переменную</small>
+              <strong>
+                {variableName} = {isStart || isDone ? "—" : items[itemIndex]}
+              </strong>
+            </div>
+            <div className={activeNode === "print" ? "is-active" : ""}>
+              <small>Выполнить тело с отступом</small>
+              <strong>print({variableName})</strong>
+            </div>
+            <div className={activeNode === "done" ? "is-active" : ""}>
+              <small>Элементы закончились</small>
+              <strong>идём дальше</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="for-debugger-output">
+        <small>Вывод</small>
+        <div>
+          {items.map((item, index) => (
+            <span className={index < printedCount ? "is-visible" : ""} key={`output-${mode}-${index}`}>
+              {item}
+            </span>
+          ))}
+        </div>
+        <p>
+          {mode === "string"
+            ? "Переменная letter существует для одного текущего символа и меняется на каждом круге."
+            : "range(5) подготовил пять значений: от 0 до 4. Число 5 — граница, оно не входит."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+const rangeExamples = [
+  { expression: "range(7)", result: ["0", "1", "2", "3", "4", "5", "6"], note: "Начало 0 и шаг 1 подставились автоматически." },
+  { expression: "range(5, 9)", result: ["5", "6", "7", "8"], note: "Идём от 5 до 9, но саму 9 не берём." },
+  { expression: "range(2, 10, 2)", result: ["2", "4", "6", "8"], note: "Шаг 2: после каждого числа прыгаем через одно." },
+  { expression: "range(10, 5, -1)", result: ["10", "9", "8", "7", "6"], note: "Отрицательный шаг позволяет двигаться назад." },
+];
+
+function RangeAnatomyGraphic() {
+  const [exampleIndex, setExampleIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setExampleIndex((current) => (current + 1) % rangeExamples.length);
+    }, 2600);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const example = rangeExamples[exampleIndex];
+
+  return (
+    <div className="range-anatomy" aria-label="Автоматическая инфографика аргументов range">
+      <div className="range-formula">
+        <small>Функция создаёт последовательность чисел</small>
+        <strong>
+          range(<i>от</i>, <i>до</i>, <i>шаг</i>)
+        </strong>
+        <div>
+          <span><b>от</b> первое число</span>
+          <span><b>до</b> граница не включается</span>
+          <span><b>шаг</b> как меняется число</span>
+        </div>
+      </div>
+      <div className="range-live-example" key={example.expression}>
+        <code>{example.expression}</code>
+        <span aria-hidden="true">→</span>
+        <div>
+          {example.result.map((number) => <i key={`${example.expression}-${number}`}>{number}</i>)}
+        </div>
+        <p>{example.note}</p>
+      </div>
+      <div className="range-rules">
+        <span><b>1 аргумент</b> начало = 0, шаг = 1</span>
+        <span><b>2 аргумента</b> шаг = 1</span>
+        <span><b>3 аргумента</b> всё задаёшь сам</span>
+      </div>
+    </div>
+  );
+}
+
+function ForWhileComparisonGraphic() {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setStep((current) => (current + 1) % 10), 850);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const value = Math.floor(step / 2);
+  const isPrint = step % 2 === 1;
+  const printed = Math.min(5, value + (isPrint ? 1 : 0));
+
+  return (
+    <div className="loop-comparison" aria-label="Сравнение одинакового перебора через for и while">
+      <div className="loop-comparison-head">
+        <div>
+          <small>Одна задача · два инструмента</small>
+          <strong>Напечатать числа от 0 до 4</strong>
+        </div>
+        <span>Сейчас: {isPrint ? `печатаем ${value}` : `готовим значение ${value}`}</span>
+      </div>
+      <div className="loop-comparison-grid">
+        <div className="loop-compare-card is-for">
+          <h4><code>for</code> сам берёт следующее значение</h4>
+          <EditorFrame file="with_for.py">
+            <pre><code>
+              <span className={!isPrint ? "is-active" : ""}><i>1</i><b>for</b> i <b>in</b> range(5):</span>
+              <span className={isPrint ? "is-active is-indented" : "is-indented"}><i>2</i>print(i)</span>
+            </code></pre>
+          </EditorFrame>
+          <p>Выбирай, когда известны элементы или количество повторений.</p>
+        </div>
+        <div className="loop-compare-card is-while">
+          <h4><code>while</code> требует управлять счётчиком вручную</h4>
+          <EditorFrame file="with_while.py">
+            <pre><code>
+              <span className={step === 0 ? "is-active" : ""}><i>1</i>i = 0</span>
+              <span className={!isPrint ? "is-active" : ""}><i>2</i><b>while</b> i &lt; 5:</span>
+              <span className={isPrint ? "is-active is-indented" : "is-indented"}><i>3</i>print(i)</span>
+              <span className={!isPrint && step > 0 ? "is-active is-indented" : "is-indented"}><i>4</i>i += 1</span>
+            </code></pre>
+          </EditorFrame>
+          <p>Выбирай, когда повторение должно продолжаться до изменения условия.</p>
+        </div>
+      </div>
+      <div className="loop-shared-output">
+        <small>Одинаковый вывод</small>
+        {["0", "1", "2", "3", "4"].map((number, index) => (
+          <span className={index < printed ? "is-visible" : ""} key={number}>{number}</span>
+        ))}
+      </div>
+      <aside>
+        <strong>Главное отличие</strong>
+        <p><code>for</code> отвечает на вопрос «для каждого элемента что сделать?», а <code>while</code> — «пока условие истинно, что повторять?»</p>
+      </aside>
+    </div>
+  );
+}
+
+function ForTheoryChapter({
+  completed,
+  progress,
+  onComplete,
+  onGoTo,
+  onReplay,
+}: {
+  completed: Set<ForTheoryLessonId>;
+  progress: number;
+  onComplete: (id: ForTheoryLessonId) => void;
+  onGoTo: (id: ForTheoryLessonId, delay?: number) => void;
+  onReplay: () => void;
+}) {
+  return (
+    <div className="theory-document theory-chapter-one theory-chapter-for">
+      <div className="theory-document-title">
+        <p className="eyebrow">Глава 6 · Перебор и диапазоны</p>
+        <h2>Цикл for</h2>
+        <p>Научимся брать элементы по одному, проследим цикл в режиме отладки и разберём, где заканчивается <code>range</code>.</p>
+        <div className="theory-document-meta">
+          <span>Предисловие + 4 блока</span><span>≈ 25 минут</span><span>{completed.size}/4 пройдено</span>
+        </div>
+      </div>
+
+      <nav className="theory-document-nav" aria-label="Содержание главы">
+        <button onClick={() => document.getElementById("theory-for-intro")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+          <span>0</span>Зачем нужен for
+        </button>
+        {forTheoryLessonIds.map((id, index) => (
+          <button onClick={() => onGoTo(id)} key={id}>
+            <span>{completed.has(id) ? "✓" : index + 1}</span>{forTheoryLessonTitles[id]}
+          </button>
+        ))}
+      </nav>
+
+      <section className="theory-intro chapter-one-intro for-chapter-intro" id="theory-for-intro">
+        <div className="theory-section-heading"><span>00</span><div><p className="eyebrow">Вступление из жизни</p><h3>Когда объекты уже стоят в очереди</h3></div></div>
+        <div className="theory-prose">
+          <p>Представь стопку карточек. На каждой написано одно слово, а тебе нужно прочитать их все. Ты берёшь первую карточку, выполняешь действие, откладываешь её и переходишь к следующей.</p>
+          <p><code>for</code> работает именно так: <strong>берёт элементы последовательности по одному</strong> и на время записывает текущий элемент в переменную. Когда элементы заканчиваются, цикл сам останавливается.</p>
+          <p>Поэтому <code>for</code> удобен, когда нужно перебрать буквы строки, элементы списка или заранее известный диапазон чисел. В отличие от <code>while</code>, здесь не нужно вручную менять счётчик и проверять границу.</p>
+        </div>
+        <aside className="theory-intro-insight">Читай конструкцию буквально: <code>for letter in word</code> — «для каждой буквы letter в слове word».</aside>
+      </section>
+
+      <article className="theory-lesson chapter-one-block" id="theory-for-iteration">
+        <div className="theory-lesson-heading"><span>01</span><div><p className="eyebrow">Перебор строки</p><h3>Один круг — один элемент</h3></div></div>
+        <div className="theory-prose">
+          <p>В строке <code>for letter in word:</code> переменная <code>letter</code> не хранит всё слово. На каждой итерации в ней лежит только один текущий символ.</p>
+          <p>Отступ показывает тело цикла. Поэтому <code>print(letter)</code> запускается отдельно для «е», затем для «г» и наконец для «э». После последнего символа Python автоматически выходит из цикла.</p>
+        </div>
+        <ForDebuggerGraphic mode="string" />
+        <ForTheoryLessonStatus id="iteration" completed={completed.has("iteration")} onComplete={onComplete} />
+      </article>
+
+      <article className="theory-lesson chapter-one-block" id="theory-for-range">
+        <div className="theory-lesson-heading"><span>02</span><div><p className="eyebrow">for и range — разные инструменты</p><h3>range создаёт числа, for их перебирает</h3></div></div>
+        <div className="theory-prose">
+          <p><code>for</code> — это цикл. <code>range()</code> — отдельная функция, которая описывает последовательность целых чисел. Они часто стоят рядом, но выполняют разные роли.</p>
+          <p><code>range(5)</code> создаёт пять значений: <code>0, 1, 2, 3, 4</code>. Пятёрка здесь означает правую границу, а не последнее число. Само значение <code>5</code> в диапазон не входит.</p>
+        </div>
+        <ForDebuggerGraphic mode="range" />
+        <ForTheoryLessonStatus id="range" completed={completed.has("range")} onComplete={onComplete} />
+      </article>
+
+      <article className="theory-lesson chapter-one-block" id="theory-for-step">
+        <div className="theory-lesson-heading"><span>03</span><div><p className="eyebrow">Аргументы range</p><h3>Откуда, докуда и каким шагом</h3></div></div>
+        <div className="theory-prose">
+          <p>Полная форма выглядит так: <code>range(от, до, шаг)</code>. Начало входит в диапазон, граница «до» не входит, а шаг говорит, насколько менять число перед следующим кругом.</p>
+          <p>Если указан один аргумент, Python начинает с нуля. Если два — использует шаг 1. Чтобы идти назад, шаг должен быть отрицательным, например <code>range(10, 5, -1)</code>.</p>
+        </div>
+        <RangeAnatomyGraphic />
+        <aside className="theory-warning"><span>Граница всегда остаётся за дверью</span><p>В <code>range(2, 10, 2)</code> последнее число — 8. Следующим было бы 10, но это уже исключённая правая граница.</p></aside>
+        <ForTheoryLessonStatus id="step" completed={completed.has("step")} onComplete={onComplete} />
+      </article>
+
+      <article className="theory-lesson chapter-one-block" id="theory-for-comparison">
+        <div className="theory-lesson-heading"><span>04</span><div><p className="eyebrow">Выбор цикла</p><h3>for и while могут решить одну задачу по-разному</h3></div></div>
+        <div className="theory-prose">
+          <p>Если заранее известен набор элементов или количество повторений, обычно яснее использовать <code>for</code>. Он сам берёт следующий элемент и сам замечает конец последовательности.</p>
+          <p><code>while</code> нужен, когда количество кругов заранее неизвестно и остановка зависит от меняющегося условия: например, «пока есть попытки» или «пока число больше нуля».</p>
+        </div>
+        <ForWhileComparisonGraphic />
+        <ForTheoryLessonStatus id="comparison" completed={completed.has("comparison")} onComplete={onComplete} />
+      </article>
+
+      <section className={`theory-finish ${progress === 100 ? "is-ready" : ""}`} id="theory-for-finish">
+        <div className="theory-finish-planet"><PlanetSphere progress={progress} variant={5} complete={progress === 100} /></div>
+        <div>
+          <p className="eyebrow">{progress === 100 ? "Глава пройдена" : "Продолжай маршрут"}</p>
+          <h3>{progress === 100 ? "Планета заполнена" : `Пройдено ${progress}%`}</h3>
+          <p>{progress === 100 ? "Теперь ты понимаешь механику for, устройство range и умеешь выбирать подходящий цикл." : "Заверши оставшиеся блоки, чтобы полностью заполнить планету."}</p>
+          {progress === 100 ? <button onClick={onReplay}>Повторить главу</button> : (
+            <button onClick={() => { const first = forTheoryLessonIds.find((id) => !completed.has(id)); if (first) onGoTo(first); }}>К непройденному блоку</button>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function TheorySpace({ userId }: TheorySpaceProps) {
   const storageKey = `egege-theory-progress-v2:${userId}`;
   const arithmeticStorageKey = `egege-theory-arithmetic-v1:${userId}`;
   const conditionStorageKey = `egege-theory-conditions-v1:${userId}`;
   const stringTheoryStorageKey = `egege-theory-strings-v1:${userId}`;
   const whileTheoryStorageKey = `egege-theory-while-v1:${userId}`;
+  const forTheoryStorageKey = `egege-theory-for-v1:${userId}`;
   const splitStorageKey = `egege-theory-split-v1:${userId}`;
   const theorySpaceRef = useRef<HTMLElement | null>(null);
   const theoryMapRef = useRef<HTMLDivElement | null>(null);
@@ -2088,6 +2464,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   >(() => new Set());
   const [completedWhileTheoryLessons, setCompletedWhileTheoryLessons] = useState<
     Set<WhileTheoryLessonId>
+  >(() => new Set());
+  const [completedForTheoryLessons, setCompletedForTheoryLessons] = useState<
+    Set<ForTheoryLessonId>
   >(() => new Set());
 
   useEffect(() => {
@@ -2182,6 +2561,25 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   useEffect(() => {
     queueMicrotask(() => {
       try {
+        const saved = JSON.parse(
+          window.localStorage.getItem(forTheoryStorageKey) ?? "[]",
+        ) as string[];
+        setCompletedForTheoryLessons(
+          new Set(
+            saved.filter((item): item is ForTheoryLessonId =>
+              forTheoryLessonIds.includes(item as ForTheoryLessonId),
+            ),
+          ),
+        );
+      } catch {
+        setCompletedForTheoryLessons(new Set());
+      }
+    });
+  }, [forTheoryStorageKey]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
         const saved = Number(window.localStorage.getItem(splitStorageKey));
         if (Number.isFinite(saved) && saved >= 16 && saved <= 78) {
           splitPercentRef.current = saved;
@@ -2210,6 +2608,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const conditionProgress = completedConditionLessons.size * 20;
   const stringTheoryProgress = completedStringTheoryLessons.size * 25;
   const whileTheoryProgress = completedWhileTheoryLessons.size * 25;
+  const forTheoryProgress = completedForTheoryLessons.size * 25;
   const activePlanet = useMemo(
     () => planets.find((planet) => planet.id === selectedPlanet) ?? null,
     [selectedPlanet],
@@ -2460,6 +2859,54 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     });
   };
 
+  const goToForTheoryLesson = (lessonId: ForTheoryLessonId, delay = 0) => {
+    window.setTimeout(() => {
+      document.getElementById(`theory-for-${lessonId}`)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    }, delay);
+  };
+
+  const completeForTheoryLesson = (id: ForTheoryLessonId) => {
+    const updated = new Set(completedForTheoryLessons);
+    updated.add(id);
+    setCompletedForTheoryLessons(updated);
+    try {
+      window.localStorage.setItem(forTheoryStorageKey, JSON.stringify(Array.from(updated)));
+    } catch {
+      // Progress remains available for the current session.
+    }
+
+    const currentIndex = forTheoryLessonIds.indexOf(id);
+    const nextLesson = forTheoryLessonIds[currentIndex + 1];
+    if (nextLesson) {
+      goToForTheoryLesson(nextLesson, 160);
+    } else {
+      window.setTimeout(() => {
+        document.getElementById("theory-for-finish")?.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+          block: "center",
+        });
+      }, 160);
+    }
+  };
+
+  const replayForTheoryChapter = () => {
+    setCompletedForTheoryLessons(new Set());
+    try {
+      window.localStorage.removeItem(forTheoryStorageKey);
+    } catch {
+      // The in-memory reset still works.
+    }
+    document.getElementById("theory-for-intro")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   const scrollToFirstIncomplete = (completed = completedLessons) => {
     const firstIncomplete = lessonIds.find((lessonId) => !completed.has(lessonId));
     if (firstIncomplete) goToLesson(firstIncomplete, 360);
@@ -2509,6 +2956,16 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
         (lessonId) => !completedWhileTheoryLessons.has(lessonId),
       );
       if (firstIncomplete) goToWhileTheoryLesson(firstIncomplete, 360);
+    }
+    if (
+      planetId === 5 &&
+      completedForTheoryLessons.size > 0 &&
+      completedForTheoryLessons.size < forTheoryLessonIds.length
+    ) {
+      const firstIncomplete = forTheoryLessonIds.find(
+        (lessonId) => !completedForTheoryLessons.has(lessonId),
+      );
+      if (firstIncomplete) goToForTheoryLesson(firstIncomplete, 360);
     }
   };
 
@@ -2585,11 +3042,12 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   arithmeticProgress +
                   conditionProgress +
                   stringTheoryProgress +
-                  whileTheoryProgress
-                ) / 5,
+                  whileTheoryProgress +
+                  forTheoryProgress
+                ) / 6,
               )}%
             </span>
-            <small>пять глав</small>
+            <small>шесть глав</small>
           </div>
         </header>
 
@@ -2598,6 +3056,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
           <span className="route-line route-line-two" aria-hidden="true" />
           <span className="route-line route-line-three" aria-hidden="true" />
           <span className="route-line route-line-four" aria-hidden="true" />
+          <span className="route-line route-line-five" aria-hidden="true" />
 
           {planets.map((planet) => {
             const planetProgress =
@@ -2609,7 +3068,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                     ? conditionProgress
                     : planet.id === 3
                       ? stringTheoryProgress
-                      : whileTheoryProgress;
+                      : planet.id === 4
+                        ? whileTheoryProgress
+                        : forTheoryProgress;
             const routePlanet =
               selectedPlanet ??
               (progress < 100
@@ -2620,7 +3081,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                     ? 2
                     : stringTheoryProgress < 100
                       ? 3
-                      : 4);
+                      : whileTheoryProgress < 100
+                        ? 4
+                        : 5);
             return (
               <button
                 className={`theory-planet theory-planet-${planet.id} ${
@@ -2708,7 +3171,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                           ? conditionProgress
                           : activePlanet.id === 3
                             ? stringTheoryProgress
-                            : whileTheoryProgress
+                            : activePlanet.id === 4
+                              ? whileTheoryProgress
+                              : forTheoryProgress
                     }%`,
                   }}
                 />
@@ -2722,12 +3187,22 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                       ? `${conditionProgress}%`
                       : activePlanet.id === 3
                         ? `${stringTheoryProgress}%`
-                        : `${whileTheoryProgress}%`}
+                        : activePlanet.id === 4
+                          ? `${whileTheoryProgress}%`
+                          : `${forTheoryProgress}%`}
               </small>
             </div>
           </header>
 
-          {activePlanet.id === 4 ? (
+          {activePlanet.id === 5 ? (
+            <ForTheoryChapter
+              completed={completedForTheoryLessons}
+              progress={forTheoryProgress}
+              onComplete={completeForTheoryLesson}
+              onGoTo={goToForTheoryLesson}
+              onReplay={replayForTheoryChapter}
+            />
+          ) : activePlanet.id === 4 ? (
             <div className="theory-document theory-chapter-one theory-chapter-while">
               <div className="theory-document-title">
                 <p className="eyebrow">Глава 5 · Управление повторениями</p>
