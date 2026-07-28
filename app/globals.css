@@ -2480,10 +2480,17 @@ footer {
 }
 
 .route-line-three {
-  left: 66%;
-  top: 59%;
-  transform: rotate(-39deg);
-  width: 22%;
+  left: 68%;
+  top: 39%;
+  transform: rotate(35deg);
+  width: 20%;
+}
+
+.route-line-four {
+  left: 50%;
+  top: 61%;
+  transform: rotate(-35deg);
+  width: 21%;
 }
 
 .theory-planet {
@@ -2504,23 +2511,28 @@ footer {
 }
 
 .theory-planet-0 {
-  left: 18%;
-  top: 63%;
+  left: 13%;
+  top: 65%;
 }
 
 .theory-planet-1 {
-  left: 43%;
+  left: 32%;
   top: 35%;
 }
 
 .theory-planet-2 {
-  left: 65%;
-  top: 63%;
+  left: 51%;
+  top: 65%;
 }
 
 .theory-planet-3 {
-  left: 84%;
+  left: 70%;
   top: 36%;
+}
+
+.theory-planet-4 {
+  left: 88%;
+  top: 64%;
 }
 
 .theory-planet-visual {
@@ -2577,6 +2589,13 @@ footer {
   animation-duration: 6.9s;
   background: color-mix(in srgb, var(--surface-raised) 88%, var(--accent) 12%);
   border-radius: 48% 52% 46% 54%;
+}
+
+.theory-planet-4 .theory-planet-sphere {
+  animation-delay: -3.2s;
+  animation-duration: 7.4s;
+  background: color-mix(in srgb, var(--surface-raised) 90%, var(--accent) 10%);
+  border-radius: 54% 46% 49% 51%;
 }
 
 .theory-planet-0 .theory-planet-sphere {
@@ -2663,10 +2682,67 @@ footer {
 
 .planet-data-pattern,
 .planet-logic-pattern,
-.planet-string-pattern {
+.planet-string-pattern,
+.planet-loop-pattern {
   inset: 0;
   position: absolute;
   z-index: 2;
+}
+
+.planet-loop-pattern {
+  display: grid;
+  height: 100%;
+  place-items: center;
+  position: absolute;
+  width: 100%;
+}
+
+.planet-loop-pattern::before,
+.planet-loop-pattern::after {
+  border: 1px solid color-mix(in srgb, var(--accent) 46%, var(--text-soft));
+  border-radius: 50%;
+  content: "";
+  height: 52%;
+  position: absolute;
+  width: 52%;
+}
+
+.planet-loop-pattern::before {
+  border-bottom-color: transparent;
+  rotate: -30deg;
+}
+
+.planet-loop-pattern::after {
+  border-left-color: transparent;
+  height: 72%;
+  rotate: 24deg;
+  width: 72%;
+}
+
+.planet-loop-pattern i {
+  color: color-mix(in srgb, var(--accent) 78%, var(--text-soft));
+  font-family: var(--font-geist-mono);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 650;
+  position: absolute;
+  z-index: 1;
+}
+
+.planet-loop-pattern i:first-child {
+  left: 24%;
+  top: 46%;
+}
+
+.planet-loop-pattern i:nth-child(2) {
+  font-size: 18px;
+  right: 17%;
+  top: 20%;
+}
+
+.planet-loop-pattern i:last-child {
+  bottom: 21%;
+  right: 31%;
 }
 
 .planet-data-pattern::before {
@@ -3001,22 +3077,27 @@ footer {
 
 .theory-space.is-chapter-open .theory-planet-0 {
   left: 30%;
-  top: 70%;
+  top: 79%;
 }
 
 .theory-space.is-chapter-open .theory-planet-1 {
   left: 69%;
-  top: 53%;
+  top: 63%;
 }
 
 .theory-space.is-chapter-open .theory-planet-2 {
   left: 31%;
-  top: 37%;
+  top: 47%;
 }
 
 .theory-space.is-chapter-open .theory-planet-3 {
   left: 70%;
-  top: 22%;
+  top: 31%;
+}
+
+.theory-space.is-chapter-open .theory-planet-4 {
+  left: 31%;
+  top: 15%;
 }
 
 .theory-space.is-chapter-open .theory-planet-0 .theory-planet-sphere,
@@ -3048,8 +3129,15 @@ footer {
 
 .theory-space.is-chapter-open .route-line-three {
   left: 35%;
-  top: 34%;
-  transform: rotate(-18deg);
+  top: 30%;
+  transform: rotate(22deg);
+  width: 38%;
+}
+
+.theory-space.is-chapter-open .route-line-four {
+  left: 35%;
+  top: 46%;
+  transform: rotate(-22deg);
   width: 38%;
 }
 
@@ -12099,6 +12187,682 @@ footer {
   grid-column: 1 / -1;
 }
 
+.while-everyday-graphic,
+.while-flow-graphic,
+.while-trace-graphic,
+.while-indent-graphic,
+.while-infinite-graphic {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-sizing: border-box;
+  margin-top: 28px;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+.while-everyday-graphic > header,
+.while-flow-graphic > header,
+.while-trace-graphic > header,
+.while-indent-graphic > header,
+.while-infinite-graphic > header {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 18px;
+}
+
+.while-everyday-graphic > header small,
+.while-flow-graphic > header small,
+.while-trace-graphic > header small,
+.while-indent-graphic > header small,
+.while-infinite-graphic > header small {
+  color: var(--accent);
+  display: block;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.while-everyday-graphic > header strong,
+.while-flow-graphic > header strong,
+.while-trace-graphic > header strong,
+.while-indent-graphic > header strong,
+.while-infinite-graphic > header strong {
+  color: var(--text-soft);
+  display: block;
+  font-size: 11px;
+  font-weight: 590;
+  margin-top: 5px;
+}
+
+.while-flow-graphic > header > code {
+  background: var(--surface);
+  border-radius: 10px;
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: 8px;
+  padding: 9px 11px;
+}
+
+.while-everyday-list {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 18px;
+}
+
+.while-everyday-list > span {
+  background: var(--surface);
+  border-radius: 14px;
+  display: grid;
+  min-height: 110px;
+  padding: 15px;
+}
+
+.while-everyday-list b {
+  color: var(--accent);
+  font-family: var(--font-geist-mono);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.while-everyday-list strong {
+  align-self: end;
+  color: var(--text-soft);
+  font-size: 10px;
+  font-weight: 590;
+  line-height: 1.35;
+}
+
+.while-everyday-list small {
+  color: var(--dim);
+  font-size: 7px;
+  margin-top: 5px;
+}
+
+.while-everyday-transform {
+  align-items: center;
+  background: var(--surface-raised);
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 18px auto 1fr;
+  padding: 16px 18px;
+}
+
+.while-everyday-transform span,
+.while-everyday-transform strong {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.while-everyday-transform strong {
+  color: var(--accent);
+  font-weight: 590;
+  text-align: right;
+}
+
+.while-everyday-transform i {
+  color: var(--dim);
+  font-style: normal;
+}
+
+.while-everyday-transform code {
+  background: var(--bg);
+  border-radius: 9px;
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: 9px;
+  padding: 9px 11px;
+}
+
+.while-flow-stage {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(220px, 0.82fr) minmax(260px, 1.18fr);
+  padding: 18px;
+}
+
+.while-flow-code .theory-editor {
+  height: 100%;
+  margin: 0;
+}
+
+.while-flow-code .theory-code,
+.while-trace-main .theory-code,
+.while-indent-comparison .theory-code,
+.while-infinite-main .theory-code {
+  padding: 12px;
+}
+
+.while-flow-code .theory-code .is-active {
+  background: var(--accent-wash);
+  border-radius: 9px;
+}
+
+.while-flow-code .theory-code .is-active b,
+.while-trace-main .theory-code b,
+.while-infinite-main .theory-code b {
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.while-flow-code .theory-code .is-indented {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent) 42%, transparent);
+}
+
+.while-flow-map {
+  min-height: 300px;
+  position: relative;
+}
+
+.while-flow-map > span {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text-soft);
+  display: flex;
+  font-family: var(--font-geist-mono);
+  font-size: 8px;
+  justify-content: center;
+  padding: 10px;
+  position: absolute;
+  text-align: center;
+  z-index: 2;
+}
+
+.while-flow-start {
+  left: 34%;
+  top: 0;
+  width: 32%;
+}
+
+.while-flow-condition {
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--line)) !important;
+  border-radius: 50% !important;
+  height: 60px;
+  left: 33%;
+  top: 76px;
+  width: 60px;
+}
+
+.while-flow-yes,
+.while-flow-no,
+.while-flow-return {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--dim) !important;
+  font-family: inherit !important;
+  font-size: 7px !important;
+  padding: 0 !important;
+}
+
+.while-flow-yes {
+  left: 8%;
+  top: 130px;
+}
+
+.while-flow-no {
+  right: 2%;
+  top: 130px;
+}
+
+.while-flow-action {
+  bottom: 42px;
+  left: 4%;
+  width: 40%;
+}
+
+.while-flow-action b {
+  color: var(--accent);
+  font-weight: 590;
+}
+
+.while-flow-end {
+  bottom: 42px;
+  right: 2%;
+  width: 34%;
+}
+
+.while-flow-return {
+  bottom: 4px;
+  left: 24%;
+}
+
+.while-flow-line {
+  background: var(--line-strong);
+  height: 1px;
+  position: absolute;
+  transform-origin: left center;
+}
+
+.line-start {
+  left: 50%;
+  rotate: 90deg;
+  top: 44px;
+  width: 38px;
+}
+
+.line-yes {
+  left: 36%;
+  rotate: 142deg;
+  top: 126px;
+  width: 76px;
+}
+
+.line-action {
+  bottom: 107px;
+  left: 15%;
+  rotate: 90deg;
+  width: 35px;
+}
+
+.line-no {
+  right: 19%;
+  rotate: 38deg;
+  top: 128px;
+  width: 72px;
+}
+
+.line-return-one {
+  bottom: 31px;
+  left: 24%;
+  rotate: 0deg;
+  width: 28%;
+}
+
+.line-return-two {
+  bottom: 31px;
+  height: 130px;
+  left: 52%;
+  width: 1px;
+}
+
+.while-flow-steps {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 9px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 16px 18px;
+}
+
+.while-flow-steps li {
+  background: var(--surface);
+  border-radius: 12px;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: 22px 1fr;
+  padding: 11px;
+}
+
+.while-flow-steps li > span {
+  color: var(--accent);
+  font-family: var(--font-geist-mono);
+  font-size: 9px;
+}
+
+.while-flow-steps p {
+  color: var(--muted);
+  font-size: 7px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.while-flow-steps code {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+}
+
+.while-trace-main {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(250px, 1fr) minmax(150px, 0.45fr);
+  padding: 18px;
+}
+
+.while-trace-main .theory-editor {
+  margin: 0;
+}
+
+.while-trace-output {
+  background: var(--surface);
+  border-radius: 15px;
+  display: grid;
+  padding: 16px;
+}
+
+.while-trace-output > small {
+  color: var(--dim);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.while-trace-output > div {
+  align-items: center;
+  align-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.while-trace-output > div span {
+  animation: while-output-pulse 6s ease-in-out infinite;
+  background: var(--accent-wash-strong);
+  border-radius: 9px;
+  color: var(--accent);
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  padding: 8px 10px;
+}
+
+.while-trace-output > div span:nth-child(2) { animation-delay: 1s; }
+.while-trace-output > div span:nth-child(3) { animation-delay: 2s; }
+.while-trace-output > div span:nth-child(4) { animation-delay: 3s; }
+.while-trace-output > div span:nth-child(5) { animation-delay: 4s; }
+
+@keyframes while-output-pulse {
+  0%, 12%, 100% { box-shadow: none; opacity: 0.45; transform: translateY(0); }
+  17%, 30% { box-shadow: inset 0 -3px 0 var(--accent); opacity: 1; transform: translateY(-2px); }
+  35%, 95% { opacity: 0.72; }
+}
+
+.while-trace-output p {
+  align-self: end;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.while-trace-table {
+  border-top: 1px solid var(--line);
+  display: grid;
+  padding: 0 18px 18px;
+}
+
+.while-trace-table > div {
+  animation: while-trace-row 7s ease-in-out infinite;
+  animation-delay: calc(var(--trace-index) * 0.85s);
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 0.7fr 1.1fr 0.8fr;
+  padding: 10px 12px;
+}
+
+.while-trace-table > div.is-heading {
+  animation: none;
+  background: var(--surface-raised);
+  border-radius: 10px 10px 0 0;
+}
+
+@keyframes while-trace-row {
+  0%, 8%, 100% { background: transparent; }
+  12%, 23% { background: var(--accent-wash); }
+  27%, 96% { background: transparent; }
+}
+
+.while-trace-table span,
+.while-trace-table code,
+.while-trace-table strong {
+  color: var(--muted);
+  font-size: 8px;
+  min-width: 0;
+}
+
+.while-trace-table code,
+.while-trace-table strong {
+  font-family: var(--font-geist-mono);
+}
+
+.while-trace-table strong {
+  color: var(--accent);
+  font-weight: 590;
+}
+
+.while-trace-summary {
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.6;
+  margin: 0;
+  padding: 14px 18px;
+  text-align: center;
+}
+
+.while-trace-summary code {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+}
+
+.while-check {
+  margin-top: 20px;
+}
+
+.while-check > div:first-child > code {
+  line-height: 1.55;
+}
+
+.while-indent-comparison {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 18px;
+}
+
+.while-indent-comparison > section {
+  background: var(--surface);
+  border-radius: 16px;
+  min-width: 0;
+  padding: 15px;
+}
+
+.while-indent-title small {
+  color: var(--accent);
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.while-indent-title h4 {
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 610;
+  margin: 5px 0 13px;
+}
+
+.while-indent-comparison .theory-editor {
+  margin: 0;
+}
+
+.while-indent-comparison .theory-code .is-in-loop {
+  background: var(--accent-wash);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.while-indent-output {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.while-indent-output > small {
+  color: var(--dim);
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.while-indent-output > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.while-indent-output code {
+  background: var(--accent-wash-strong);
+  border-radius: 7px;
+  color: var(--accent);
+  font-family: var(--font-geist-mono);
+  font-size: 9px;
+  padding: 6px 8px;
+}
+
+.while-indent-comparison > section > p {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.55;
+  margin: 12px 0 0;
+}
+
+.while-indent-graphic > aside {
+  background: var(--surface-raised);
+  border-top: 1px solid var(--line);
+  padding: 15px 18px;
+}
+
+.while-indent-graphic > aside strong {
+  color: var(--text-soft);
+  display: block;
+  font-size: 10px;
+  font-weight: 610;
+}
+
+.while-indent-graphic > aside p {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.6;
+  margin: 6px 0 0;
+}
+
+.while-indent-graphic > aside code {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+}
+
+.while-infinite-main {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(240px, 1fr) minmax(220px, 0.9fr);
+  padding: 18px;
+}
+
+.while-infinite-main .theory-editor {
+  margin: 0;
+}
+
+.while-infinite-loop {
+  min-height: 230px;
+  position: relative;
+}
+
+.while-infinite-loop > span {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: 9px;
+  padding: 10px 12px;
+  position: absolute;
+  text-align: center;
+}
+
+.infinite-value { left: 36%; top: 4px; }
+.infinite-check { right: 4%; top: 78px; }
+.infinite-print { bottom: 22px; left: 4%; }
+
+.infinite-check b {
+  color: var(--accent);
+  font-weight: 610;
+}
+
+.while-infinite-loop > i {
+  animation: infinite-loop-spin 4s linear infinite;
+  border: 1px dashed color-mix(in srgb, #ff6d7d 48%, var(--line));
+  border-radius: 50%;
+  color: color-mix(in srgb, #ff6d7d 76%, var(--text-soft));
+  display: grid;
+  font-size: 24px;
+  height: 150px;
+  left: calc(50% - 75px);
+  place-items: center;
+  position: absolute;
+  top: 42px;
+  width: 150px;
+}
+
+@keyframes infinite-loop-spin {
+  to { rotate: 360deg; }
+}
+
+.while-infinite-loop > strong {
+  bottom: 0;
+  color: color-mix(in srgb, #ff6d7d 75%, var(--text-soft));
+  font-size: 8px;
+  font-weight: 590;
+  position: absolute;
+  right: 0;
+}
+
+.while-infinite-output {
+  align-items: center;
+  background: color-mix(in srgb, #ff6d7d 5%, var(--surface-raised));
+  border-block: 1px solid color-mix(in srgb, #ff6d7d 18%, var(--line));
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 14px 18px;
+}
+
+.while-infinite-output small {
+  color: color-mix(in srgb, #ff6d7d 72%, var(--text-soft));
+  font-size: 8px;
+}
+
+.while-infinite-output code {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: 9px;
+}
+
+.while-infinite-fix {
+  display: grid;
+  gap: 10px 16px;
+  grid-template-columns: auto 1fr;
+  padding: 16px 18px;
+}
+
+.while-infinite-fix span {
+  color: var(--accent);
+  font-size: 7px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.while-infinite-fix span:first-child {
+  color: color-mix(in srgb, #ff6d7d 76%, var(--text-soft));
+}
+
+.while-infinite-fix p {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.while-infinite-fix code {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+}
+
 .condition-chain-title {
   align-items: flex-start;
   display: flex;
@@ -12138,7 +12902,12 @@ footer {
   .slice-window-graphic,
   .slice-step-graphic,
   .string-number-graphic,
-  .index-error-graphic
+  .index-error-graphic,
+  .while-everyday-graphic,
+  .while-flow-graphic,
+  .while-trace-graphic,
+  .while-indent-graphic,
+  .while-infinite-graphic
 ) {
   box-sizing: border-box;
   max-inline-size: 100%;
@@ -12194,6 +12963,23 @@ footer {
 
   .slice-boundary-graphic > section {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .while-flow-stage,
+  .while-trace-main,
+  .while-infinite-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .while-flow-map {
+    margin-inline: auto;
+    max-width: 420px;
+    width: 100%;
+  }
+
+  .while-flow-steps,
+  .while-indent-comparison {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .index-error-graphic,
@@ -12279,6 +13065,39 @@ footer {
   .slice-boundary-example {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .while-everyday-list,
+  .while-flow-steps,
+  .while-indent-comparison {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .while-everyday-transform {
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+    text-align: left;
+  }
+
+  .while-everyday-transform strong {
+    text-align: left;
+  }
+
+  .while-trace-table {
+    overflow-x: auto;
+  }
+
+  .while-trace-table > div {
+    min-width: 440px;
+  }
+
+  .while-infinite-output {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .while-infinite-fix {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 980px) {
@@ -12305,7 +13124,7 @@ footer {
 
 @media (max-width: 700px) {
   .theory-space {
-    min-height: 600px;
+    min-height: 760px;
   }
 
   .theory-map-header {
@@ -12329,22 +13148,27 @@ footer {
 
   .theory-planet-0 {
     left: 27%;
-    top: 68%;
+    top: 80%;
   }
 
   .theory-planet-1 {
     left: 72%;
-    top: 52%;
+    top: 65%;
   }
 
   .theory-planet-2 {
     left: 28%;
-    top: 36%;
+    top: 50%;
   }
 
   .theory-planet-3 {
     left: 72%;
-    top: 22%;
+    top: 35%;
+  }
+
+  .theory-planet-4 {
+    left: 28%;
+    top: 20%;
   }
 
   .theory-planet-0 .theory-planet-sphere,
@@ -12380,8 +13204,15 @@ footer {
 
   .route-line-three {
     left: 32%;
-    top: 33%;
-    transform: rotate(-16deg);
+    top: 34%;
+    transform: rotate(20deg);
+    width: 42%;
+  }
+
+  .route-line-four {
+    left: 32%;
+    top: 49%;
+    transform: rotate(-20deg);
     width: 42%;
   }
 
@@ -12842,6 +13673,12 @@ footer {
   .preview-theory-card:first-of-type {
     opacity: 1;
     transform: none;
+  }
+
+  .while-trace-output > div span,
+  .while-trace-table > div,
+  .while-infinite-loop > i {
+    animation: none;
   }
 
   .theory-planet-liquid,

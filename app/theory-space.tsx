@@ -38,6 +38,12 @@ const planets: Planet[] = [
     title: "Строки: индексы и срезы",
     description: "Как находить символы и вырезать части текста.",
   },
+  {
+    id: 4,
+    chapter: "Глава 5",
+    title: "Цикл while",
+    description: "Как повторять команды, пока условие истинно.",
+  },
 ];
 
 const lessonIds = ["program", "variables"] as const;
@@ -77,6 +83,16 @@ const stringTheoryLessonTitles: Record<StringTheoryLessonId, string> = {
   negative: "Отсчёт с конца",
   slices: "Границы среза",
   step: "Шаг и полезные сокращения",
+};
+
+const whileTheoryLessonIds = ["idea", "trace", "indentation", "infinite"] as const;
+type WhileTheoryLessonId = (typeof whileTheoryLessonIds)[number];
+
+const whileTheoryLessonTitles: Record<WhileTheoryLessonId, string> = {
+  idea: "Как устроен while",
+  trace: "Итерации шаг за шагом",
+  indentation: "Что повторяется, а что нет",
+  infinite: "Как остановить цикл",
 };
 
 function PlanetSphere({
@@ -125,6 +141,13 @@ function PlanetSphere({
           <i>0</i>
           <i>:</i>
           <i>−1</i>
+        </span>
+      )}
+      {variant === 4 && (
+        <span className="planet-loop-pattern">
+          <i>while</i>
+          <i>↻</i>
+          <i>?</i>
         </span>
       )}
     </span>
@@ -260,6 +283,27 @@ function StringTheoryLessonStatus({
     >
       <span aria-hidden="true">{completed ? "✓" : "→"}</span>
       {completed ? "Блок пройден" : id === "step" ? "Завершить главу" : "Завершить блок"}
+    </button>
+  );
+}
+
+function WhileTheoryLessonStatus({
+  id,
+  completed,
+  onComplete,
+}: {
+  id: WhileTheoryLessonId;
+  completed: boolean;
+  onComplete: (id: WhileTheoryLessonId) => void;
+}) {
+  return (
+    <button
+      className={`theory-complete-button ${completed ? "is-complete" : ""}`}
+      disabled={completed}
+      onClick={() => onComplete(id)}
+    >
+      <span aria-hidden="true">{completed ? "✓" : "→"}</span>
+      {completed ? "Блок пройден" : id === "infinite" ? "Завершить главу" : "Завершить блок"}
     </button>
   );
 }
@@ -1602,11 +1646,291 @@ function StringSliceCheck() {
   );
 }
 
+function WhileEverydayGraphic() {
+  const examples = [
+    ["100×", "написать «Привет!»", "одна и та же команда"],
+    ["каждый", "символ длинного текста", "проверяем по очереди"],
+    ["1…1000", "числа на делимость", "повторяем одну проверку"],
+  ];
+
+  return (
+    <div className="while-everyday-graphic">
+      <header>
+        <div>
+          <small>Ручной труд против цикла</small>
+          <strong>Повторение превращаем в одну инструкцию</strong>
+        </div>
+      </header>
+      <div className="while-everyday-list">
+        {examples.map(([amount, task, note]) => (
+          <span key={task}>
+            <b>{amount}</b>
+            <strong>{task}</strong>
+            <small>{note}</small>
+          </span>
+        ))}
+      </div>
+      <div className="while-everyday-transform">
+        <span>повтори вручную</span>
+        <i>→</i>
+        <code>while условие:</code>
+        <strong>повторяй автоматически</strong>
+      </div>
+    </div>
+  );
+}
+
+function WhileFlowGraphic() {
+  return (
+    <div
+      className="while-flow-graphic"
+      aria-label="Цикл while проверяет условие, выполняет блок и возвращается к проверке"
+    >
+      <header>
+        <div>
+          <small>Главный маршрут</small>
+          <strong>Проверка всегда происходит перед новым повторением</strong>
+        </div>
+        <code>while x &lt; 5:</code>
+      </header>
+      <div className="while-flow-stage">
+        <div className="while-flow-code">
+          <EditorFrame file="while_flow.py">
+            <div className="theory-code is-static">
+              <div><span>1</span><code>x = 0</code></div>
+              <div className="is-active"><span>2</span><code><b>while</b> x &lt; 5:</code></div>
+              <div className="is-indented"><span>3</span><code>    x += 1</code></div>
+              <div className="is-indented"><span>4</span><code>    print(x)</code></div>
+            </div>
+          </EditorFrame>
+        </div>
+        <div className="while-flow-map" aria-hidden="true">
+          <span className="while-flow-start">x = 0</span>
+          <span className="while-flow-condition">x &lt; 5?</span>
+          <span className="while-flow-yes">Да · True</span>
+          <span className="while-flow-action">x += 1<br /><b>print(x)</b></span>
+          <span className="while-flow-return">вернуться к проверке</span>
+          <span className="while-flow-no">Нет · False</span>
+          <span className="while-flow-end">цикл закончен</span>
+          <i className="while-flow-line line-start" />
+          <i className="while-flow-line line-yes" />
+          <i className="while-flow-line line-action" />
+          <i className="while-flow-line line-return-one" />
+          <i className="while-flow-line line-return-two" />
+          <i className="while-flow-line line-no" />
+        </div>
+      </div>
+      <ol className="while-flow-steps">
+        <li><span>1</span><p>Python проверяет условие перед входом в цикл.</p></li>
+        <li><span>2</span><p>Если получилось <code>True</code>, выполняется весь блок с отступом.</p></li>
+        <li><span>3</span><p>После последней команды Python возвращается к условию и проверяет его заново.</p></li>
+        <li><span>4</span><p>Первый результат <code>False</code> завершает цикл.</p></li>
+      </ol>
+    </div>
+  );
+}
+
+function WhileTraceGraphic() {
+  const steps = [
+    ["Старт", "0", "0 < 5", "—"],
+    ["1-й круг", "1", "1 < 5", "1"],
+    ["2-й круг", "2", "2 < 5", "2"],
+    ["3-й круг", "3", "3 < 5", "3"],
+    ["4-й круг", "4", "4 < 5", "4"],
+    ["5-й круг", "5", "5 < 5", "5"],
+    ["Стоп", "5", "False", "—"],
+  ];
+
+  return (
+    <div className="while-trace-graphic">
+      <header>
+        <div>
+          <small>Трассировка программы</small>
+          <strong>Следим за x после каждого полного круга</strong>
+        </div>
+      </header>
+      <div className="while-trace-main">
+        <EditorFrame file="counter.py">
+          <div className="theory-code is-static">
+            <div><span>1</span><code>x = 0</code></div>
+            <div><span>2</span><code><b>while</b> x &lt; 5:</code></div>
+            <div><span>3</span><code>    x += 1</code></div>
+            <div><span>4</span><code>    print(x)</code></div>
+          </div>
+        </EditorFrame>
+        <div className="while-trace-output">
+          <small>Вывод</small>
+          <div>{["1", "2", "3", "4", "5"].map((value) => <span key={value}>{value}</span>)}</div>
+          <p>Печать находится внутри цикла, поэтому срабатывает на каждом круге.</p>
+        </div>
+      </div>
+      <div className="while-trace-table">
+        <div className="is-heading">
+          <span>Этап</span><span>Новое x</span><span>Следующая проверка</span><span>Напечатано</span>
+        </div>
+        {steps.map(([step, value, check, output], index) => (
+          <div style={{ "--trace-index": index } as React.CSSProperties} key={step}>
+            <span>{step}</span><code>{value}</code><code>{check}</code><strong>{output}</strong>
+          </div>
+        ))}
+      </div>
+      <p className="while-trace-summary">
+        Важно: сначала выполняется <code>x += 1</code>, и только потом <code>print(x)</code>.
+        Поэтому первым выводится <code>1</code>, а не <code>0</code>.
+      </p>
+    </div>
+  );
+}
+
+function WhileIndentGraphic() {
+  const examples = [
+    {
+      kind: "is-inside",
+      title: "print с отступом",
+      label: "Команда повторяется",
+      lines: ["x = 0", "while x < 5:", "    x += 1", "    print(x)"],
+      output: ["1", "2", "3", "4", "5"],
+      note: "На каждом круге меняем x и сразу печатаем новое значение.",
+    },
+    {
+      kind: "is-outside",
+      title: "print без отступа",
+      label: "Команда выполняется после цикла",
+      lines: ["x = 0", "while x < 5:", "    x += 1", "print(x)"],
+      output: ["5"],
+      note: "Цикл пять раз меняет x, а печать запускается один раз — уже после остановки.",
+    },
+  ];
+
+  return (
+    <div className="while-indent-graphic">
+      <header>
+        <div>
+          <small>Одна строка — два разных поведения</small>
+          <strong>Отступ определяет границу повторяемого блока</strong>
+        </div>
+      </header>
+      <div className="while-indent-comparison">
+        {examples.map((example) => (
+          <section className={example.kind} key={example.title}>
+            <div className="while-indent-title">
+              <small>{example.label}</small>
+              <h4>{example.title}</h4>
+            </div>
+            <EditorFrame file={example.kind === "is-inside" ? "inside.py" : "outside.py"}>
+              <div className="theory-code is-static">
+                {example.lines.map((line, index) => (
+                  <div
+                    className={index > 1 && line.startsWith("    ") ? "is-in-loop" : ""}
+                    key={`${line}-${index}`}
+                  >
+                    <span>{index + 1}</span><code>{line}</code>
+                  </div>
+                ))}
+              </div>
+            </EditorFrame>
+            <div className="while-indent-output">
+              <small>Вывод</small>
+              <div>{example.output.map((value) => <code key={value}>{value}</code>)}</div>
+            </div>
+            <p>{example.note}</p>
+          </section>
+        ))}
+      </div>
+      <aside>
+        <strong>Мысленно проведи вертикальную линию по отступу.</strong>
+        <p>Всё, что сдвинуто вправо после <code>while</code>, принадлежит циклу и повторяется. Первая строка без этого отступа продолжает программу после цикла.</p>
+      </aside>
+    </div>
+  );
+}
+
+function InfiniteWhileGraphic() {
+  return (
+    <div className="while-infinite-graphic">
+      <header>
+        <div>
+          <small>Опасная ловушка</small>
+          <strong>Условие должно когда-нибудь стать ложным</strong>
+        </div>
+      </header>
+      <div className="while-infinite-main">
+        <EditorFrame file="infinite.py">
+          <div className="theory-code is-static">
+            <div><span>1</span><code>x = 5</code></div>
+            <div><span>2</span><code><b>while</b> x &gt; 0:</code></div>
+            <div><span>3</span><code>    print(x)</code></div>
+          </div>
+        </EditorFrame>
+        <div className="while-infinite-loop" aria-hidden="true">
+          <span className="infinite-value">x = 5</span>
+          <span className="infinite-check">x &gt; 0<br /><b>True</b></span>
+          <span className="infinite-print">print(5)</span>
+          <i>↻</i>
+          <strong>ничего не меняет x</strong>
+        </div>
+      </div>
+      <div className="while-infinite-output">
+        <small>Вывод не заканчивается</small>
+        <code>5&nbsp;&nbsp;5&nbsp;&nbsp;5&nbsp;&nbsp;5&nbsp;&nbsp;5&nbsp;&nbsp;5&nbsp;&nbsp;…</code>
+      </div>
+      <div className="while-infinite-fix">
+        <span>Проблема</span>
+        <p><code>x</code> всегда равно <code>5</code>, поэтому проверка всегда возвращает <code>True</code>.</p>
+        <span>Исправление</span>
+        <p>Добавь внутрь цикла изменение, которое приближает его к остановке: например, <code>x -= 1</code>.</p>
+      </div>
+    </div>
+  );
+}
+
+function WhileCheck() {
+  const [answer, setAnswer] = useState<string | null>(null);
+  const options = ["0 1 2", "1 2 3", "3"];
+  const correct = "1 2 3";
+
+  return (
+    <div className="arithmetic-check while-check">
+      <div>
+        <small>Короткая проверка</small>
+        <strong>Что напечатает программа?</strong>
+        <code>
+          x = 0<br />
+          while x &lt; 3:<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;x += 1<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;print(x)
+        </code>
+      </div>
+      <div className="arithmetic-check-options">
+        {options.map((option) => (
+          <button
+            className={`${answer === option ? "is-selected" : ""} ${
+              answer && option === correct ? "is-correct" : ""
+            }`}
+            onClick={() => setAnswer(option)}
+            key={option}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+      {answer && (
+        <p className={answer === correct ? "is-correct" : ""}>
+          {answer === correct
+            ? "Верно: на каждом круге x сначала увеличивается, затем новое значение печатается."
+            : "Проследи порядок строк: сначала x += 1, затем print(x)."}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function TheorySpace({ userId }: TheorySpaceProps) {
   const storageKey = `egege-theory-progress-v2:${userId}`;
   const arithmeticStorageKey = `egege-theory-arithmetic-v1:${userId}`;
   const conditionStorageKey = `egege-theory-conditions-v1:${userId}`;
   const stringTheoryStorageKey = `egege-theory-strings-v1:${userId}`;
+  const whileTheoryStorageKey = `egege-theory-while-v1:${userId}`;
   const splitStorageKey = `egege-theory-split-v1:${userId}`;
   const theorySpaceRef = useRef<HTMLElement | null>(null);
   const splitPercentRef = useRef(41);
@@ -1622,6 +1946,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   >(() => new Set());
   const [completedStringTheoryLessons, setCompletedStringTheoryLessons] = useState<
     Set<StringTheoryLessonId>
+  >(() => new Set());
+  const [completedWhileTheoryLessons, setCompletedWhileTheoryLessons] = useState<
+    Set<WhileTheoryLessonId>
   >(() => new Set());
 
   useEffect(() => {
@@ -1697,6 +2024,25 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   useEffect(() => {
     queueMicrotask(() => {
       try {
+        const saved = JSON.parse(
+          window.localStorage.getItem(whileTheoryStorageKey) ?? "[]",
+        ) as string[];
+        setCompletedWhileTheoryLessons(
+          new Set(
+            saved.filter((item): item is WhileTheoryLessonId =>
+              whileTheoryLessonIds.includes(item as WhileTheoryLessonId),
+            ),
+          ),
+        );
+      } catch {
+        setCompletedWhileTheoryLessons(new Set());
+      }
+    });
+  }, [whileTheoryStorageKey]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
         const saved = Number(window.localStorage.getItem(splitStorageKey));
         if (Number.isFinite(saved) && saved >= 24 && saved <= 60) {
           splitPercentRef.current = saved;
@@ -1712,6 +2058,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const arithmeticProgress = completedArithmeticLessons.size * 25;
   const conditionProgress = completedConditionLessons.size * 20;
   const stringTheoryProgress = completedStringTheoryLessons.size * 25;
+  const whileTheoryProgress = completedWhileTheoryLessons.size * 25;
   const activePlanet = useMemo(
     () => planets.find((planet) => planet.id === selectedPlanet) ?? null,
     [selectedPlanet],
@@ -1912,6 +2259,56 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     });
   };
 
+  const goToWhileTheoryLesson = (lessonId: WhileTheoryLessonId, delay = 0) => {
+    window.setTimeout(() => {
+      document.getElementById(`theory-while-${lessonId}`)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    }, delay);
+  };
+
+  const completeWhileTheoryLesson = (id: WhileTheoryLessonId) => {
+    const updated = new Set(completedWhileTheoryLessons);
+    updated.add(id);
+    setCompletedWhileTheoryLessons(updated);
+    try {
+      window.localStorage.setItem(whileTheoryStorageKey, JSON.stringify(Array.from(updated)));
+    } catch {
+      // Progress remains available for the current session.
+    }
+
+    const currentIndex = whileTheoryLessonIds.indexOf(id);
+    const nextLesson = whileTheoryLessonIds[currentIndex + 1];
+    if (nextLesson) {
+      goToWhileTheoryLesson(nextLesson, 160);
+    } else {
+      window.setTimeout(() => {
+        document.getElementById("theory-while-finish")?.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+          block: "center",
+        });
+      }, 160);
+    }
+  };
+
+  const replayWhileTheoryChapter = () => {
+    setCompletedWhileTheoryLessons(new Set());
+    try {
+      window.localStorage.removeItem(whileTheoryStorageKey);
+    } catch {
+      // The in-memory reset still works.
+    }
+    document.getElementById("theory-while-intro")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   const scrollToFirstIncomplete = (completed = completedLessons) => {
     const firstIncomplete = lessonIds.find((lessonId) => !completed.has(lessonId));
     if (firstIncomplete) goToLesson(firstIncomplete, 360);
@@ -1951,6 +2348,16 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
         (lessonId) => !completedStringTheoryLessons.has(lessonId),
       );
       if (firstIncomplete) goToStringTheoryLesson(firstIncomplete, 360);
+    }
+    if (
+      planetId === 4 &&
+      completedWhileTheoryLessons.size > 0 &&
+      completedWhileTheoryLessons.size < whileTheoryLessonIds.length
+    ) {
+      const firstIncomplete = whileTheoryLessonIds.find(
+        (lessonId) => !completedWhileTheoryLessons.has(lessonId),
+      );
+      if (firstIncomplete) goToWhileTheoryLesson(firstIncomplete, 360);
     }
   };
 
@@ -2022,10 +2429,16 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
           <div className="theory-overall-progress">
             <span>
               {Math.round(
-                (progress + arithmeticProgress + conditionProgress + stringTheoryProgress) / 4,
+                (
+                  progress +
+                  arithmeticProgress +
+                  conditionProgress +
+                  stringTheoryProgress +
+                  whileTheoryProgress
+                ) / 5,
               )}%
             </span>
-            <small>четыре главы</small>
+            <small>пять глав</small>
           </div>
         </header>
 
@@ -2033,6 +2446,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
           <span className="route-line route-line-one" aria-hidden="true" />
           <span className="route-line route-line-two" aria-hidden="true" />
           <span className="route-line route-line-three" aria-hidden="true" />
+          <span className="route-line route-line-four" aria-hidden="true" />
 
           {planets.map((planet) => {
             const planetProgress =
@@ -2042,7 +2456,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   ? arithmeticProgress
                   : planet.id === 2
                     ? conditionProgress
-                    : stringTheoryProgress;
+                    : planet.id === 3
+                      ? stringTheoryProgress
+                      : whileTheoryProgress;
             const routePlanet =
               selectedPlanet ??
               (progress < 100
@@ -2051,7 +2467,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   ? 1
                   : conditionProgress < 100
                     ? 2
-                    : 3);
+                    : stringTheoryProgress < 100
+                      ? 3
+                      : 4);
             return (
               <button
                 className={`theory-planet theory-planet-${planet.id} ${
@@ -2136,8 +2554,10 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                         : activePlanet.id === 1
                           ? arithmeticProgress
                           : activePlanet.id === 2
-                            ? conditionProgress
-                            : stringTheoryProgress
+                          ? conditionProgress
+                          : activePlanet.id === 3
+                            ? stringTheoryProgress
+                            : whileTheoryProgress
                     }%`,
                   }}
                 />
@@ -2149,12 +2569,254 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                     ? `${arithmeticProgress}%`
                     : activePlanet.id === 2
                       ? `${conditionProgress}%`
-                      : `${stringTheoryProgress}%`}
+                      : activePlanet.id === 3
+                        ? `${stringTheoryProgress}%`
+                        : `${whileTheoryProgress}%`}
               </small>
             </div>
           </header>
 
-          {activePlanet.id === 3 ? (
+          {activePlanet.id === 4 ? (
+            <div className="theory-document theory-chapter-one theory-chapter-while">
+              <div className="theory-document-title">
+                <p className="eyebrow">Глава 5 · Управление повторениями</p>
+                <h2>Цикл while</h2>
+                <p>
+                  Разберём цикл как маршрут, по которому программа ходит кругами: проверяет
+                  условие, выполняет блок, возвращается назад и останавливается только после
+                  первого результата <code>False</code>.
+                </p>
+                <div className="theory-document-meta">
+                  <span>Предисловие + 4 блока</span>
+                  <span>≈ 26 минут</span>
+                  <span>{completedWhileTheoryLessons.size}/4 пройдено</span>
+                </div>
+              </div>
+
+              <nav className="theory-document-nav" aria-label="Содержание главы">
+                <button
+                  onClick={() =>
+                    document.getElementById("theory-while-intro")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    })
+                  }
+                >
+                  <span>0</span>
+                  Зачем нужны циклы
+                </button>
+                {whileTheoryLessonIds.map((lessonId, index) => (
+                  <button onClick={() => goToWhileTheoryLesson(lessonId)} key={lessonId}>
+                    <span>{completedWhileTheoryLessons.has(lessonId) ? "✓" : index + 1}</span>
+                    {whileTheoryLessonTitles[lessonId]}
+                  </button>
+                ))}
+              </nav>
+
+              <section
+                className="theory-intro chapter-one-intro while-chapter-intro"
+                id="theory-while-intro"
+              >
+                <div className="theory-section-heading">
+                  <span>00</span>
+                  <div>
+                    <p className="eyebrow">Вступление из жизни</p>
+                    <h3>Компьютер не устаёт повторять одно и то же</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Представь, что тебе нужно сто раз написать «Привет», проверить каждую букву
+                    огромного текста или перебрать числа от 1 до 1000. Вручную каждое действие
+                    простое, но вместе они отнимают часы и заставляют ошибаться.
+                  </p>
+                  <p>
+                    Цикл позволяет один раз описать действие и сказать компьютеру:
+                    <strong> «повторяй его, пока выполняется условие»</strong>. Сам код остаётся
+                    коротким, а количество повторений может быть любым.
+                  </p>
+                  <p>
+                    В этой главе мы не будем смешивать два разных инструмента. Здесь изучаем только
+                    <code> while</code> — цикл, количество повторений которого определяется
+                    условием. Циклу <code>for</code> будет посвящена следующая самостоятельная
+                    планета.
+                  </p>
+                </div>
+                <WhileEverydayGraphic />
+                <aside className="theory-intro-insight">
+                  Цикл — не команда «сделай много раз». Это команда «после каждого раза проверь,
+                  нужно ли делать ещё один».
+                </aside>
+              </section>
+
+              <article className="theory-lesson chapter-one-block" id="theory-while-idea">
+                <div className="theory-lesson-heading">
+                  <span>01</span>
+                  <div>
+                    <p className="eyebrow">Механика while</p>
+                    <h3>Проверка → блок → снова проверка</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Слово <code>while</code> переводится как «пока». Запись
+                    <code> while x &lt; 5:</code> читается так: «пока <code>x</code> меньше пяти,
+                    выполняй вложенный блок».
+                  </p>
+                  <p>
+                    Двоеточие открывает блок, а отступ показывает, какие команды относятся к
+                    циклу. Python выполняет все строки блока сверху вниз, затем возвращается к
+                    условию. Никакого автоматического изменения <code>x</code> нет: его обязан
+                    изменить твой код.
+                  </p>
+                </div>
+                <WhileFlowGraphic />
+                <aside className="theory-warning">
+                  <span>Условие проверяется раньше блока</span>
+                  <p>
+                    Если условие ложно уже при первой проверке, тело цикла не выполнится ни одного
+                    раза. <code>while</code> не обязан запускаться хотя бы один раз.
+                  </p>
+                </aside>
+                <WhileTheoryLessonStatus
+                  id="idea"
+                  completed={completedWhileTheoryLessons.has("idea")}
+                  onComplete={completeWhileTheoryLesson}
+                />
+              </article>
+
+              <article className="theory-lesson chapter-one-block" id="theory-while-trace">
+                <div className="theory-lesson-heading">
+                  <span>02</span>
+                  <div>
+                    <p className="eyebrow">Итерации</p>
+                    <h3>Один полный круг называется итерацией</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Итерация — это одно полное выполнение тела цикла. Чтобы понять программу,
+                    полезно не пытаться увидеть весь результат сразу, а выписывать состояние
+                    переменной после каждого круга.
+                  </p>
+                  <p>
+                    В примере ниже <code>x</code> начинается с нуля. Каждый круг сначала прибавляет
+                    единицу, затем печатает новое значение. После печати программа не идёт дальше —
+                    она возвращается к строке <code>while</code>.
+                  </p>
+                </div>
+                <WhileTraceGraphic />
+                <WhileCheck />
+                <WhileTheoryLessonStatus
+                  id="trace"
+                  completed={completedWhileTheoryLessons.has("trace")}
+                  onComplete={completeWhileTheoryLesson}
+                />
+              </article>
+
+              <article className="theory-lesson chapter-one-block" id="theory-while-indentation">
+                <div className="theory-lesson-heading">
+                  <span>03</span>
+                  <div>
+                    <p className="eyebrow">Граница тела цикла</p>
+                    <h3>Отступ решает, что повторяется</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Самая важная мысль этой главы: <strong>цикл повторяет не все строки ниже, а
+                    только строки с отступом</strong>. Как только Python встречает строку,
+                    вернувшуюся к прежнему уровню, тело цикла закончилось.
+                  </p>
+                  <p>
+                    Поэтому два почти одинаковых примера дают разный вывод. С отступом
+                    <code> print(x)</code> срабатывает пять раз. Без отступа цикл только изменяет
+                    <code> x</code>, а печать выполняется один раз после завершения цикла.
+                  </p>
+                </div>
+                <WhileIndentGraphic />
+                <WhileTheoryLessonStatus
+                  id="indentation"
+                  completed={completedWhileTheoryLessons.has("indentation")}
+                  onComplete={completeWhileTheoryLesson}
+                />
+              </article>
+
+              <article className="theory-lesson chapter-one-block" id="theory-while-infinite">
+                <div className="theory-lesson-heading">
+                  <span>04</span>
+                  <div>
+                    <p className="eyebrow">Остановка</p>
+                    <h3>Цикл должен приближаться к False</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Перед запуском <code>while</code> задай себе два вопроса: какая переменная
+                    участвует в условии и какая команда внутри цикла её изменяет? Если ответ на
+                    второй вопрос — «никакая», цикл, скорее всего, никогда не закончится.
+                  </p>
+                  <p>
+                    Бесконечный цикл не обязательно означает поломку Python. Программа честно
+                    выполняет твою инструкцию: условие остаётся истинным, поэтому она снова и снова
+                    проходит тот же маршрут.
+                  </p>
+                </div>
+                <InfiniteWhileGraphic />
+                <aside className="theory-intro-insight">
+                  Полезная проверка перед запуском: выпиши несколько будущих значений переменной.
+                  Если они не приближают условие к <code>False</code>, остановки не будет.
+                </aside>
+                <WhileTheoryLessonStatus
+                  id="infinite"
+                  completed={completedWhileTheoryLessons.has("infinite")}
+                  onComplete={completeWhileTheoryLesson}
+                />
+              </article>
+
+              <section
+                className={`theory-finish ${whileTheoryProgress === 100 ? "is-ready" : ""}`}
+                id="theory-while-finish"
+              >
+                <div className="theory-finish-planet">
+                  <PlanetSphere
+                    progress={whileTheoryProgress}
+                    variant={4}
+                    complete={whileTheoryProgress === 100}
+                  />
+                </div>
+                <div>
+                  <p className="eyebrow">
+                    {whileTheoryProgress === 100 ? "Глава пройдена" : "Продолжай маршрут"}
+                  </p>
+                  <h3>
+                    {whileTheoryProgress === 100
+                      ? "Планета заполнена"
+                      : `Пройдено ${whileTheoryProgress}%`}
+                  </h3>
+                  <p>
+                    {whileTheoryProgress === 100
+                      ? "Теперь ты умеешь прослеживать итерации while, видеть границы тела цикла и заранее замечать бесконечные повторения."
+                      : "Заверши оставшиеся блоки, чтобы полностью заполнить планету."}
+                  </p>
+                  {whileTheoryProgress === 100 ? (
+                    <button onClick={replayWhileTheoryChapter}>Повторить главу</button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const firstIncomplete = whileTheoryLessonIds.find(
+                          (lessonId) => !completedWhileTheoryLessons.has(lessonId),
+                        );
+                        if (firstIncomplete) goToWhileTheoryLesson(firstIncomplete);
+                      }}
+                    >
+                      К непройденному блоку
+                    </button>
+                  )}
+                </div>
+              </section>
+            </div>
+          ) : activePlanet.id === 3 ? (
             <div className="theory-document theory-chapter-one theory-chapter-strings">
               <div className="theory-document-title">
                 <p className="eyebrow">Глава 4 · Работа с последовательностями</p>
