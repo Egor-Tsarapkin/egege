@@ -32,6 +32,12 @@ const planets: Planet[] = [
     title: "Условные конструкции",
     description: "Как код сравнивает значения и выбирает маршрут.",
   },
+  {
+    id: 3,
+    chapter: "Глава 4",
+    title: "Строки: индексы и срезы",
+    description: "Как находить символы и вырезать части текста.",
+  },
 ];
 
 const lessonIds = ["program", "variables"] as const;
@@ -61,6 +67,16 @@ const conditionLessonTitles: Record<ConditionLessonId, string> = {
   indentation: "Отступы и границы блока",
   logic: "Сравнения и логика",
   contains: "Оператор in и частые ошибки",
+};
+
+const stringTheoryLessonIds = ["indexing", "negative", "slices", "step"] as const;
+type StringTheoryLessonId = (typeof stringTheoryLessonIds)[number];
+
+const stringTheoryLessonTitles: Record<StringTheoryLessonId, string> = {
+  indexing: "Строка и положительные индексы",
+  negative: "Отсчёт с конца",
+  slices: "Границы среза",
+  step: "Шаг и полезные сокращения",
 };
 
 function PlanetSphere({
@@ -101,6 +117,14 @@ function PlanetSphere({
           <i />
           <i />
           <i />
+        </span>
+      )}
+      {variant === 3 && (
+        <span className="planet-string-pattern">
+          <i>&quot;</i>
+          <i>0</i>
+          <i>:</i>
+          <i>−1</i>
         </span>
       )}
     </span>
@@ -215,6 +239,27 @@ function ConditionLessonStatus({
     >
       <span aria-hidden="true">{completed ? "✓" : "→"}</span>
       {completed ? "Блок пройден" : id === "contains" ? "Завершить главу" : "Завершить блок"}
+    </button>
+  );
+}
+
+function StringTheoryLessonStatus({
+  id,
+  completed,
+  onComplete,
+}: {
+  id: StringTheoryLessonId;
+  completed: boolean;
+  onComplete: (id: StringTheoryLessonId) => void;
+}) {
+  return (
+    <button
+      className={`theory-complete-button ${completed ? "is-complete" : ""}`}
+      disabled={completed}
+      onClick={() => onComplete(id)}
+    >
+      <span aria-hidden="true">{completed ? "✓" : "→"}</span>
+      {completed ? "Блок пройден" : id === "step" ? "Завершить главу" : "Завершить блок"}
     </button>
   );
 }
@@ -1092,10 +1137,330 @@ function IndentationCheck() {
   );
 }
 
+const theoryStringCharacters = Array.from("информатика");
+
+function StringCellStrip({
+  selected = [],
+  stop,
+  className = "",
+}: {
+  selected?: number[];
+  stop?: number;
+  className?: string;
+}) {
+  return (
+    <div className={`string-cell-strip ${className}`} aria-hidden="true">
+      {theoryStringCharacters.map((character, index) => (
+        <span
+          className={`${selected.includes(index) ? "is-selected" : ""} ${
+            stop === index ? "is-stop" : ""
+          }`}
+          key={`${character}-${index}`}
+        >
+          {character}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function StringIndexGraphic() {
+  return (
+    <div
+      className="string-index-graphic"
+      aria-label="В строке информатика положительные индексы идут от нуля слева направо, отрицательные — от минус одного справа налево"
+    >
+      <header>
+        <div>
+          <small>Две шкалы одной строки</small>
+          <strong>У каждого символа есть адрес</strong>
+        </div>
+        <code>s = &quot;информатика&quot;</code>
+      </header>
+      <div className="string-index-stage">
+        <div className="string-index-direction is-forward">
+          <span>начало</span>
+          <i />
+          <strong>слева направо</strong>
+        </div>
+        <div className="string-index-row is-positive" aria-hidden="true">
+          {theoryStringCharacters.map((_, index) => <span key={index}>{index}</span>)}
+        </div>
+        <StringCellStrip className="is-index-demo" />
+        <div className="string-index-row is-negative" aria-hidden="true">
+          {theoryStringCharacters.map((_, index) => (
+            <span key={index}>{index - theoryStringCharacters.length}</span>
+          ))}
+        </div>
+        <div className="string-index-direction is-backward">
+          <strong>справа налево</strong>
+          <i />
+          <span>конец</span>
+        </div>
+      </div>
+      <div className="string-index-calls" aria-hidden="true">
+        <span className="index-call call-zero"><code>s[0]</code><b>и</b></span>
+        <span className="index-call call-three"><code>s[3]</code><b>о</b></span>
+        <span className="index-call call-last"><code>s[-1]</code><b>а</b></span>
+      </div>
+      <p>Положительный адрес начинается с <code>0</code>, а последний символ всегда доступен по <code>-1</code>.</p>
+    </div>
+  );
+}
+
+function StringIndexEditor() {
+  return (
+    <EditorFrame file="indexes.py" className="string-index-editor">
+      <div className="theory-code is-static">
+        {[
+          ["1", 's = "информатика"'],
+          ["2", "print(s[0])", "# и"],
+          ["3", "print(s[3])", "# о"],
+          ["4", "print(s[-1])", "# а"],
+        ].map(([line, code, note]) => (
+          <div key={line}>
+            <span>{line}</span>
+            <code>{code} {note && <i>{note}</i>}</code>
+          </div>
+        ))}
+      </div>
+    </EditorFrame>
+  );
+}
+
+function IndexErrorGraphic() {
+  return (
+    <div className="index-error-graphic">
+      <EditorFrame file="too_far.py">
+        <div className="index-error-lines">
+          <div className="index-error-line">
+            <span>1</span>
+            <code>s = &quot;информатика&quot;</code>
+          </div>
+          <div className="index-error-line is-error">
+            <span>2</span>
+            <code>print(s[20])</code>
+          </div>
+        </div>
+        <div className="index-error-console">
+          <small>Python остановился</small>
+          <code>IndexError: string index out of range</code>
+        </div>
+      </EditorFrame>
+      <p>
+        В слове «информатика» нет символа с индексом <code>20</code>. Обычный индекс обязан
+        существовать.
+      </p>
+    </div>
+  );
+}
+
+function NegativeIndexGraphic() {
+  const tail = [
+    ["s[-1]", "а", "последний"],
+    ["s[-2]", "к", "предпоследний"],
+    ["s[-4]", "т", "четвёртый с конца"],
+  ];
+
+  return (
+    <div className="negative-index-graphic" aria-label="Отрицательные индексы считают символы с конца строки">
+      <header>
+        <div>
+          <small>Не нужно вычислять длину</small>
+          <strong>Конец строки всегда рядом</strong>
+        </div>
+      </header>
+      <div className="negative-index-stage">
+        <StringCellStrip selected={[7, 9, 10]} />
+        <div className="negative-index-tail" aria-hidden="true">
+          <span><i>−4</i>т</span>
+          <span><i>−2</i>к</span>
+          <span><i>−1</i>а</span>
+        </div>
+      </div>
+      <div className="negative-index-examples">
+        {tail.map(([expression, result, label]) => (
+          <div key={expression}>
+            <code>{expression}</code>
+            <strong>{result}</strong>
+            <small>{label}</small>
+          </div>
+        ))}
+      </div>
+      <p>Если нужен символ с конца, отрицательная запись обычно короче и понятнее.</p>
+    </div>
+  );
+}
+
+const sliceWindows = [
+  { expression: "s[0:4]", result: "инфо", selected: [0, 1, 2, 3], stop: 4 },
+  { expression: "s[3:7]", result: "орма", selected: [3, 4, 5, 6], stop: 7 },
+] as const;
+
+function SliceWindowGraphic() {
+  return (
+    <div className="slice-window-graphic" aria-label="Срез берёт символы от левой границы до правой, не включая правую">
+      <header>
+        <div>
+          <small>Формула среза</small>
+          <strong><code>s[от:до]</code></strong>
+        </div>
+        <span><i />входит в срез <b />граница «до»</span>
+      </header>
+      <div className="slice-window-list">
+        {sliceWindows.map((slice) => (
+          <div className="slice-window-row" key={slice.expression}>
+            <div className="slice-window-code">
+              <code>{slice.expression}</code>
+              <i>→</i>
+              <strong>&quot;{slice.result}&quot;</strong>
+            </div>
+            <div className="slice-window-ruler">
+              <div className="string-index-row is-positive" aria-hidden="true">
+                {theoryStringCharacters.map((_, index) => <span key={index}>{index}</span>)}
+              </div>
+              <StringCellStrip
+                selected={[...slice.selected]}
+                stop={slice.stop}
+                className="is-slice-demo"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <p>
+        Левая граница входит в результат. Правая только показывает, где остановиться, поэтому
+        символ с индексом <code>до</code> не берётся.
+      </p>
+    </div>
+  );
+}
+
+function SliceCodeEditor() {
+  return (
+    <EditorFrame file="slices.py" className="slice-code-editor">
+      <div className="theory-code is-static">
+        {[
+          ["1", 's = "информатика"'],
+          ["2", "print(s[0:4])", "# инфо"],
+          ["3", "print(s[3:7])", "# орма"],
+          ["4", "print(s[-4:])", "# тика"],
+          ["5", "print(s[:-5])", "# информ"],
+        ].map(([line, code, note]) => (
+          <div key={line}>
+            <span>{line}</span>
+            <code>{code} {note && <i>{note}</i>}</code>
+          </div>
+        ))}
+      </div>
+    </EditorFrame>
+  );
+}
+
+function SliceStepGraphic() {
+  const stepRows = [
+    { expression: "s[::2]", result: "ифраиа", selected: [0, 2, 4, 6, 8, 10] },
+    { expression: "s[1::2]", result: "номтк", selected: [1, 3, 5, 7, 9] },
+  ];
+
+  return (
+    <div className="slice-step-graphic" aria-label="Шаг два берёт каждый второй символ строки">
+      <header>
+        <div>
+          <small>Третий параметр</small>
+          <strong><code>s[от:до:шаг]</code></strong>
+        </div>
+      </header>
+      <div className="slice-step-list">
+        {stepRows.map((row) => (
+          <div className="slice-step-row" key={row.expression}>
+            <div>
+              <code>{row.expression}</code>
+              <span>каждый второй символ</span>
+              <strong>{row.result}</strong>
+            </div>
+            <StringCellStrip selected={row.selected} />
+          </div>
+        ))}
+      </div>
+      <div className="slice-shortcuts">
+        <span><code>s[-4:]</code><i>→</i><strong>тика</strong><small>от −4 до конца</small></span>
+        <span><code>s[:-5]</code><i>→</i><strong>информ</strong><small>от начала до −5</small></span>
+      </div>
+    </div>
+  );
+}
+
+function StringNumberGraphic() {
+  const examples = [
+    ['"3" + "4"', '"34"', "строки соединяются"],
+    ["3 + 4", "7", "числа складываются"],
+    ['"3" * 2', '"33"', "строка повторяется"],
+    ["3 * 2", "6", "числа умножаются"],
+  ];
+
+  return (
+    <div className="string-number-graphic">
+      <header>
+        <div>
+          <small>Внешность обманчива</small>
+          <strong>Кавычки меняют смысл операции</strong>
+        </div>
+      </header>
+      <div>
+        {examples.map(([expression, result, label], index) => (
+          <span className={index % 2 === 0 ? "is-string" : "is-number"} key={expression}>
+            <code>{expression}</code>
+            <i>→</i>
+            <b>{result}</b>
+            <small>{label}</small>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StringSliceCheck() {
+  const [answer, setAnswer] = useState<string | null>(null);
+  const options = ["форм", "орма", "ормат"];
+
+  return (
+    <div className="arithmetic-check string-slice-check">
+      <div>
+        <small>Быстрая проверка</small>
+        <strong>Что вернёт этот срез?</strong>
+        <code>s = &quot;информатика&quot;<br />print(s[3:7])</code>
+      </div>
+      <div className="arithmetic-check-options">
+        {options.map((option) => (
+          <button
+            className={`${answer === option ? "is-selected" : ""} ${
+              answer && option === "орма" ? "is-correct" : ""
+            }`}
+            onClick={() => setAnswer(option)}
+            key={option}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+      {answer && (
+        <p className={answer === "орма" ? "is-correct" : ""}>
+          {answer === "орма"
+            ? "Верно: берём индексы 3, 4, 5 и 6. Символ с индексом 7 уже не входит."
+            : "Проверь границы: начало входит, конец с индексом 7 — нет."}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function TheorySpace({ userId }: TheorySpaceProps) {
   const storageKey = `egege-theory-progress-v2:${userId}`;
   const arithmeticStorageKey = `egege-theory-arithmetic-v1:${userId}`;
   const conditionStorageKey = `egege-theory-conditions-v1:${userId}`;
+  const stringTheoryStorageKey = `egege-theory-strings-v1:${userId}`;
   const splitStorageKey = `egege-theory-split-v1:${userId}`;
   const theorySpaceRef = useRef<HTMLElement | null>(null);
   const splitPercentRef = useRef(41);
@@ -1108,6 +1473,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   >(() => new Set());
   const [completedConditionLessons, setCompletedConditionLessons] = useState<
     Set<ConditionLessonId>
+  >(() => new Set());
+  const [completedStringTheoryLessons, setCompletedStringTheoryLessons] = useState<
+    Set<StringTheoryLessonId>
   >(() => new Set());
 
   useEffect(() => {
@@ -1164,6 +1532,25 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   useEffect(() => {
     queueMicrotask(() => {
       try {
+        const saved = JSON.parse(
+          window.localStorage.getItem(stringTheoryStorageKey) ?? "[]",
+        ) as string[];
+        setCompletedStringTheoryLessons(
+          new Set(
+            saved.filter((item): item is StringTheoryLessonId =>
+              stringTheoryLessonIds.includes(item as StringTheoryLessonId),
+            ),
+          ),
+        );
+      } catch {
+        setCompletedStringTheoryLessons(new Set());
+      }
+    });
+  }, [stringTheoryStorageKey]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
         const saved = Number(window.localStorage.getItem(splitStorageKey));
         if (Number.isFinite(saved) && saved >= 24 && saved <= 60) {
           splitPercentRef.current = saved;
@@ -1178,6 +1565,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const progress = completedLessons.size * 50;
   const arithmeticProgress = completedArithmeticLessons.size * 25;
   const conditionProgress = completedConditionLessons.size * 20;
+  const stringTheoryProgress = completedStringTheoryLessons.size * 25;
   const activePlanet = useMemo(
     () => planets.find((planet) => planet.id === selectedPlanet) ?? null,
     [selectedPlanet],
@@ -1328,6 +1716,56 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     });
   };
 
+  const goToStringTheoryLesson = (lessonId: StringTheoryLessonId, delay = 0) => {
+    window.setTimeout(() => {
+      document.getElementById(`theory-strings-${lessonId}`)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    }, delay);
+  };
+
+  const completeStringTheoryLesson = (id: StringTheoryLessonId) => {
+    const updated = new Set(completedStringTheoryLessons);
+    updated.add(id);
+    setCompletedStringTheoryLessons(updated);
+    try {
+      window.localStorage.setItem(stringTheoryStorageKey, JSON.stringify(Array.from(updated)));
+    } catch {
+      // Progress remains available for the current session.
+    }
+
+    const currentIndex = stringTheoryLessonIds.indexOf(id);
+    const nextLesson = stringTheoryLessonIds[currentIndex + 1];
+    if (nextLesson) {
+      goToStringTheoryLesson(nextLesson, 160);
+    } else {
+      window.setTimeout(() => {
+        document.getElementById("theory-strings-finish")?.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+          block: "center",
+        });
+      }, 160);
+    }
+  };
+
+  const replayStringTheoryChapter = () => {
+    setCompletedStringTheoryLessons(new Set());
+    try {
+      window.localStorage.removeItem(stringTheoryStorageKey);
+    } catch {
+      // The in-memory reset still works.
+    }
+    document.getElementById("theory-strings-intro")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   const scrollToFirstIncomplete = (completed = completedLessons) => {
     const firstIncomplete = lessonIds.find((lessonId) => !completed.has(lessonId));
     if (firstIncomplete) goToLesson(firstIncomplete, 360);
@@ -1357,6 +1795,16 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
         (lessonId) => !completedConditionLessons.has(lessonId),
       );
       if (firstIncomplete) goToConditionLesson(firstIncomplete, 360);
+    }
+    if (
+      planetId === 3 &&
+      completedStringTheoryLessons.size > 0 &&
+      completedStringTheoryLessons.size < stringTheoryLessonIds.length
+    ) {
+      const firstIncomplete = stringTheoryLessonIds.find(
+        (lessonId) => !completedStringTheoryLessons.has(lessonId),
+      );
+      if (firstIncomplete) goToStringTheoryLesson(firstIncomplete, 360);
     }
   };
 
@@ -1426,14 +1874,19 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
             <h1>Космос знаний</h1>
           </div>
           <div className="theory-overall-progress">
-            <span>{Math.round((progress + arithmeticProgress + conditionProgress) / 3)}%</span>
-            <small>три главы</small>
+            <span>
+              {Math.round(
+                (progress + arithmeticProgress + conditionProgress + stringTheoryProgress) / 4,
+              )}%
+            </span>
+            <small>четыре главы</small>
           </div>
         </header>
 
         <div className="theory-route" aria-label="Главы теории">
           <span className="route-line route-line-one" aria-hidden="true" />
           <span className="route-line route-line-two" aria-hidden="true" />
+          <span className="route-line route-line-three" aria-hidden="true" />
 
           {planets.map((planet) => {
             const planetProgress =
@@ -1441,9 +1894,18 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 ? progress
                 : planet.id === 1
                   ? arithmeticProgress
-                  : conditionProgress;
+                  : planet.id === 2
+                    ? conditionProgress
+                    : stringTheoryProgress;
             const routePlanet =
-              selectedPlanet ?? (progress < 100 ? 0 : arithmeticProgress < 100 ? 1 : 2);
+              selectedPlanet ??
+              (progress < 100
+                ? 0
+                : arithmeticProgress < 100
+                  ? 1
+                  : conditionProgress < 100
+                    ? 2
+                    : 3);
             return (
               <button
                 className={`theory-planet theory-planet-${planet.id} ${
@@ -1527,7 +1989,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                         ? progress
                         : activePlanet.id === 1
                           ? arithmeticProgress
-                          : conditionProgress
+                          : activePlanet.id === 2
+                            ? conditionProgress
+                            : stringTheoryProgress
                     }%`,
                   }}
                 />
@@ -1537,12 +2001,267 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   ? `${progress}%`
                   : activePlanet.id === 1
                     ? `${arithmeticProgress}%`
-                    : `${conditionProgress}%`}
+                    : activePlanet.id === 2
+                      ? `${conditionProgress}%`
+                      : `${stringTheoryProgress}%`}
               </small>
             </div>
           </header>
 
-          {activePlanet.id === 2 ? (
+          {activePlanet.id === 3 ? (
+            <div className="theory-document theory-chapter-one theory-chapter-strings">
+              <div className="theory-document-title">
+                <p className="eyebrow">Глава 4 · Работа с последовательностями</p>
+                <h2>Строки: индексация и срезы</h2>
+                <p>
+                  Научимся видеть текст глазами Python: находить символ по адресу, считать с конца
+                  и аккуратно вырезать нужный фрагмент строки.
+                </p>
+                <div className="theory-document-meta">
+                  <span>Предисловие + 4 блока</span>
+                  <span>≈ 17 минут</span>
+                  <span>{completedStringTheoryLessons.size}/4 пройдено</span>
+                </div>
+              </div>
+
+              <nav className="theory-document-nav" aria-label="Содержание главы">
+                <button
+                  onClick={() =>
+                    document.getElementById("theory-strings-intro")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    })
+                  }
+                >
+                  <span>0</span>
+                  Текст глазами Python
+                </button>
+                {stringTheoryLessonIds.map((lessonId, index) => (
+                  <button onClick={() => goToStringTheoryLesson(lessonId)} key={lessonId}>
+                    <span>{completedStringTheoryLessons.has(lessonId) ? "✓" : index + 1}</span>
+                    {stringTheoryLessonTitles[lessonId]}
+                  </button>
+                ))}
+              </nav>
+
+              <section
+                className="theory-intro chapter-one-intro string-chapter-intro"
+                id="theory-strings-intro"
+              >
+                <div className="theory-section-heading">
+                  <span>00</span>
+                  <div>
+                    <p className="eyebrow">Вступление из жизни</p>
+                    <h3>Текст — тоже упорядоченные данные</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Ты наверняка писал сообщение, в котором случайно забыл букву, переставил
+                    символы или скопировал только часть текста. Каждый раз ты работал со строкой —
+                    просто не думал об этом как программист.
+                  </p>
+                  <p>
+                    <strong>Строка в Python — это последовательность символов.</strong> Каждый
+                    символ занимает своё место и имеет номер — индекс. Программа видит текст как
+                    аккуратную цепочку: символ за символом.
+                  </p>
+                </div>
+                <aside className="theory-intro-insight">
+                  Хорошо поймёшь строки — будет гораздо проще перейти к спискам. Индексы и срезы у
+                  них устроены почти одинаково.
+                </aside>
+                <div className="theory-prose string-use-cases">
+                  <p>В задачах ЕГЭ тебе понадобится:</p>
+                  <ul className="subtask-list">
+                    <li>проверять первый или последний символ строки;</li>
+                    <li>искать и извлекать нужный фрагмент;</li>
+                    <li>отсчитывать символы с конца;</li>
+                    <li>перебирать строку по одному символу.</li>
+                  </ul>
+                </div>
+              </section>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-strings-indexing"
+              >
+                <div className="theory-lesson-heading">
+                  <span>01</span>
+                  <div>
+                    <p className="eyebrow">Строка как цепочка</p>
+                    <h3>Первый символ имеет индекс 0</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Индекс — это адрес символа внутри строки. Счёт начинается не с единицы, а с
+                    нуля: первый символ имеет индекс <code>0</code>, второй — <code>1</code> и так
+                    далее.
+                  </p>
+                </div>
+                <StringIndexGraphic />
+                <StringIndexEditor />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Если адреса нет</p>
+                  <h4>Обычный индекс должен существовать</h4>
+                  <p>
+                    Python не может вернуть символ за пределами строки. Если индекс слишком
+                    большой, программа остановится с ошибкой <code>IndexError</code>.
+                  </p>
+                </div>
+                <IndexErrorGraphic />
+                <StringTheoryLessonStatus
+                  id="indexing"
+                  completed={completedStringTheoryLessons.has("indexing")}
+                  onComplete={completeStringTheoryLesson}
+                />
+              </article>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-strings-negative"
+              >
+                <div className="theory-lesson-heading">
+                  <span>02</span>
+                  <div>
+                    <p className="eyebrow">Отрицательные индексы</p>
+                    <h3>С конца считаем от −1</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Иногда нужен последний символ, но длина строки заранее неизвестна. Тогда
+                    удобно считать справа налево: <code>-1</code> — последний символ,
+                    <code> -2</code> — предпоследний.
+                  </p>
+                </div>
+                <NegativeIndexGraphic />
+                <aside className="theory-warning">
+                  <span>Запомни две опоры</span>
+                  <p>
+                    Первый символ — <code>s[0]</code>. Последний символ — <code>s[-1]</code>.
+                    Эти две записи будут встречаться постоянно.
+                  </p>
+                </aside>
+                <StringTheoryLessonStatus
+                  id="negative"
+                  completed={completedStringTheoryLessons.has("negative")}
+                  onComplete={completeStringTheoryLesson}
+                />
+              </article>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-strings-slices"
+              >
+                <div className="theory-lesson-heading">
+                  <span>03</span>
+                  <div>
+                    <p className="eyebrow">Срезы</p>
+                    <h3>Берём фрагмент от одной границы до другой</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Индекс возвращает один символ, а срез — новую строку из нескольких символов.
+                    Формат записи: <code>s[от:до]</code>.
+                  </p>
+                </div>
+                <SliceWindowGraphic />
+                <aside className="theory-intro-insight string-slice-rule">
+                  Левая граница включается. Правая — нет. Срез <code>s[3:7]</code> берёт индексы
+                  <code> 3, 4, 5, 6</code> и останавливается перед индексом <code>7</code>.
+                </aside>
+                <SliceCodeEditor />
+                <StringSliceCheck />
+                <StringTheoryLessonStatus
+                  id="slices"
+                  completed={completedStringTheoryLessons.has("slices")}
+                  onComplete={completeStringTheoryLesson}
+                />
+              </article>
+
+              <article
+                className="theory-lesson chapter-one-block"
+                id="theory-strings-step"
+              >
+                <div className="theory-lesson-heading">
+                  <span>04</span>
+                  <div>
+                    <p className="eyebrow">Шаг и пустые границы</p>
+                    <h3>Можно брать каждый второй символ</h3>
+                  </div>
+                </div>
+                <div className="theory-prose">
+                  <p>
+                    Третий параметр среза задаёт шаг: <code>s[от:до:шаг]</code>. Если начало или
+                    конец не указаны, Python идёт от края строки.
+                  </p>
+                </div>
+                <SliceStepGraphic />
+
+                <div className="theory-subsection">
+                  <p className="eyebrow">Строка не становится числом</p>
+                  <h4>Кавычки меняют тип и поведение</h4>
+                  <p>
+                    Даже если строка выглядит как число, Python продолжает видеть текст.
+                    Поэтому <code>&quot;3&quot; + &quot;4&quot;</code> соединяет символы, а
+                    <code> 3 + 4</code> складывает числа.
+                  </p>
+                </div>
+                <StringNumberGraphic />
+                <StringTheoryLessonStatus
+                  id="step"
+                  completed={completedStringTheoryLessons.has("step")}
+                  onComplete={completeStringTheoryLesson}
+                />
+              </article>
+
+              <section
+                className={`theory-finish ${stringTheoryProgress === 100 ? "is-ready" : ""}`}
+                id="theory-strings-finish"
+              >
+                <div className="theory-finish-planet">
+                  <PlanetSphere
+                    progress={stringTheoryProgress}
+                    variant={3}
+                    complete={stringTheoryProgress === 100}
+                  />
+                </div>
+                <div>
+                  <p className="eyebrow">
+                    {stringTheoryProgress === 100 ? "Глава пройдена" : "Продолжай маршрут"}
+                  </p>
+                  <h3>
+                    {stringTheoryProgress === 100
+                      ? "Планета заполнена"
+                      : `Пройдено ${stringTheoryProgress}%`}
+                  </h3>
+                  <p>
+                    {stringTheoryProgress === 100
+                      ? "Теперь ты умеешь находить символы с двух сторон строки и собирать нужные фрагменты срезами."
+                      : "Заверши оставшиеся блоки, чтобы полностью заполнить планету."}
+                  </p>
+                  {stringTheoryProgress === 100 ? (
+                    <button onClick={replayStringTheoryChapter}>Повторить главу</button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const firstIncomplete = stringTheoryLessonIds.find(
+                          (lessonId) => !completedStringTheoryLessons.has(lessonId),
+                        );
+                        if (firstIncomplete) goToStringTheoryLesson(firstIncomplete);
+                      }}
+                    >
+                      К непройденному блоку
+                    </button>
+                  )}
+                </div>
+              </section>
+            </div>
+          ) : activePlanet.id === 2 ? (
             <div className="theory-document theory-chapter-one theory-chapter-conditions">
               <div className="theory-document-title">
                 <p className="eyebrow">Глава 3 · Выбор программы</p>
