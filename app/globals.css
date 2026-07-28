@@ -86,7 +86,7 @@
 .for-debugger-grid {
   display: grid;
   gap: 24px;
-  grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   padding: 28px;
 }
 
@@ -169,6 +169,7 @@
   display: grid;
   gap: 14px;
   grid-template-rows: auto auto auto 1fr;
+  min-width: 0;
 }
 
 .for-source {
@@ -252,12 +253,15 @@
 .for-flow-branches {
   display: flex;
   justify-content: space-between;
+  padding: 0 12px;
 }
 
 .for-flow-branches span {
   color: var(--dim);
   font-size: 13px;
+  min-width: 0;
   transition: color 180ms ease-out;
+  white-space: nowrap;
 }
 
 .for-flow-branches span.is-active {
@@ -268,7 +272,8 @@
 .for-flow-actions {
   display: grid;
   gap: 10px;
-  grid-template-columns: minmax(190px, 1.25fr) minmax(150px, 0.75fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  min-width: 0;
 }
 
 .for-flow-actions > div {
@@ -278,6 +283,7 @@
   display: grid;
   gap: 8px;
   min-height: 108px;
+  min-width: 0;
   padding: 15px;
   transition: background 180ms ease-out, border-color 180ms ease-out;
 }
@@ -547,7 +553,7 @@
   from { opacity: 0.35; transform: translateY(6px); }
 }
 
-@container theory-chapter (max-width: 780px) {
+@container theory-panel (max-width: 1280px) {
   .for-debugger-grid,
   .loop-comparison-grid {
     grid-template-columns: 1fr;
@@ -568,7 +574,7 @@
   }
 }
 
-@container theory-chapter (max-width: 560px) {
+@container theory-panel (max-width: 620px) {
   .for-debugger,
   .range-anatomy,
   .loop-comparison {
