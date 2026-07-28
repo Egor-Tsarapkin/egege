@@ -12515,6 +12515,400 @@ footer {
   font-family: var(--font-geist-mono);
 }
 
+.while-flow-graphic > header {
+  padding: clamp(18px, 3cqi, 30px);
+}
+
+.while-flow-graphic > header strong {
+  font-size: clamp(14px, 2.1cqi, 20px);
+  line-height: 1.35;
+}
+
+.while-flow-graphic > header > code {
+  font-size: clamp(10px, 1.4cqi, 13px);
+  white-space: nowrap;
+}
+
+.while-purpose-stage {
+  align-items: stretch;
+  display: grid;
+  gap: clamp(14px, 2.4cqi, 24px);
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 0.34fr) minmax(0, 1.08fr);
+  padding: clamp(18px, 3cqi, 30px);
+}
+
+.while-purpose-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  padding: clamp(14px, 2.3cqi, 22px);
+}
+
+.while-purpose-panel.is-loop {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--line));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.while-purpose-heading {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.while-purpose-heading span {
+  color: var(--accent);
+  font-size: clamp(9px, 1.3cqi, 12px);
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.while-purpose-heading strong {
+  color: var(--text);
+  font-size: clamp(13px, 1.8cqi, 17px);
+  font-weight: 610;
+  line-height: 1.35;
+}
+
+.while-repeat-code {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  display: grid;
+  overflow: hidden;
+}
+
+.while-repeat-code > div {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  min-height: 43px;
+  padding: 7px 12px;
+}
+
+.while-repeat-code > div:last-child {
+  border-bottom: 0;
+}
+
+.while-repeat-code span {
+  color: var(--dim);
+  font-family: var(--font-geist-mono);
+  font-size: clamp(9px, 1.2cqi, 11px);
+}
+
+.while-repeat-code code {
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: clamp(10px, 1.45cqi, 13px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.while-purpose-panel > p {
+  color: var(--muted);
+  font-size: clamp(10px, 1.35cqi, 12px);
+  line-height: 1.5;
+  margin: 14px 0 0;
+}
+
+.while-purpose-switch {
+  align-content: center;
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  text-align: center;
+}
+
+.while-purpose-switch span {
+  color: var(--muted);
+  font-size: clamp(9px, 1.25cqi, 11px);
+  line-height: 1.4;
+}
+
+.while-purpose-switch i {
+  color: var(--accent);
+  font-size: clamp(24px, 4cqi, 38px);
+  font-style: normal;
+  line-height: 1;
+}
+
+.while-purpose-switch strong {
+  color: var(--text-soft);
+  font-size: clamp(10px, 1.35cqi, 12px);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.while-purpose-panel .theory-editor {
+  margin: 0;
+}
+
+.while-purpose-panel .theory-code {
+  padding: 10px;
+}
+
+.while-purpose-panel .theory-code .is-active {
+  background: var(--accent-wash);
+  border-radius: 9px;
+}
+
+.while-purpose-panel .theory-code .is-active b {
+  color: var(--accent);
+}
+
+.while-purpose-panel .theory-code .is-indented {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.while-value-track {
+  align-items: center;
+  background: var(--bg);
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 11px 12px;
+}
+
+.while-value-track span {
+  color: var(--muted);
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  margin-right: 3px;
+}
+
+.while-value-track b {
+  align-items: center;
+  background: var(--surface-raised);
+  border-radius: 7px;
+  color: var(--text-soft);
+  display: inline-flex;
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  height: 25px;
+  justify-content: center;
+  min-width: 25px;
+}
+
+.while-value-track b:last-child {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.while-value-track i {
+  color: var(--dim);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.while-five-results {
+  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding: clamp(16px, 2.5cqi, 24px) clamp(18px, 3cqi, 30px);
+}
+
+.while-five-results span {
+  align-items: center;
+  animation: while-result-step 6s ease-in-out infinite;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border-radius: 11px;
+  color: var(--text-soft);
+  display: flex;
+  font-family: var(--font-geist-mono);
+  font-size: clamp(8px, 1.15cqi, 11px);
+  gap: 8px;
+  justify-content: center;
+  min-height: 42px;
+  padding: 8px;
+  text-align: center;
+}
+
+.while-five-results span:nth-child(2) { animation-delay: 0.8s; }
+.while-five-results span:nth-child(3) { animation-delay: 1.6s; }
+.while-five-results span:nth-child(4) { animation-delay: 2.4s; }
+.while-five-results span:nth-child(5) { animation-delay: 3.2s; }
+
+@keyframes while-result-step {
+  0%, 10%, 100% {
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+    box-shadow: none;
+    color: var(--text-soft);
+    transform: translateY(0);
+  }
+  14%, 26% {
+    background: var(--accent-wash-strong);
+    box-shadow: inset 0 -2px 0 var(--accent);
+    color: var(--text);
+    transform: translateY(-2px);
+  }
+  30%, 96% {
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+    box-shadow: none;
+    color: var(--text-soft);
+    transform: translateY(0);
+  }
+}
+
+.while-five-results b {
+  color: var(--accent);
+  font-size: 10px;
+}
+
+.while-decision {
+  padding: clamp(22px, 3.5cqi, 36px) clamp(18px, 3cqi, 30px);
+}
+
+.while-decision-heading {
+  display: grid;
+  gap: 7px;
+  text-align: center;
+}
+
+.while-decision-heading small {
+  color: var(--accent);
+  font-size: clamp(9px, 1.25cqi, 12px);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.while-decision-heading strong {
+  color: var(--text);
+  font-size: clamp(14px, 2.1cqi, 20px);
+  font-weight: 610;
+  line-height: 1.4;
+}
+
+.while-decision-heading code {
+  color: var(--accent);
+  font-family: var(--font-geist-mono);
+}
+
+.while-condition-card {
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+  border-radius: 16px;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin: 24px auto 16px;
+  max-width: 310px;
+  padding: 15px 20px;
+}
+
+.while-condition-card span {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.while-condition-card code {
+  color: var(--text);
+  font-family: var(--font-geist-mono);
+  font-size: clamp(17px, 2.6cqi, 23px);
+}
+
+.while-branches {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.while-branches article {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: clamp(15px, 2.2cqi, 22px);
+}
+
+.while-branches article.is-true {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+.while-branches article > header {
+  align-items: baseline;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.while-branches article > header span {
+  color: var(--muted);
+  font-size: clamp(11px, 1.4cqi, 13px);
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+
+.while-branches article > header strong {
+  color: var(--text);
+  font-family: var(--font-geist-mono);
+  font-size: clamp(20px, 3.4cqi, 32px);
+  font-weight: 650;
+}
+
+.while-branches .is-true > header strong {
+  color: var(--accent);
+}
+
+.while-branches article p {
+  color: var(--muted);
+  font-size: clamp(10px, 1.4cqi, 13px);
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.while-branches article > code,
+.while-branches article > div {
+  background: var(--bg);
+  border-radius: 10px;
+  color: var(--text-soft);
+  font-family: var(--font-geist-mono);
+  font-size: clamp(10px, 1.35cqi, 12px);
+  margin-top: 7px;
+  overflow-wrap: anywhere;
+  padding: 11px 12px;
+}
+
+.while-branches article > b {
+  color: var(--muted);
+  font-size: clamp(9px, 1.25cqi, 11px);
+  font-weight: 580;
+  line-height: 1.45;
+  margin-top: 16px;
+}
+
+.while-branches .is-true > b {
+  color: var(--accent);
+}
+
+.while-flow-summary {
+  background: var(--surface-raised);
+  border-left: 3px solid var(--accent);
+  color: var(--text-soft);
+  font-size: clamp(11px, 1.55cqi, 14px);
+  line-height: 1.65;
+  margin: 0;
+  padding: clamp(16px, 2.4cqi, 23px) clamp(18px, 3cqi, 30px);
+}
+
+.while-flow-summary strong {
+  color: var(--accent);
+}
+
 .while-trace-main {
   display: grid;
   gap: 14px;
@@ -12967,6 +13361,19 @@ footer {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .while-purpose-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .while-purpose-switch {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    text-align: left;
+  }
+
+  .while-purpose-switch i {
+    rotate: 90deg;
+  }
+
   .while-flow-map {
     margin-inline: auto;
     max-width: 420px;
@@ -12994,6 +13401,37 @@ footer {
   .theory-document {
     padding-left: 18px;
     padding-right: 18px;
+  }
+
+  .while-flow-graphic > header {
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .while-flow-graphic > header > code {
+    flex: none;
+  }
+
+  .while-purpose-switch {
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr);
+    text-align: center;
+  }
+
+  .while-purpose-switch i {
+    rotate: 90deg;
+  }
+
+  .while-five-results {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .while-five-results span:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .while-branches {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .index-error-explanation {

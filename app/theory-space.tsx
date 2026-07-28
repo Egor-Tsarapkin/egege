@@ -1681,51 +1681,100 @@ function WhileEverydayGraphic() {
 }
 
 function WhileFlowGraphic() {
+  const repeatedLines = Array.from({ length: 5 }, (_, index) => index + 1);
+
   return (
     <div
       className="while-flow-graphic"
-      aria-label="Цикл while проверяет условие, выполняет блок и возвращается к проверке"
+      aria-label="Пять одинаковых команд можно заменить циклом while, который повторяет команду, пока условие истинно"
     >
       <header>
         <div>
-          <small>Главный маршрут</small>
-          <strong>Проверка всегда происходит перед новым повторением</strong>
+          <small>Зачем нужен цикл</small>
+          <strong>Пять одинаковых команд или одна инструкция?</strong>
         </div>
-        <code>while x &lt; 5:</code>
+        <code>5 повторений</code>
       </header>
-      <div className="while-flow-stage">
-        <div className="while-flow-code">
-          <EditorFrame file="while_flow.py">
+
+      <div className="while-purpose-stage">
+        <section className="while-purpose-panel is-manual">
+          <div className="while-purpose-heading">
+            <span>Без цикла</span>
+            <strong>Повторяем код вручную</strong>
+          </div>
+          <div className="while-repeat-code" aria-label="Пять одинаковых команд print">
+            {repeatedLines.map((line) => (
+              <div key={line}>
+                <span>{line}</span>
+                <code>print(&apos;hello, world&apos;)</code>
+              </div>
+            ))}
+          </div>
+          <p>Работает, но одна и та же команда написана пять раз.</p>
+        </section>
+
+        <div className="while-purpose-switch" aria-hidden="true">
+          <span>Зачем повторять код?</span>
+          <i>→</i>
+          <strong>Скажем компьютеру повторить самому</strong>
+        </div>
+
+        <section className="while-purpose-panel is-loop">
+          <div className="while-purpose-heading">
+            <span>С циклом</span>
+            <strong>Описываем повторение один раз</strong>
+          </div>
+          <EditorFrame file="hello_loop.py">
             <div className="theory-code is-static">
               <div><span>1</span><code>x = 0</code></div>
               <div className="is-active"><span>2</span><code><b>while</b> x &lt; 5:</code></div>
-              <div className="is-indented"><span>3</span><code>    x += 1</code></div>
-              <div className="is-indented"><span>4</span><code>    print(x)</code></div>
+              <div className="is-indented"><span>3</span><code>    print(&apos;hello, world&apos;)</code></div>
+              <div className="is-indented"><span>4</span><code>    x += 1</code></div>
             </div>
           </EditorFrame>
-        </div>
-        <div className="while-flow-map" aria-hidden="true">
-          <span className="while-flow-start">x = 0</span>
-          <span className="while-flow-condition">x &lt; 5?</span>
-          <span className="while-flow-yes">Да · True</span>
-          <span className="while-flow-action">x += 1<br /><b>print(x)</b></span>
-          <span className="while-flow-return">вернуться к проверке</span>
-          <span className="while-flow-no">Нет · False</span>
-          <span className="while-flow-end">цикл закончен</span>
-          <i className="while-flow-line line-start" />
-          <i className="while-flow-line line-yes" />
-          <i className="while-flow-line line-action" />
-          <i className="while-flow-line line-return-one" />
-          <i className="while-flow-line line-return-two" />
-          <i className="while-flow-line line-no" />
-        </div>
+          <div className="while-value-track">
+            <span>x</span>
+            <b>0</b><i>→</i><b>1</b><i>→</i><b>2</b><i>→</i><b>3</b><i>→</i><b>4</b><i>→</i><b>5</b>
+          </div>
+        </section>
       </div>
-      <ol className="while-flow-steps">
-        <li><span>1</span><p>Python проверяет условие перед входом в цикл.</p></li>
-        <li><span>2</span><p>Если получилось <code>True</code>, выполняется весь блок с отступом.</p></li>
-        <li><span>3</span><p>После последней команды Python возвращается к условию и проверяет его заново.</p></li>
-        <li><span>4</span><p>Первый результат <code>False</code> завершает цикл.</p></li>
-      </ol>
+
+      <div className="while-five-results" aria-label="Команда вывела hello world пять раз">
+        {repeatedLines.map((line) => (
+          <span key={line}><b>{line}</b>hello, world</span>
+        ))}
+      </div>
+
+      <section className="while-decision">
+        <div className="while-decision-heading">
+          <small>Как цикл решает, повторять ли ещё?</small>
+          <strong>Перед каждым кругом Python проверяет <code>x &lt; 5</code></strong>
+        </div>
+        <div className="while-condition-card">
+          <span>УСЛОВИЕ</span>
+          <code>x &lt; 5?</code>
+        </div>
+        <div className="while-branches">
+          <article className="is-true">
+            <header><span>ДА</span><strong>True</strong></header>
+            <p>Выполнить весь блок с отступом:</p>
+            <code>print(&apos;hello, world&apos;)</code>
+            <code>x += 1</code>
+            <b>↩ Проверить условие снова</b>
+          </article>
+          <article className="is-false">
+            <header><span>НЕТ</span><strong>False</strong></header>
+            <p>Не входить в блок ещё раз.</p>
+            <div>Цикл закончен</div>
+            <b>→ Программа идёт дальше</b>
+          </article>
+        </div>
+      </section>
+
+      <p className="while-flow-summary">
+        Цикл нужен не для «магии», а чтобы <strong>не копировать одинаковый код</strong>.
+        Мы один раз описываем действие и условие остановки — повторениями занимается Python.
+      </p>
     </div>
   );
 }
