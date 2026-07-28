@@ -11203,6 +11203,11 @@ footer {
   position: relative;
 }
 
+.string-index-graphic .string-cell-strip > span {
+  font-size: clamp(11px, 3cqw, 18px);
+  font-weight: 610;
+}
+
 .string-cell-strip > span:first-child {
   border-radius: 10px 0 0 10px;
 }
@@ -11396,8 +11401,8 @@ footer {
 
 .index-error-graphic {
   display: grid;
-  gap: 10px;
-  grid-template-columns: minmax(0, 1.15fr) minmax(180px, 0.85fr);
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .index-error-line {
@@ -11446,23 +11451,73 @@ footer {
   color: color-mix(in srgb, #ff6d7d 72%, var(--text-soft));
 }
 
-.index-error-graphic > p {
+.index-error-explanation {
   align-items: center;
   background: color-mix(in srgb, #ff6d7d 6%, var(--bg));
   border: 1px solid color-mix(in srgb, #ff6d7d 24%, var(--line));
   border-radius: 16px;
-  color: var(--muted);
-  display: flex;
-  font-size: 9px;
-  line-height: 1.55;
-  margin: 0;
-  padding: 16px;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 18px 20px;
 }
 
-.index-error-graphic > p code {
+.index-error-explanation > div {
+  min-width: 0;
+}
+
+.index-error-explanation > div > small {
+  color: color-mix(in srgb, #ff6d7d 76%, var(--text-soft));
+  display: block;
+  font-size: 7px;
+  font-weight: 620;
+  letter-spacing: 0.1em;
+  margin-bottom: 7px;
+  text-transform: uppercase;
+}
+
+.index-error-explanation > div > strong {
+  color: var(--text-soft);
+  display: block;
+  font-size: clamp(12px, 2.4cqw, 16px);
+  font-weight: 620;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.index-error-explanation > div > p {
+  color: var(--muted);
+  font-size: clamp(9px, 1.7cqw, 11px);
+  line-height: 1.65;
+  margin: 8px 0 0;
+  max-width: 70ch;
+  text-wrap: pretty;
+}
+
+.index-error-explanation code {
   color: var(--text-soft);
   font-family: var(--font-geist-mono);
-  margin-inline: 3px;
+}
+
+.index-error-explanation > span {
+  background: var(--surface-raised);
+  border-radius: 12px;
+  display: grid;
+  gap: 6px;
+  min-width: 132px;
+  padding: 13px 15px;
+}
+
+.index-error-explanation > span small {
+  color: var(--dim);
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.index-error-explanation > span code {
+  font-size: clamp(10px, 1.9cqw, 13px);
+  font-variant-numeric: tabular-nums;
 }
 
 .negative-index-stage {
@@ -11945,6 +12000,15 @@ footer {
   .theory-document {
     padding-left: 18px;
     padding-right: 18px;
+  }
+
+  .index-error-explanation {
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .index-error-explanation > span {
+    min-width: 0;
   }
 
   .everyday-condition {
