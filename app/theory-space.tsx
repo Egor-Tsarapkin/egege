@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type TheorySpaceProps = {
   userId: string;
@@ -782,14 +782,20 @@ function IfFlowGraphic() {
       </EditorFrame>
       <div className="if-flow-map" aria-hidden="true">
         <span className="flow-start">x = 10</span>
-        <i className="flow-arrow flow-arrow-one" />
+        <i className="flow-downline" />
         <span className="flow-decision"><code>x &gt; 5?</code></span>
-        <span className="flow-true">True</span>
-        <span className="flow-false">False</span>
-        <i className="flow-arrow flow-arrow-true" />
-        <i className="flow-arrow flow-arrow-false" />
-        <span className="flow-action">вывести<br />«Больше пяти»</span>
-        <span className="flow-skip">пропустить блок</span>
+        <div className="flow-branches">
+          <div className="flow-branch is-true">
+            <span>True</span>
+            <i>↓</i>
+            <strong>вывести<br />«Больше пяти»</strong>
+          </div>
+          <div className="flow-branch is-false">
+            <span>False</span>
+            <i>↓</i>
+            <strong>пропустить блок</strong>
+          </div>
+        </div>
       </div>
       <p><code>if</code> запускает вложенный блок только тогда, когда условие равно <code>True</code>.</p>
     </div>
@@ -1090,7 +1096,12 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const storageKey = `egege-theory-progress-v2:${userId}`;
   const arithmeticStorageKey = `egege-theory-arithmetic-v1:${userId}`;
   const conditionStorageKey = `egege-theory-conditions-v1:${userId}`;
+  const splitStorageKey = `egege-theory-split-v1:${userId}`;
+  const theorySpaceRef = useRef<HTMLElement | null>(null);
+  const splitPercentRef = useRef(41);
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
+  const [splitPercent, setSplitPercent] = useState(41);
+  const [isResizing, setIsResizing] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
   const [completedArithmeticLessons, setCompletedArithmeticLessons] = useState<
     Set<ArithmeticLessonId>
@@ -1149,6 +1160,20 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
       }
     });
   }, [conditionStorageKey]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const saved = Number(window.localStorage.getItem(splitStorageKey));
+        if (Number.isFinite(saved) && saved >= 24 && saved <= 60) {
+          splitPercentRef.current = saved;
+          setSplitPercent(saved);
+        }
+      } catch {
+        // The default split remains available.
+      }
+    });
+  }, [splitStorageKey]);
 
   const progress = completedLessons.size * 50;
   const arithmeticProgress = completedArithmeticLessons.size * 25;
@@ -1335,8 +1360,64 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     }
   };
 
+  const updateSplitFromPointer = (clientX: number) => {
+    const container = theorySpaceRef.current;
+    if (!container) return;
+
+    const bounds = container.getBoundingClientRect();
+    const minimumMapWidth = Math.min(280, bounds.width * 0.32);
+    const minimumChapterWidth = Math.min(430, bounds.width * 0.48);
+    const minimumPercent = Math.max(24, (minimumMapWidth / bounds.width) * 100);
+    const maximumPercent = Math.min(60, 100 - (minimumChapterWidth / bounds.width) * 100);
+    const next = Math.min(
+      Math.max(((clientX - bounds.left) / bounds.width) * 100, minimumPercent),
+      Math.max(minimumPercent, maximumPercent),
+    );
+
+    splitPercentRef.current = next;
+    setSplitPercent(next);
+  };
+
+  const persistSplit = () => {
+    setIsResizing(false);
+    try {
+      window.localStorage.setItem(splitStorageKey, String(splitPercentRef.current));
+    } catch {
+      // The chosen split remains available for the current session.
+    }
+  };
+
+  const changeSplitWithKeyboard = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    let next = splitPercentRef.current;
+    if (event.key === "ArrowLeft") next -= 2;
+    else if (event.key === "ArrowRight") next += 2;
+    else if (event.key === "Home") next = 24;
+    else if (event.key === "End") next = 60;
+    else return;
+
+    event.preventDefault();
+    next = Math.min(60, Math.max(24, next));
+    splitPercentRef.current = next;
+    setSplitPercent(next);
+    try {
+      window.localStorage.setItem(splitStorageKey, String(next));
+    } catch {
+      // The chosen split remains available for the current session.
+    }
+  };
+
   return (
-    <section className={`theory-space ${activePlanet ? "is-chapter-open" : ""}`}>
+    <section
+      ref={theorySpaceRef}
+      className={`theory-space ${activePlanet ? "is-chapter-open" : ""} ${
+        isResizing ? "is-resizing" : ""
+      }`}
+      style={
+        {
+          "--theory-map-width": `${splitPercent}%`,
+        } as React.CSSProperties
+      }
+    >
       <div className="theory-map">
         <div className="theory-stars" aria-hidden="true" />
         <header className="theory-map-header">
@@ -1396,7 +1477,38 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
       </div>
 
       {activePlanet && (
-        <aside className="theory-chapter" aria-label={`Глава «${activePlanet.title}»`}>
+        <>
+          <div
+            className="theory-splitter"
+            role="separator"
+            aria-label="Изменить ширину карты и теории"
+            aria-orientation="vertical"
+            aria-valuemin={24}
+            aria-valuemax={60}
+            aria-valuenow={Math.round(splitPercent)}
+            tabIndex={0}
+            onKeyDown={changeSplitWithKeyboard}
+            onPointerDown={(event) => {
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setIsResizing(true);
+              updateSplitFromPointer(event.clientX);
+            }}
+            onPointerMove={(event) => {
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                updateSplitFromPointer(event.clientX);
+              }
+            }}
+            onPointerUp={(event) => {
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+              persistSplit();
+            }}
+            onPointerCancel={persistSplit}
+          >
+            <span aria-hidden="true" />
+          </div>
+          <aside className="theory-chapter" aria-label={`Глава «${activePlanet.title}»`}>
           <header className="theory-chapter-header">
             <button
               className="theory-close"
@@ -1553,7 +1665,11 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                   <span>02</span>
                   <div>
                     <p className="eyebrow">Независимые проверки</p>
-                    <h3><code>if · if · if</code> или <code>if · elif · elif</code></h3>
+                    <h3 className="condition-chain-title">
+                      <span><code>if · if · if</code></span>
+                      <em>или</em>
+                      <span><code>if · elif · elif</code></span>
+                    </h3>
                   </div>
                 </div>
                 <div className="theory-prose">
@@ -2257,7 +2373,8 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
               </section>
             </div>
           )}
-        </aside>
+          </aside>
+        </>
       )}
     </section>
   );
