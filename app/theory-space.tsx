@@ -2193,13 +2193,13 @@ function ForDebuggerGraphic({ mode }: { mode: ForDebugMode }) {
           </div>
           <div className="for-flow-actions">
             <div className={activeNode === "assign" ? "is-active" : ""}>
-              <small>Записать во временную переменную</small>
+              <small>Текущий элемент</small>
               <strong>
                 {variableName} = {isStart || isDone ? "—" : items[itemIndex]}
               </strong>
             </div>
             <div className={activeNode === "print" ? "is-active" : ""}>
-              <small>Выполнить тело с отступом</small>
+              <small>Тело цикла</small>
               <strong>print({variableName})</strong>
             </div>
             <div className={activeNode === "done" ? "is-active" : ""}>

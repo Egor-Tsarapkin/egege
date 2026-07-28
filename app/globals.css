@@ -268,7 +268,7 @@
 .for-flow-actions {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(190px, 1.25fr) minmax(150px, 0.75fr);
 }
 
 .for-flow-actions > div {
@@ -280,6 +280,16 @@
   min-height: 108px;
   padding: 15px;
   transition: background 180ms ease-out, border-color 180ms ease-out;
+}
+
+.for-flow-actions > div:first-child,
+.for-flow-actions > div:nth-child(2) {
+  grid-column: 1;
+}
+
+.for-flow-actions > div:last-child {
+  grid-column: 2;
+  grid-row: 1 / span 2;
 }
 
 .for-flow-actions > div.is-active {
@@ -298,6 +308,8 @@
   color: var(--text);
   font-family: var(--font-geist-mono);
   font-size: 13px;
+  overflow-wrap: normal;
+  white-space: nowrap;
 }
 
 .for-debugger-output {
@@ -320,12 +332,21 @@
 
 .for-debugger-output > div {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 122px;
 }
 
 .for-debugger-output span,
 .loop-shared-output span {
   opacity: 0.18;
+}
+
+.for-debugger-output span {
+  border-radius: 7px;
+  height: 22px;
+  min-width: 34px;
+  width: 34px;
 }
 
 .for-debugger-output span.is-visible,
@@ -573,6 +594,13 @@
 
   .for-flow-actions {
     grid-template-columns: 1fr;
+  }
+
+  .for-flow-actions > div:first-child,
+  .for-flow-actions > div:nth-child(2),
+  .for-flow-actions > div:last-child {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .for-code code > span,
