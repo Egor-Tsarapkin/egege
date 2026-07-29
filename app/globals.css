@@ -15639,3 +15639,175 @@ footer {
     padding-left: 16px;
   }
 }
+
+/* Mobile theory reflow — keep every educational block inside the chapter pane. */
+
+.theory-chapter {
+  overflow-x: clip;
+}
+
+.theory-document,
+.theory-document *,
+.theory-document *::before,
+.theory-document *::after {
+  box-sizing: border-box;
+}
+
+.theory-document :is(
+  section,
+  article,
+  header,
+  footer,
+  nav,
+  div,
+  p,
+  ul,
+  ol,
+  li,
+  pre,
+  code,
+  table
+) {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+@media (max-width: 700px) {
+  .theory-chapter {
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
+  }
+
+  .theory-document {
+    inline-size: 100%;
+    margin-inline: 0;
+    max-inline-size: 100%;
+    padding-inline: 18px;
+  }
+
+  .theory-document-title h2,
+  .theory-section-heading :is(h3, h4),
+  .theory-subsection h4 {
+    max-inline-size: 100%;
+    overflow-wrap: break-word;
+    text-wrap: pretty;
+  }
+
+  .literal-comic,
+  .computer-strengths > div,
+  .subtask-list,
+  .program-example,
+  .life-box-graphic,
+  .assignment-graphic,
+  .equality-graphic,
+  .type-difference-cells,
+  .same-screen,
+  .print-note {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .literal-panel {
+    min-height: 198px;
+  }
+
+  .literal-request {
+    border-bottom: 1px solid var(--line);
+    border-right: 0;
+  }
+
+  .computer-strengths span {
+    min-height: 50px;
+  }
+
+  .task-constructor > header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .task-constructor > header > span {
+    align-self: flex-start;
+  }
+
+  .task-parts-bank {
+    padding-inline: 12px;
+  }
+
+  .task-crate {
+    width: 136px;
+  }
+
+  .program-direction {
+    flex-direction: row;
+    gap: 12px;
+    min-height: 64px;
+  }
+
+  .program-direction i {
+    height: 1px;
+    margin: 0;
+    width: 72px;
+  }
+
+  .program-direction i::after {
+    right: 0;
+    top: -3px;
+  }
+
+  .life-box-graphic {
+    gap: 8px;
+    padding: 20px;
+  }
+
+  .cardboard-scene {
+    justify-self: center;
+    width: min(220px, 100%);
+  }
+
+  .assignment-graphic {
+    padding: 14px;
+  }
+
+  .assignment-code {
+    min-height: 104px;
+  }
+
+  .assignment-motion {
+    gap: clamp(10px, 4vw, 18px);
+    min-height: 130px;
+    width: 100%;
+  }
+
+  .assignment-graphic > p {
+    grid-column: auto;
+    padding: 0 4px 5px;
+  }
+
+  .data-type-row {
+    gap: 8px 12px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 12px 14px;
+  }
+
+  .data-type-row.is-heading {
+    display: none;
+  }
+
+  .data-type-row > span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .data-type-row code {
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+
+  .type-difference-cells > div:first-child {
+    border-bottom: 1px solid var(--line);
+    border-right: 0;
+  }
+
+  .print-note > code {
+    width: fit-content;
+  }
+}
