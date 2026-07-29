@@ -15523,12 +15523,14 @@ footer {
   .topbar-actions {
     flex: 1 1 auto;
     gap: 3px;
-    overflow: hidden;
+    min-width: 0;
+    overflow: visible;
   }
 
   .topbar-actions nav {
     flex: 1 1 auto;
     justify-content: flex-start;
+    min-width: 0;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
@@ -15548,8 +15550,13 @@ footer {
   }
 
   .profile-trigger.is-user {
+    flex: 0 0 44px;
     min-width: 44px;
     width: 44px;
+  }
+
+  .topbar-actions > .profile {
+    flex: 0 0 44px;
   }
 
   .theory-close,
