@@ -121,21 +121,116 @@ function AnswerFields({
 }) {
   const count = getInputCount(task);
   const isTable = count > 1;
+  const cols = Math.max(1, task.table.cols || 1);
+  const rows = Math.ceil(count / cols);
+  const fieldsRef = useRef<HTMLDivElement>(null);
 
-  return (
-    <div className={`exam-answer-fields ${isTable ? "is-table" : ""}`}>
-      {Array.from({ length: count }, (_, index) => (
-        <label key={index}>
-          <span>{isTable ? `${Math.floor(index / task.table.cols) + 1}.${(index % task.table.cols) + 1}` : "Ответ"}</span>
+  if (!isTable) {
+    return (
+      <div className="exam-answer-fields">
+        <label>
+          <span>Ответ</span>
           <input
-            aria-label={isTable ? `Строка ${Math.floor(index / task.table.cols) + 1}, поле ${(index % task.table.cols) + 1}` : `Ответ на задание ${task.number}`}
+            aria-label={`Ответ на задание ${task.number}`}
             autoComplete="off"
             inputMode={task.number === 2 ? "text" : "numeric"}
-            value={values[index] ?? ""}
-            onChange={(event) => onChange(index, event.target.value)}
+            value={values[0] ?? ""}
+            onChange={(event) => onChange(0, event.target.value)}
           />
         </label>
-      ))}
+      </div>
+    );
+  }
+
+  const focusCell = (index: number) => {
+    fieldsRef.current
+      ?.querySelector<HTMLInputElement>(`[data-answer-cell="${index}"]`)
+      ?.focus();
+  };
+
+  const pasteTable = (
+    event: React.ClipboardEvent<HTMLInputElement>,
+    startIndex: number,
+  ) => {
+    const clipboard = event.clipboardData.getData("text").replace(/\r/g, "");
+    const lines = clipboard.split("\n");
+    while (lines.length > 1 && lines.at(-1) === "") lines.pop();
+
+    const matrix = lines.map((line) => line.split("\t"));
+    const containsTable = matrix.length > 1 || matrix.some((line) => line.length > 1);
+    if (!containsTable) return;
+
+    event.preventDefault();
+    const startRow = Math.floor(startIndex / cols);
+    const startCol = startIndex % cols;
+
+    matrix.forEach((line, rowOffset) => {
+      line.forEach((cell, colOffset) => {
+        const row = startRow + rowOffset;
+        const col = startCol + colOffset;
+        const index = row * cols + col;
+        if (row < rows && col < cols && index < count) {
+          onChange(index, cell.trim());
+        }
+      });
+    });
+
+    if (startIndex === 0) {
+      fieldsRef.current?.querySelector(".exam-answer-table-scroll")?.scrollTo({ top: 0 });
+    }
+  };
+
+  return (
+    <div className="exam-answer-table" ref={fieldsRef}>
+      <div className="exam-answer-table-heading">
+        <strong>Ответ в виде таблицы</strong>
+        <span>Можно вставить весь массив сразу</span>
+      </div>
+      <div className="exam-answer-table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th aria-label="Номер строки" />
+              {Array.from({ length: cols }, (_, col) => (
+                <th scope="col" key={col}>{col + 1}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: rows }, (_, row) => (
+              <tr key={row}>
+                <th scope="row">{row + 1}</th>
+                {Array.from({ length: cols }, (_, col) => {
+                  const index = row * cols + col;
+                  if (index >= count) return <td key={col} />;
+                  return (
+                    <td key={col}>
+                      <input
+                        aria-label={`Строка ${row + 1}, столбец ${col + 1}`}
+                        autoComplete="off"
+                        data-answer-cell={index}
+                        inputMode="text"
+                        value={values[index] ?? ""}
+                        onChange={(event) => onChange(index, event.target.value)}
+                        onPaste={(event) => pasteTable(event, index)}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter") return;
+                          event.preventDefault();
+                          const next = index + cols < count ? index + cols : index + 1;
+                          focusCell(Math.min(next, count - 1));
+                        }}
+                      />
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="exam-answer-table-hint">
+        Скопируйте строки из таблицы или файла и вставьте в верхнюю левую ячейку.
+      </p>
     </div>
   );
 }
@@ -393,7 +488,7 @@ export default function ExamStation({
           {!currentTask && <span>{variant.title}</span>}
         </div>
         {currentTask ? (
-          <div className="exam-answer-actions">
+          <div className={`exam-answer-actions ${getInputCount(currentTask) > 1 ? "has-table-answer" : ""}`}>
             <AnswerFields
               task={currentTask}
               values={currentDraft}
