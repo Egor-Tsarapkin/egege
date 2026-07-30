@@ -6,6 +6,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 const TypingTrainer = lazy(() => import("./typing-trainer"));
 const TheorySpace = lazy(() => import("./theory-space"));
+const ExamStation = lazy(() => import("./exam-station"));
 
 type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "dashboard";
 type GateSection = Extract<Section, "theory" | "game" | "trainer" | "dashboard">;
@@ -34,10 +35,23 @@ type Task = {
 };
 
 type Variant = {
-  id: string;
+  kim: string;
   title: string;
   description: string;
-  taskIds: string[];
+  date: string;
+};
+
+type ExamVariantData = {
+  kim: string;
+  title: string;
+  sourceUrl: string;
+  tasks: Array<{
+    id: string;
+    number: number;
+    html: string;
+    table: { cols: number; rows: number };
+    files: Array<{ name: string; href: string }>;
+  }>;
 };
 
 type Burst = {
@@ -1433,13 +1447,13 @@ function Dashboard({
 export default function Home() {
   const [section, setSection] = useState<Section>("home");
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [variantTasks, setVariantTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
   const [difficulty, setDifficulty] = useState("all");
   const [source, setSource] = useState("all");
-  const [openVariant, setOpenVariant] = useState<string | null>(null);
+  const [examVariant, setExamVariant] = useState<ExamVariantData | null>(null);
+  const [examLoading, setExamLoading] = useState(false);
   const [activity, setActivity] = useState<Activity>({});
   const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(() => new Set());
   const [community, setCommunity] = useState<CommunityPayload | null>(null);
@@ -1573,22 +1587,6 @@ export default function Home() {
       controller.abort();
     };
   }, [type]);
-
-  useEffect(() => {
-    if (section !== "variants" || variantTasks.length > 0) return;
-    const controller = new AbortController();
-    void fetch("/data/variant-tasks.json", { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error("Не удалось загрузить варианты");
-        return response.json() as Promise<Task[]>;
-      })
-      .then(setVariantTasks)
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        notify("Не удалось загрузить задания варианта");
-      });
-    return () => controller.abort();
-  }, [section, variantTasks.length]);
 
   useEffect(() => {
     if (!user) return;
@@ -1908,20 +1906,28 @@ export default function Home() {
   const variants = useMemo<Variant[]>(
     () => [
       {
-        id: "01",
-        title: "Разминка",
-        description: "Три коротких задания из разных тем.",
-        taskIds: ["31347", "31350", "31354"],
-      },
-      {
-        id: "02",
-        title: "Практика с файлами",
-        description: "Два задания повышенной сложности.",
-        taskIds: ["31363", "31370"],
+        kim: "25135392",
+        title: "ЕГКР",
+        description: "Полный вариант из 27 заданий в режиме экзаменационной станции.",
+        date: "13 декабря 2025",
       },
     ],
     [],
   );
+
+  const openExamVariant = async (kim: string) => {
+    if (examLoading) return;
+    setExamLoading(true);
+    try {
+      const response = await fetch(`/data/variants/${kim}.json`);
+      if (!response.ok) throw new Error("Вариант не загрузился");
+      setExamVariant(await response.json() as ExamVariantData);
+    } catch {
+      notify("Не удалось открыть экзаменационную станцию");
+    } finally {
+      setExamLoading(false);
+    }
+  };
 
   const resetFilters = () => {
     setSearch("");
@@ -2144,50 +2150,33 @@ export default function Home() {
         {section === "variants" && (
           <>
             <PageHeading
-              eyebrow="Тестовый режим"
+              eyebrow="Экзаменационный режим"
               title="Варианты"
-              description="Небольшие подборки заданий для быстрой тренировки."
+              description="Решайте полный вариант в интерфейсе, приближенном к станции ЕГЭ."
             />
             <section className="variant-list" aria-label="Доступные варианты">
-              {variants.map((variant) => {
-                const isOpen = openVariant === variant.id;
-                return (
-                  <article className={`variant-card ${isOpen ? "is-open" : ""}`} key={variant.id}>
-                    <div className="variant-number">{variant.id}</div>
+              {variants.map((variant) => (
+                  <article className="variant-card exam-variant-card" key={variant.kim}>
+                    <div className="variant-number">27</div>
                     <div className="variant-copy">
-                      <h2>{variant.title}</h2>
+                      <span className="variant-kim">КИМ № {variant.kim}</span>
+                      <h2>{variant.title} · {variant.date}</h2>
                       <p>{variant.description}</p>
                     </div>
-                    <span className="variant-count">{variant.taskIds.length} задания</span>
-                    <button onClick={() => setOpenVariant(isOpen ? null : variant.id)}>
-                      {isOpen ? "Свернуть" : "Открыть"}
+                    <span className="variant-count">3 ч 55 мин</span>
+                    <button onClick={() => void openExamVariant(variant.kim)} disabled={examLoading}>
+                      {examLoading ? "Открываем…" : "Начать вариант"}
                     </button>
                   </article>
-                );
-              })}
+              ))}
             </section>
-
-            {openVariant && (
-              <section className="variant-run">
-                <div className="variant-run-heading">
-                  <span>Вариант {openVariant}</span>
-                  <p>Ответы можно смотреть в любом порядке.</p>
-                </div>
-                {variants
-                  .find((variant) => variant.id === openVariant)
-                  ?.taskIds.map((taskId) => {
-                    const task = variantTasks.find((item) => item.id === taskId);
-                    return task ? (
-                      <TaskItem
-                        task={task}
-                        completed={completedTaskIds.has(task.id)}
-                        key={task.id}
-                        {...taskProps}
-                      />
-                    ) : null;
-                  })}
-              </section>
-            )}
+            <section className="variant-station-note">
+              <span>Режим станции</span>
+              <p>
+                Номера 1–27, автоматическое сохранение ответов, таймер, прикреплённые файлы
+                и итоговый экран — в одном полноэкранном интерфейсе.
+              </p>
+            </section>
           </>
         )}
 
@@ -2256,6 +2245,11 @@ export default function Home() {
         />
       )}
       <Toast message={toast} />
+      {examVariant && (
+        <Suspense fallback={<div className="exam-loading-screen">Готовим вариант…</div>}>
+          <ExamStation variant={examVariant} onClose={() => setExamVariant(null)} />
+        </Suspense>
+      )}
       <div className="xp-layer" aria-hidden="true">
         {bursts.map((burst) => (
           <div
