@@ -12,6 +12,10 @@
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "variants:import": "node scripts/import-exam-variant.mjs",
+    "variants:import-all": "node scripts/import-kompege-variants.mjs",
+    "variants:sync-tasks": "node scripts/sync-variant-tasks.mjs",
+    "files:rewrite-links": "node scripts/rewrite-kompege-file-links.mjs",
+    "tasks:import": "node scripts/import-kompege-tasks.mjs",
     "tasks:render-math": "node scripts/render-task-math.mjs",
     "tasks:split": "node scripts/split-task-data.mjs",
     "db:generate": "drizzle-kit generate"

@@ -1,0 +1,281 @@
+import { mkdir, stat, writeFile } from "node:fs/promises";
+import { basename, extname } from "node:path";
+import { pathToFileURL } from "node:url";
+import katex from "katex";
+
+const API_ROOT = "https://kompege.ru/api/v1";
+const SITE_ROOT = "https://kompege.ru";
+const outputRoot = new URL("../public/data/", import.meta.url);
+const taskOutputRoot = new URL("../public/data/tasks/", import.meta.url);
+const imageOutputRoot = new URL("../public/materials/kege/imported/", import.meta.url);
+const fileOutputRoot = new URL("../public/materials/kege/files/", import.meta.url);
+const sourceNumbers = [...Array.from({ length: 19 }, (_, index) => index + 1), 22, 23, 24, 25, 26, 27];
+const difficultyNames = ["Базовый", "Средний", "Высокий", "Высокий"];
+const concurrency = 2;
+const downloadFiles = process.env.DOWNLOAD_TASK_FILES === "1";
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function fetchWithRetry(url, options = {}, attempts = 8) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          Accept: "*/*",
+          "User-Agent": "EGEGE educational importer (permission granted by source owner)",
+          ...options.headers,
+        },
+      });
+
+      if (response.ok) return response;
+      lastError = new Error(`${response.status} ${response.statusText}`);
+      if (response.status === 429) {
+        const retryAfter = Number(response.headers.get("retry-after") ?? 0);
+        await wait(Math.max(retryAfter * 1000, 2500 * attempt));
+        continue;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+
+    await wait(650 * attempt);
+  }
+
+  throw new Error(`Не удалось загрузить ${url}: ${lastError?.message ?? "unknown error"}`);
+}
+
+async function mapLimit(values, limit, mapper) {
+  const results = new Array(values.length);
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < values.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await mapper(values[index], index);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(limit, values.length) }, worker));
+  return results;
+}
+
+function decodeFormula(value) {
+  return value
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .trim();
+}
+
+function renderFormula(sourceFormula, displayMode = false) {
+  const formula = decodeFormula(sourceFormula);
+
+  try {
+    const rendered = katex.renderToString(formula, {
+      displayMode,
+      output: "htmlAndMathml",
+      strict: "ignore",
+      throwOnError: true,
+      trust: false,
+    });
+
+    return displayMode
+      ? `<span class="task-formula task-formula-display">${rendered}</span>`
+      : `<span class="task-formula task-formula-inline">${rendered}</span>`;
+  } catch {
+    return `<code class="task-formula-error">${formula}</code>`;
+  }
+}
+
+function safeFilePart(value) {
+  return value
+    .normalize("NFKD")
+    .replace(/[^\p{L}\p{N}._-]+/gu, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 110);
+}
+
+function extensionForMime(mime) {
+  if (mime === "jpeg") return "jpg";
+  if (mime === "svg+xml") return "svg";
+  return mime;
+}
+
+async function extractInlineImages(html, taskId) {
+  let imageIndex = 0;
+  const pending = [];
+
+  const nextHtml = html.replace(
+    /(<img\b[^>]*?\bsrc=["'])data:image\/([a-zA-Z0-9+.-]+);base64,([^"']+)(["'][^>]*>)/gi,
+    (_match, prefix, mime, encoded, suffix) => {
+      imageIndex += 1;
+      const extension = extensionForMime(mime.toLowerCase());
+      const fileName = `${taskId}-${imageIndex}.${extension}`;
+      pending.push(
+        writeFile(new URL(fileName, imageOutputRoot), Buffer.from(encoded.replace(/\s/g, ""), "base64")),
+      );
+      return `${prefix}/materials/kege/imported/${fileName}${suffix}`;
+    },
+  );
+
+  await Promise.all(pending);
+  return nextHtml;
+}
+
+function prepareMarkup(html) {
+  return html
+    .replace(/\\\(([\s\S]*?)\\\)/g, (_match, formula) => renderFormula(formula, false))
+    .replace(/\\\[([\s\S]*?)\\\]/g, (_match, formula) => renderFormula(formula, true))
+    .replace(/\$\$([\s\S]*?)\$\$/g, (_match, formula) => renderFormula(formula, true))
+    .replace(/<img\b(?![^>]*\bloading=)([^>]*)>/gi, '<img loading="lazy" decoding="async"$1>')
+    .replace(/<table\b([^>]*)>/gi, '<div class="task-table-scroll"><table$1>')
+    .replace(/<\/table>/gi, "</table></div>");
+}
+
+async function downloadTaskFiles(files, taskId) {
+  return mapLimit(files ?? [], 1, async (file, index) => {
+    const remoteUrl = new URL(file.url, SITE_ROOT);
+    const originalName = safeFilePart(file.name || basename(remoteUrl.pathname)) || `file-${index + 1}`;
+    const remoteExtension = extname(remoteUrl.pathname);
+    const nameWithExtension = extname(originalName)
+      ? originalName
+      : `${originalName}${remoteExtension}`;
+    const localName = `${taskId}-${index + 1}-${nameWithExtension}`;
+    const localUrl = new URL(localName, fileOutputRoot);
+    const publicHref = `/materials/kege/files/${localName}`;
+    let exists = false;
+    try {
+      exists = (await stat(localUrl)).size > 0;
+    } catch {
+      exists = false;
+    }
+
+    if (!exists && downloadFiles) {
+      await wait(90);
+      const response = await fetchWithRetry(remoteUrl);
+      await writeFile(localUrl, Buffer.from(await response.arrayBuffer()));
+      exists = true;
+    }
+
+    return {
+      name: file.name || nameWithExtension,
+      href: downloadFiles && exists ? publicHref : remoteUrl.href,
+      sourceUrl: remoteUrl.href,
+      meta: "Файл к заданию",
+    };
+  });
+}
+
+async function makeTask(source, number, id, text, answer, table = source.table) {
+  const htmlWithImages = await extractInlineImages(text ?? "", id);
+  return {
+    id: String(id),
+    number,
+    difficulty: difficultyNames[Number(source.difficulty)] ?? "Средний",
+    source: "КЕГЭ",
+    title: `Задание №${number}`,
+    note: source.comment || undefined,
+    html: prepareMarkup(htmlWithImages),
+    answer: String(answer ?? ""),
+    table: {
+      cols: Math.max(1, Number(table?.cols ?? 1)),
+      rows: Math.max(1, Number(table?.rows ?? 1)),
+    },
+    files: await downloadTaskFiles(source.files, id),
+  };
+}
+
+async function importNumber(number) {
+  const response = await fetchWithRetry(`${API_ROOT}/task/number/${number}`, {
+    headers: { Accept: "application/json" },
+  });
+  const sourceTasks = await response.json();
+  const result = [];
+
+  for (const source of sourceTasks) {
+    result.push(
+      await makeTask(source, number, source.taskId, source.text, source.key, source.table),
+    );
+
+    if (number === 19) {
+      for (const subTask of source.subTask ?? []) {
+        const subNumber = Number(subTask.number);
+        const subId = `${source.taskId}${subNumber}`;
+        result.push(
+          await makeTask(
+            { ...source, files: [] },
+            subNumber,
+            subId,
+            `${source.text ?? ""}${subTask.text ?? ""}`,
+            subTask.key,
+            subTask.table,
+          ),
+        );
+      }
+    }
+  }
+
+  console.log(`№${number}: ${sourceTasks.length}`);
+  return result;
+}
+
+export async function importKompegeTasks() {
+  await Promise.all([
+    mkdir(taskOutputRoot, { recursive: true }),
+    mkdir(imageOutputRoot, { recursive: true }),
+    mkdir(fileOutputRoot, { recursive: true }),
+  ]);
+
+  const importedGroups = await mapLimit(sourceNumbers, concurrency, importNumber);
+  const tasks = importedGroups.flat().sort((left, right) => {
+    if (left.number !== right.number) return left.number - right.number;
+    return Number(right.id) - Number(left.id);
+  });
+
+  await Promise.all(
+    Array.from({ length: 27 }, async (_, index) => {
+      const number = index + 1;
+      const tasksForNumber = tasks.filter((task) => task.number === number);
+      await writeFile(
+        new URL(`${number}.json`, taskOutputRoot),
+        `${JSON.stringify(tasksForNumber)}\n`,
+      );
+    }),
+  );
+
+  const taskIndex = Object.fromEntries(tasks.map((task) => [task.id, task.number]));
+  const taskCounts = Object.fromEntries(
+    Array.from({ length: 27 }, (_, index) => {
+      const number = index + 1;
+      return [number, tasks.filter((task) => task.number === number).length];
+    }),
+  );
+
+  await Promise.all([
+    writeFile(new URL("task-index.json", outputRoot), `${JSON.stringify(taskIndex)}\n`),
+    writeFile(
+      new URL("task-manifest.json", outputRoot),
+      `${JSON.stringify({
+        source: "https://kompege.ru/task",
+        importedAt: new Date().toISOString(),
+        total: tasks.length,
+        counts: taskCounts,
+      }, null, 2)}\n`,
+    ),
+  ]);
+
+  return { total: tasks.length, counts: taskCounts };
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const result = await importKompegeTasks();
+  console.log(`Готово: ${result.total} заданий`);
+  console.log(result.counts);
+}

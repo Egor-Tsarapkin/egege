@@ -1,0 +1,2077 @@
+{
+  "source": "https://kompege.ru/archive",
+  "importedAt": "2026-07-30T10:37:23.005Z",
+  "total": 345,
+  "variants": [
+    {
+      "kim": "25107025",
+      "title": "Демоверсия",
+      "taskCount": 31,
+      "sourceUrl": "https://kompege.ru/variant?kim=25107025"
+    },
+    {
+      "kim": "25135392",
+      "title": "ЕГКР 13.12.25",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25135392"
+    },
+    {
+      "kim": "25163454",
+      "title": "Апробация 04.03.26",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25163454"
+    },
+    {
+      "kim": "25164989",
+      "title": "Апробация 04.03.26 II",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25164989"
+    },
+    {
+      "kim": "25177268",
+      "title": "Досрочная волна 2026",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25177268"
+    },
+    {
+      "kim": "25181217",
+      "title": "ЕГКР 18.04.26",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25181217"
+    },
+    {
+      "kim": "25185395",
+      "title": "Открытый вариант",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25185395"
+    },
+    {
+      "kim": "25192097",
+      "title": "Апробация 14.05.26",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25192097"
+    },
+    {
+      "kim": "25203213",
+      "title": "Основная волна 18.06.26",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25203213"
+    },
+    {
+      "kim": "25203290",
+      "title": "Основная волна 19.06.26",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25203290"
+    },
+    {
+      "kim": "25203502",
+      "title": "Резервная волна 22.06.26",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25203502"
+    },
+    {
+      "kim": "25205244",
+      "title": "Пересдача 08.07.26",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25205244"
+    },
+    {
+      "kim": "25112400",
+      "title": "Вариант #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25112400"
+    },
+    {
+      "kim": "25121225",
+      "title": "Вариант #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25121225"
+    },
+    {
+      "kim": "25141101",
+      "title": "Вариант #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25141101"
+    },
+    {
+      "kim": "25141693",
+      "title": "Вариант #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25141693"
+    },
+    {
+      "kim": "25149146",
+      "title": "Вариант #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25149146"
+    },
+    {
+      "kim": "25143017",
+      "title": "Вариант #6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25143017"
+    },
+    {
+      "kim": "25165560",
+      "title": "Вариант #7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25165560"
+    },
+    {
+      "kim": "25145224",
+      "title": "Вариант #8",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25145224"
+    },
+    {
+      "kim": "25176679",
+      "title": "Вариант #9",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25176679"
+    },
+    {
+      "kim": "25183809",
+      "title": "Вариант #10",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25183809"
+    },
+    {
+      "kim": "25188676",
+      "title": "Вариант #11",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25188676"
+    },
+    {
+      "kim": "25193685",
+      "title": "Вариант #12",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25193685"
+    },
+    {
+      "kim": "25197370",
+      "title": "Вариант #13",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25197370"
+    },
+    {
+      "kim": "25198084",
+      "title": "Вариант #14",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25198084"
+    },
+    {
+      "kim": "25199692",
+      "title": "Вариант #15",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25199692"
+    },
+    {
+      "kim": "25114534",
+      "title": "Вариант #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25114534"
+    },
+    {
+      "kim": "25116548",
+      "title": "Вариант #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25116548"
+    },
+    {
+      "kim": "25120738",
+      "title": "Вариант #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25120738"
+    },
+    {
+      "kim": "25126584",
+      "title": "Вариант #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25126584"
+    },
+    {
+      "kim": "25136078",
+      "title": "Вариант #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25136078"
+    },
+    {
+      "kim": "25147031",
+      "title": "Вариант #6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25147031"
+    },
+    {
+      "kim": "25155916",
+      "title": "Вариант #7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25155916"
+    },
+    {
+      "kim": "25167211",
+      "title": "Вариант #8",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25167211"
+    },
+    {
+      "kim": "25175418",
+      "title": "Вариант #9",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25175418"
+    },
+    {
+      "kim": "25184231",
+      "title": "Вариант #10",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25184231"
+    },
+    {
+      "kim": "25109507",
+      "title": "Вариант #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25109507"
+    },
+    {
+      "kim": "25115343",
+      "title": "Вариант #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25115343"
+    },
+    {
+      "kim": "25124397",
+      "title": "Вариант #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25124397"
+    },
+    {
+      "kim": "25135264",
+      "title": "Вариант #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25135264"
+    },
+    {
+      "kim": "25143077",
+      "title": "Вариант #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25143077"
+    },
+    {
+      "kim": "25154203",
+      "title": "Вариант #6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25154203"
+    },
+    {
+      "kim": "25167515",
+      "title": "Вариант #7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25167515"
+    },
+    {
+      "kim": "25177298",
+      "title": "Вариант #8",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25177298"
+    },
+    {
+      "kim": "25189996",
+      "title": "Вариант #9",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25189996"
+    },
+    {
+      "kim": "25122069",
+      "title": "Вариант #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25122069"
+    },
+    {
+      "kim": "25134173",
+      "title": "Вариант #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25134173"
+    },
+    {
+      "kim": "25142942",
+      "title": "Вариант #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25142942"
+    },
+    {
+      "kim": "25151832",
+      "title": "Любовные приключения",
+      "taskCount": 28,
+      "sourceUrl": "https://kompege.ru/variant?kim=25151832"
+    },
+    {
+      "kim": "25170061",
+      "title": "Вариант #6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25170061"
+    },
+    {
+      "kim": "25177284",
+      "title": "Вариант #7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25177284"
+    },
+    {
+      "kim": "25193609",
+      "title": "Вариант #8",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25193609"
+    },
+    {
+      "kim": "25196170",
+      "title": "Вариант #9",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25196170"
+    },
+    {
+      "kim": "25138308",
+      "title": "Вариант #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25138308"
+    },
+    {
+      "kim": "25138309",
+      "title": "Вариант #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25138309"
+    },
+    {
+      "kim": "25138311",
+      "title": "Вариант #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25138311"
+    },
+    {
+      "kim": "25138312",
+      "title": "Вариант #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25138312"
+    },
+    {
+      "kim": "25138313",
+      "title": "Вариант #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25138313"
+    },
+    {
+      "kim": "25138319",
+      "title": "Вариант #6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25138319"
+    },
+    {
+      "kim": "25140442",
+      "title": "Вариант #7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25140442"
+    },
+    {
+      "kim": "25140443",
+      "title": "Вариант #8",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25140443"
+    },
+    {
+      "kim": "25140444",
+      "title": "Вариант #9",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25140444"
+    },
+    {
+      "kim": "25140445",
+      "title": "Вариант #10",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25140445"
+    },
+    {
+      "kim": "25106570",
+      "title": "М. Мигунов",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25106570"
+    },
+    {
+      "kim": "25111879",
+      "title": "С. Горбачев #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25111879"
+    },
+    {
+      "kim": "25118748",
+      "title": "Д. Аббазов",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25118748"
+    },
+    {
+      "kim": "25121892",
+      "title": "Тыквенный гроб 😈",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25121892"
+    },
+    {
+      "kim": "25121111",
+      "title": "С. Горбачев #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25121111"
+    },
+    {
+      "kim": "25128661",
+      "title": "М. Рейм #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25128661"
+    },
+    {
+      "kim": "25125061",
+      "title": "А. Ходарин #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25125061"
+    },
+    {
+      "kim": "25141629",
+      "title": "Зимний гроб 😈",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25141629"
+    },
+    {
+      "kim": "25165385",
+      "title": "С. Якунин",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25165385"
+    },
+    {
+      "kim": "25186594",
+      "title": "Т. Никитин #1 😈",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25186594"
+    },
+    {
+      "kim": "25187194",
+      "title": "И. Карпачев",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25187194"
+    },
+    {
+      "kim": "25196800",
+      "title": "С. Горбачев #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25196800"
+    },
+    {
+      "kim": "25195892",
+      "title": "Т. Никитин #2 😈",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25195892"
+    },
+    {
+      "kim": "25058505",
+      "title": "Демоверсия",
+      "taskCount": 30,
+      "sourceUrl": "https://kompege.ru/variant?kim=25058505"
+    },
+    {
+      "kim": "25073855",
+      "title": "ЕГКР 21.12.24",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25073855"
+    },
+    {
+      "kim": "25086726",
+      "title": "Апробация 05.03.25 I",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25086726"
+    },
+    {
+      "kim": "25088424",
+      "title": "Апробация 05.03.25 II",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25088424"
+    },
+    {
+      "kim": "25093318",
+      "title": "Досрочная волна 2025",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25093318"
+    },
+    {
+      "kim": "25095608",
+      "title": "ЕГКР 19.04.25",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25095608"
+    },
+    {
+      "kim": "25097382",
+      "title": "Открытый вариант",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25097382"
+    },
+    {
+      "kim": "25104364",
+      "title": "Основная волна 10.06.25",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25104364"
+    },
+    {
+      "kim": "25104336",
+      "title": "Подборка 10.06.25",
+      "taskCount": 34,
+      "sourceUrl": "https://kompege.ru/variant?kim=25104336"
+    },
+    {
+      "kim": "25104458",
+      "title": "Основная волна 11.06.25",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25104458"
+    },
+    {
+      "kim": "25104393",
+      "title": "Подборка 11.06.25",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25104393"
+    },
+    {
+      "kim": "25104683",
+      "title": "Резервный день 19.06.25",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25104683"
+    },
+    {
+      "kim": "25104799",
+      "title": "Резервный день 23.06.25",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25104799"
+    },
+    {
+      "kim": "25105568",
+      "title": "Пересдача 03.07.25",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25105568"
+    },
+    {
+      "kim": "25058419",
+      "title": "Вариант #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25058419"
+    },
+    {
+      "kim": "25059935",
+      "title": "Вариант #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25059935"
+    },
+    {
+      "kim": "25062004",
+      "title": "Вариант #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25062004"
+    },
+    {
+      "kim": "25064102",
+      "title": "Вариант #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25064102"
+    },
+    {
+      "kim": "25066404",
+      "title": "Вариант #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25066404"
+    },
+    {
+      "kim": "25067205",
+      "title": "Вариант #6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25067205"
+    },
+    {
+      "kim": "25071427",
+      "title": "Вариант #7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25071427"
+    },
+    {
+      "kim": "25076361",
+      "title": "Вариант #8",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25076361"
+    },
+    {
+      "kim": "25081237",
+      "title": "Вариант #9",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25081237"
+    },
+    {
+      "kim": "25087135",
+      "title": "Вариант #10",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25087135"
+    },
+    {
+      "kim": "25098973",
+      "title": "Вариант #11",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25098973"
+    },
+    {
+      "kim": "25102234",
+      "title": "Вариант #12",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25102234"
+    },
+    {
+      "kim": "25102627",
+      "title": "Вариант #13",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25102627"
+    },
+    {
+      "kim": "25102944",
+      "title": "Вариант #14",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25102944"
+    },
+    {
+      "kim": "25102945",
+      "title": "Вариант #15",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25102945"
+    },
+    {
+      "kim": "25062307",
+      "title": "Вариант #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25062307"
+    },
+    {
+      "kim": "25067145",
+      "title": "Вариант #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25067145"
+    },
+    {
+      "kim": "25072710",
+      "title": "Вариант #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25072710"
+    },
+    {
+      "kim": "25075184",
+      "title": "Вариант #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25075184"
+    },
+    {
+      "kim": "25081895",
+      "title": "Вариант #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25081895"
+    },
+    {
+      "kim": "25091699",
+      "title": "Вариант #6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25091699"
+    },
+    {
+      "kim": "25099988",
+      "title": "Вариант #7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25099988"
+    },
+    {
+      "kim": "25070441",
+      "title": "Вариант #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25070441"
+    },
+    {
+      "kim": "25077904",
+      "title": "Вариант #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25077904"
+    },
+    {
+      "kim": "25083435",
+      "title": "Вариант #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25083435"
+    },
+    {
+      "kim": "25088673",
+      "title": "Вариант #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25088673"
+    },
+    {
+      "kim": "25094005",
+      "title": "Вариант #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25094005"
+    },
+    {
+      "kim": "25099345",
+      "title": "Вариант #6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25099345"
+    },
+    {
+      "kim": "25066260",
+      "title": "К. Иглин #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25066260"
+    },
+    {
+      "kim": "25078328",
+      "title": "К. Иглин #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25078328"
+    },
+    {
+      "kim": "25083591",
+      "title": "К. Иглин #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25083591"
+    },
+    {
+      "kim": "25092717",
+      "title": "К. Иглин #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25092717"
+    },
+    {
+      "kim": "25103646",
+      "title": "К. Иглин #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25103646"
+    },
+    {
+      "kim": "25059762",
+      "title": "М. Крючков #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25059762"
+    },
+    {
+      "kim": "25060491",
+      "title": "С. Якунин #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25060491"
+    },
+    {
+      "kim": "25061303",
+      "title": "В. Колчев #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25061303"
+    },
+    {
+      "kim": "25070634",
+      "title": "В. Лашин #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25070634"
+    },
+    {
+      "kim": "25078973",
+      "title": "М. Ишимов #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25078973"
+    },
+    {
+      "kim": "25083253",
+      "title": "Д. Байт #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25083253"
+    },
+    {
+      "kim": "25093536",
+      "title": "Д. Байт #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25093536"
+    },
+    {
+      "kim": "25063141",
+      "title": "А. Ходарин #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25063141"
+    },
+    {
+      "kim": "25099173",
+      "title": "Д. Байт #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25099173"
+    },
+    {
+      "kim": "25101955",
+      "title": "В. Лашин #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25101955"
+    },
+    {
+      "kim": "25103475",
+      "title": "В. Лашин #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25103475"
+    },
+    {
+      "kim": "25028749",
+      "title": "Демоверсия",
+      "taskCount": 29,
+      "sourceUrl": "https://kompege.ru/variant?kim=25028749"
+    },
+    {
+      "kim": "25037026",
+      "title": "ЕГКР 16.12.23",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25037026"
+    },
+    {
+      "kim": "25049996",
+      "title": "Досрочная волна",
+      "taskCount": 29,
+      "sourceUrl": "https://kompege.ru/variant?kim=25049996"
+    },
+    {
+      "kim": "25053844",
+      "title": "Вариант ЕГКР 27.04.24",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053844"
+    },
+    {
+      "kim": "25053338",
+      "title": "Открытый вариант ФИПИ",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053338"
+    },
+    {
+      "kim": "25056868",
+      "title": "Основная волна 07.06.2024",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25056868"
+    },
+    {
+      "kim": "25056920",
+      "title": "Основная волна 08.06.2024",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25056920"
+    },
+    {
+      "kim": "25057064",
+      "title": "Основная волна 19.06.2024 (Центр)",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25057064"
+    },
+    {
+      "kim": "25057025",
+      "title": "Основная волна 19.06.2024 (Сибирь)",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25057025"
+    },
+    {
+      "kim": "25057665",
+      "title": "Основная волна 04.07.2024",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25057665"
+    },
+    {
+      "kim": "25028622",
+      "title": "Л. Шастин #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25028622"
+    },
+    {
+      "kim": "25033139",
+      "title": "Л. Шастин #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25033139"
+    },
+    {
+      "kim": "25034284",
+      "title": "Л. Шастин #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25034284"
+    },
+    {
+      "kim": "25037669",
+      "title": "Л. Шастин #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25037669"
+    },
+    {
+      "kim": "25044095",
+      "title": "Л. Шастин #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25044095"
+    },
+    {
+      "kim": "25044384",
+      "title": "Л. Шастин #6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25044384"
+    },
+    {
+      "kim": "25053163",
+      "title": "Л. Шастин #7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053163"
+    },
+    {
+      "kim": "25053174",
+      "title": "Л. Шастин #8",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053174"
+    },
+    {
+      "kim": "25053180",
+      "title": "Л. Шастин #9",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053180"
+    },
+    {
+      "kim": "25053182",
+      "title": "Л. Шастин #10",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053182"
+    },
+    {
+      "kim": "25053188",
+      "title": "Л. Шастин #11",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053188"
+    },
+    {
+      "kim": "25053190",
+      "title": "Л. Шастин #12",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053190"
+    },
+    {
+      "kim": "25030012",
+      "title": "PRO100EGE #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25030012"
+    },
+    {
+      "kim": "25032504",
+      "title": "PRO100EGE #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25032504"
+    },
+    {
+      "kim": "25034725",
+      "title": "PRO100EGE #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25034725"
+    },
+    {
+      "kim": "25037581",
+      "title": "PRO100EGE #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25037581"
+    },
+    {
+      "kim": "25039931",
+      "title": "PRO100EGE #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25039931"
+    },
+    {
+      "kim": "25044014",
+      "title": "PRO100EGE #6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25044014"
+    },
+    {
+      "kim": "25048321",
+      "title": "PRO100EGE #7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25048321"
+    },
+    {
+      "kim": "25056563",
+      "title": "PRO100EGE #8",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25056563"
+    },
+    {
+      "kim": "25053943",
+      "title": "И. Баженов #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053943"
+    },
+    {
+      "kim": "25055710",
+      "title": "И. Баженов #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25055710"
+    },
+    {
+      "kim": "25055758",
+      "title": "И. Баженов #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25055758"
+    },
+    {
+      "kim": "25055863",
+      "title": "И. Баженов #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25055863"
+    },
+    {
+      "kim": "25055866",
+      "title": "И. Баженов #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25055866"
+    },
+    {
+      "kim": "25028750",
+      "title": "Вариант 1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25028750"
+    },
+    {
+      "kim": "25028473",
+      "title": "Вариант 2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25028473"
+    },
+    {
+      "kim": "25027714",
+      "title": "Вариант 3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25027714"
+    },
+    {
+      "kim": "25028525",
+      "title": "Вариант 4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25028525"
+    },
+    {
+      "kim": "25028626",
+      "title": "Вариант 5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25028626"
+    },
+    {
+      "kim": "25053178",
+      "title": "Вариант от 03.05.2024",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053178"
+    },
+    {
+      "kim": "25055822",
+      "title": "Вариант от 30.05.2024",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25055822"
+    },
+    {
+      "kim": "25056474",
+      "title": "Вариант от 06.06.2024",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25056474"
+    },
+    {
+      "kim": "25031715",
+      "title": "М. Ишимов #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25031715"
+    },
+    {
+      "kim": "25033034",
+      "title": "М. Ишимов #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25033034"
+    },
+    {
+      "kim": "25031317",
+      "title": "В. Ремезов #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25031317"
+    },
+    {
+      "kim": "25032150",
+      "title": "С. Якунин #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25032150"
+    },
+    {
+      "kim": "25034132",
+      "title": "С. Якунин #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25034132"
+    },
+    {
+      "kim": "25033103",
+      "title": "И. Карпачев #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25033103"
+    },
+    {
+      "kim": "25036213",
+      "title": "Новогодний вариант (М. Попков)",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25036213"
+    },
+    {
+      "kim": "25038160",
+      "title": "В. Смирнов #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25038160"
+    },
+    {
+      "kim": "25040199",
+      "title": "С. Якунин #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25040199"
+    },
+    {
+      "kim": "25042852",
+      "title": "М. Крючков #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25042852"
+    },
+    {
+      "kim": "25043579",
+      "title": "С. Горбачёв #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25043579"
+    },
+    {
+      "kim": "25040499",
+      "title": "М. Шагитов #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25040499"
+    },
+    {
+      "kim": "25045011",
+      "title": "И. Попеляев #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25045011"
+    },
+    {
+      "kim": "25045875",
+      "title": "Я. Агеев #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25045875"
+    },
+    {
+      "kim": "25047425",
+      "title": "Гробовой вариант #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25047425"
+    },
+    {
+      "kim": "25053055",
+      "title": "И. Карпачев #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053055"
+    },
+    {
+      "kim": "25053633",
+      "title": "И. Карпачев #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25053633"
+    },
+    {
+      "kim": "25055698",
+      "title": "С. Горбачёв #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25055698"
+    },
+    {
+      "kim": "25012927",
+      "title": "Демоверсия",
+      "taskCount": 28,
+      "sourceUrl": "https://kompege.ru/variant?kim=25012927"
+    },
+    {
+      "kim": "25013947",
+      "title": "Пробник 09.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25013947"
+    },
+    {
+      "kim": "25016609",
+      "title": "Пробник 11.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25016609"
+    },
+    {
+      "kim": "25019383",
+      "title": "Пробник 01.2023",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25019383"
+    },
+    {
+      "kim": "25019903",
+      "title": "ФИПИ 03.02.2023",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25019903"
+    },
+    {
+      "kim": "25019914",
+      "title": "ФИПИ 04.02.2023",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25019914"
+    },
+    {
+      "kim": "25021833",
+      "title": "Пробник ИМЦ СПб",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25021833"
+    },
+    {
+      "kim": "25021990",
+      "title": "Апробация 10.03.23",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25021990"
+    },
+    {
+      "kim": "25022577",
+      "title": "OpenFIPI #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25022577"
+    },
+    {
+      "kim": "25022798",
+      "title": "OpenFIPI #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25022798"
+    },
+    {
+      "kim": "25023734",
+      "title": "Досрочная волна I",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25023734"
+    },
+    {
+      "kim": "25023719",
+      "title": "Досрочная волна II",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25023719"
+    },
+    {
+      "kim": "25026304",
+      "title": "Апробация 17.05.23",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25026304"
+    },
+    {
+      "kim": "25028275",
+      "title": "Основная волна 2023 I",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25028275"
+    },
+    {
+      "kim": "25028282",
+      "title": "Основная волна 2023 II",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25028282"
+    },
+    {
+      "kim": "25028311",
+      "title": "Основная волна 2023 III",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25028311"
+    },
+    {
+      "kim": "25013089",
+      "title": "Вариант 1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25013089"
+    },
+    {
+      "kim": "25013090",
+      "title": "Вариант 2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25013090"
+    },
+    {
+      "kim": "25013091",
+      "title": "Вариант 3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25013091"
+    },
+    {
+      "kim": "25013092",
+      "title": "Вариант 4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25013092"
+    },
+    {
+      "kim": "25013093",
+      "title": "Вариант 5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25013093"
+    },
+    {
+      "kim": "25013094",
+      "title": "Вариант 6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25013094"
+    },
+    {
+      "kim": "25013095",
+      "title": "Вариант 7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25013095"
+    },
+    {
+      "kim": "25013096",
+      "title": "Вариант 8",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25013096"
+    },
+    {
+      "kim": "25013097",
+      "title": "Вариант 9",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25013097"
+    },
+    {
+      "kim": "25013098",
+      "title": "Вариант 10",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25013098"
+    },
+    {
+      "kim": "25017844",
+      "title": "21.12.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25017844"
+    },
+    {
+      "kim": "25018373",
+      "title": "09.01.2023",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25018373"
+    },
+    {
+      "kim": "25022410",
+      "title": "21.03.2023",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25022410"
+    },
+    {
+      "kim": "25021989",
+      "title": "27.03.2023",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25021989"
+    },
+    {
+      "kim": "25026870",
+      "title": "02.06.2023",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25026870"
+    },
+    {
+      "kim": "25027193",
+      "title": "06.06.2023",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25027193"
+    },
+    {
+      "kim": "25027544",
+      "title": "10.06.2023",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25027544"
+    },
+    {
+      "kim": "25027864",
+      "title": "14.06.2023",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25027864"
+    },
+    {
+      "kim": "25019141",
+      "title": "Danov2301",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25019141"
+    },
+    {
+      "kim": "25020847",
+      "title": "Danov2302",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25020847"
+    },
+    {
+      "kim": "25022658",
+      "title": "Danov2303",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25022658"
+    },
+    {
+      "kim": "25024260",
+      "title": "Danov 2304",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25024260"
+    },
+    {
+      "kim": "25025747",
+      "title": "Danov 2305",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25025747"
+    },
+    {
+      "kim": "25026935",
+      "title": "Danov 2306",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25026935"
+    },
+    {
+      "kim": "25028157",
+      "title": "Danov 2307",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25028157"
+    },
+    {
+      "kim": "25014273",
+      "title": "Вариант 1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25014273"
+    },
+    {
+      "kim": "25016763",
+      "title": "Вариант 2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25016763"
+    },
+    {
+      "kim": "25018316",
+      "title": "Вариант 3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25018316"
+    },
+    {
+      "kim": "25023074",
+      "title": "Вариант 4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25023074"
+    },
+    {
+      "kim": "25024686",
+      "title": "Вариант 5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25024686"
+    },
+    {
+      "kim": "25026530",
+      "title": "Вариант 6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25026530"
+    },
+    {
+      "kim": "25026712",
+      "title": "Вариант 7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25026712"
+    },
+    {
+      "kim": "25026733",
+      "title": "Вариант 8",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25026733"
+    },
+    {
+      "kim": "25015585",
+      "title": "/dev/inf #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25015585"
+    },
+    {
+      "kim": "25017540",
+      "title": "/dev/inf #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25017540"
+    },
+    {
+      "kim": "25020030",
+      "title": "/dev/inf #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25020030"
+    },
+    {
+      "kim": "25025091",
+      "title": "/dev/inf #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25025091"
+    },
+    {
+      "kim": "25027697",
+      "title": "/dev/inf #5",
+      "taskCount": 26,
+      "sourceUrl": "https://kompege.ru/variant?kim=25027697"
+    },
+    {
+      "kim": "25022058",
+      "title": "PRO100EGE #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25022058"
+    },
+    {
+      "kim": "25018341",
+      "title": "М. Ишимов #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25018341"
+    },
+    {
+      "kim": "25019310",
+      "title": "Д. Тараскин #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25019310"
+    },
+    {
+      "kim": "25022649",
+      "title": "И. Карпачев #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25022649"
+    },
+    {
+      "kim": "25023892",
+      "title": "В. Рыбальченко #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25023892"
+    },
+    {
+      "kim": "25024005",
+      "title": "Н. Грачев #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25024005"
+    },
+    {
+      "kim": "25024231",
+      "title": "М. Ишимов #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25024231"
+    },
+    {
+      "kim": "25019139",
+      "title": "С. Якунин #1",
+      "taskCount": 25,
+      "sourceUrl": "https://kompege.ru/variant?kim=25019139"
+    },
+    {
+      "kim": "25025197",
+      "title": "Д. Тараскин (П. Миронов) #2",
+      "taskCount": 26,
+      "sourceUrl": "https://kompege.ru/variant?kim=25025197"
+    },
+    {
+      "kim": "25016363",
+      "title": "Г. Симаков #1",
+      "taskCount": 26,
+      "sourceUrl": "https://kompege.ru/variant?kim=25016363"
+    },
+    {
+      "kim": "25022997",
+      "title": "М. Шагитов #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25022997"
+    },
+    {
+      "kim": "25026893",
+      "title": "И. Карпачев #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25026893"
+    },
+    {
+      "kim": "25027014",
+      "title": "С. Якунин #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25027014"
+    },
+    {
+      "kim": "25027647",
+      "title": "Вариант от Вебиум",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25027647"
+    },
+    {
+      "kim": "25026073",
+      "title": "Д. Тараскин (В. Блинов) #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25026073"
+    },
+    {
+      "kim": "25017531",
+      "title": "Новогодний гробник",
+      "taskCount": 28,
+      "sourceUrl": "https://kompege.ru/variant?kim=25017531"
+    },
+    {
+      "kim": "25018254",
+      "title": "Harry Potter 22/23",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25018254"
+    },
+    {
+      "kim": "25021843",
+      "title": "Вариант 8 марта",
+      "taskCount": 25,
+      "sourceUrl": "https://kompege.ru/variant?kim=25021843"
+    },
+    {
+      "kim": "25019514",
+      "title": "Гробник #2",
+      "taskCount": 25,
+      "sourceUrl": "https://kompege.ru/variant?kim=25019514"
+    },
+    {
+      "kim": "25022580",
+      "title": "Гробник #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25022580"
+    },
+    {
+      "kim": "25004839",
+      "title": "Демоверсия",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25004839"
+    },
+    {
+      "kim": "25005579",
+      "title": "10.2021",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25005579"
+    },
+    {
+      "kim": "25005700",
+      "title": "Halloween 2021",
+      "taskCount": 12,
+      "sourceUrl": "https://kompege.ru/variant?kim=25005700"
+    },
+    {
+      "kim": "25006154",
+      "title": "11.2021",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006154"
+    },
+    {
+      "kim": "25006891",
+      "title": "12.2021",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006891"
+    },
+    {
+      "kim": "25006991",
+      "title": "Новогодний вариант",
+      "taskCount": 25,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006991"
+    },
+    {
+      "kim": "25007591",
+      "title": "01.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25007591"
+    },
+    {
+      "kim": "25008180",
+      "title": "19.02.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25008180"
+    },
+    {
+      "kim": "25008865",
+      "title": "Вариант PRO100 ЕГЭ",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25008865"
+    },
+    {
+      "kim": "25009347",
+      "title": "03.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25009347"
+    },
+    {
+      "kim": "25009665",
+      "title": "Досрочный вариант",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25009665"
+    },
+    {
+      "kim": "25010523",
+      "title": "27.04.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25010523"
+    },
+    {
+      "kim": "25011595",
+      "title": "Открытый вариант",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25011595"
+    },
+    {
+      "kim": "25009344",
+      "title": "Вариант от учеников",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25009344"
+    },
+    {
+      "kim": "25011999",
+      "title": "06.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25011999"
+    },
+    {
+      "kim": "25012688",
+      "title": "Основная волна 2022 I",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25012688"
+    },
+    {
+      "kim": "25012690",
+      "title": "Основная волна 2022 II",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25012690"
+    },
+    {
+      "kim": "25012895",
+      "title": "Основная волна 2022 III",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25012895"
+    },
+    {
+      "kim": "25008975",
+      "title": "Вариант #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25008975"
+    },
+    {
+      "kim": "25011978",
+      "title": "Вариант #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25011978"
+    },
+    {
+      "kim": "25011979",
+      "title": "Вариант #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25011979"
+    },
+    {
+      "kim": "25011980",
+      "title": "Вариант #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25011980"
+    },
+    {
+      "kim": "25006544",
+      "title": "/dev/inf #1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006544"
+    },
+    {
+      "kim": "25007636",
+      "title": "/dev/inf #2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25007636"
+    },
+    {
+      "kim": "25007634",
+      "title": "/dev/inf #3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25007634"
+    },
+    {
+      "kim": "25011767",
+      "title": "/dev/inf #4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25011767"
+    },
+    {
+      "kim": "25011775",
+      "title": "/dev/inf #5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25011775"
+    },
+    {
+      "kim": "25006979",
+      "title": "Вариант 1",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006979"
+    },
+    {
+      "kim": "25006980",
+      "title": "Вариант 2",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006980"
+    },
+    {
+      "kim": "25006974",
+      "title": "Вариант 3",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006974"
+    },
+    {
+      "kim": "25006975",
+      "title": "Вариант 4",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006975"
+    },
+    {
+      "kim": "25006976",
+      "title": "Вариант 5",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006976"
+    },
+    {
+      "kim": "25006977",
+      "title": "Вариант 6",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006977"
+    },
+    {
+      "kim": "25006978",
+      "title": "Вариант 7",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006978"
+    },
+    {
+      "kim": "25006981",
+      "title": "Вариант 8",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006981"
+    },
+    {
+      "kim": "25006983",
+      "title": "Вариант 9",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006983"
+    },
+    {
+      "kim": "25006984",
+      "title": "Вариант 10",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25006984"
+    },
+    {
+      "kim": "25010320",
+      "title": "22.04.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25010320"
+    },
+    {
+      "kim": "25010850",
+      "title": "05.05.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25010850"
+    },
+    {
+      "kim": "25011126",
+      "title": "14.05.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25011126"
+    },
+    {
+      "kim": "25012307",
+      "title": "15.06.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25012307"
+    },
+    {
+      "kim": "25012520",
+      "title": "19.06.2022",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25012520"
+    },
+    {
+      "kim": "25005475",
+      "title": "Danov2201",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25005475"
+    },
+    {
+      "kim": "25012503",
+      "title": "Danov2202",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25012503"
+    },
+    {
+      "kim": "25000351",
+      "title": "Демоверсия",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000351"
+    },
+    {
+      "kim": "25003288",
+      "title": "27.04.2021 I",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25003288"
+    },
+    {
+      "kim": "25003302",
+      "title": "27.04.2021 II",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25003302"
+    },
+    {
+      "kim": "25003483",
+      "title": "досрочный вариант",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25003483"
+    },
+    {
+      "kim": "25001940",
+      "title": "01.03.2021",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25001940"
+    },
+    {
+      "kim": "25002021",
+      "title": "01.04.2021",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25002021"
+    },
+    {
+      "kim": "25003350",
+      "title": "01.05.2021",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25003350"
+    },
+    {
+      "kim": "25003936",
+      "title": "07.06.2021",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25003936"
+    },
+    {
+      "kim": "25004741",
+      "title": "Основная волна 2021",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25004741"
+    },
+    {
+      "kim": "25000001",
+      "title": "31.08.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000001"
+    },
+    {
+      "kim": "25000002",
+      "title": "07.09.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000002"
+    },
+    {
+      "kim": "25000005",
+      "title": "14.09.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000005"
+    },
+    {
+      "kim": "25000006",
+      "title": "21.09.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000006"
+    },
+    {
+      "kim": "25000007",
+      "title": "28.09.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000007"
+    },
+    {
+      "kim": "25000014",
+      "title": "05.10.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000014"
+    },
+    {
+      "kim": "25000027",
+      "title": "12.10.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000027"
+    },
+    {
+      "kim": "25000063",
+      "title": "19.10.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000063"
+    },
+    {
+      "kim": "25000150",
+      "title": "26.10.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000150"
+    },
+    {
+      "kim": "25000219",
+      "title": "02.11.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000219"
+    },
+    {
+      "kim": "25000332",
+      "title": "09.11.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000332"
+    },
+    {
+      "kim": "25000410",
+      "title": "16.11.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000410"
+    },
+    {
+      "kim": "25000592",
+      "title": "24.11.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000592"
+    },
+    {
+      "kim": "25000671",
+      "title": "30.11.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000671"
+    },
+    {
+      "kim": "25000760",
+      "title": "07.12.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000760"
+    },
+    {
+      "kim": "25000872",
+      "title": "14.12.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25000872"
+    },
+    {
+      "kim": "25001050",
+      "title": "25.12.2020",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25001050"
+    },
+    {
+      "kim": "25001659",
+      "title": "11.02.2021",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25001659"
+    },
+    {
+      "kim": "25002209",
+      "title": "15.03.2021",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25002209"
+    },
+    {
+      "kim": "25003662",
+      "title": "16.05.2021",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25003662"
+    },
+    {
+      "kim": "25003645",
+      "title": "Danov2101",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25003645"
+    },
+    {
+      "kim": "25004287",
+      "title": "Danov2102",
+      "taskCount": 27,
+      "sourceUrl": "https://kompege.ru/variant?kim=25004287"
+    }
+  ]
+}

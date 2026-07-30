@@ -37,8 +37,8 @@ type Task = {
 type Variant = {
   kim: string;
   title: string;
-  description: string;
-  date: string;
+  taskCount: number;
+  sourceUrl: string;
 };
 
 type ExamVariantData = {
@@ -1452,8 +1452,12 @@ export default function Home() {
   const [type, setType] = useState("");
   const [difficulty, setDifficulty] = useState("all");
   const [source, setSource] = useState("all");
+  const [variants, setVariants] = useState<Variant[]>([]);
+  const [variantsLoading, setVariantsLoading] = useState(false);
+  const [variantSearch, setVariantSearch] = useState("");
+  const [visibleVariantCount, setVisibleVariantCount] = useState(36);
   const [examVariant, setExamVariant] = useState<ExamVariantData | null>(null);
-  const [examLoading, setExamLoading] = useState(false);
+  const [openingVariantKim, setOpeningVariantKim] = useState("");
   const [activity, setActivity] = useState<Activity>({});
   const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(() => new Set());
   const [community, setCommunity] = useState<CommunityPayload | null>(null);
@@ -1551,6 +1555,20 @@ export default function Home() {
         taskIndex.current = {};
       });
   }, []);
+
+  useEffect(() => {
+    if (section !== "variants" || variants.length > 0 || variantsLoading) return;
+
+    queueMicrotask(() => setVariantsLoading(true));
+    void fetch("/data/variant-manifest.json")
+      .then((response) => {
+        if (!response.ok) throw new Error("Не удалось загрузить каталог вариантов");
+        return response.json() as Promise<{ variants: Variant[] }>;
+      })
+      .then((payload) => setVariants(payload.variants ?? []))
+      .catch(() => notify("Не удалось загрузить каталог вариантов"))
+      .finally(() => setVariantsLoading(false));
+  }, [section, variants.length, variantsLoading]);
 
   useEffect(() => {
     if (!type) {
@@ -1903,21 +1921,22 @@ export default function Home() {
     [tasks, search, type, difficulty, source],
   );
 
-  const variants = useMemo<Variant[]>(
-    () => [
-      {
-        kim: "25135392",
-        title: "ЕГКР",
-        description: "Полный вариант из 27 заданий в режиме экзаменационной станции.",
-        date: "13 декабря 2025",
-      },
-    ],
-    [],
+  const filteredVariants = useMemo(
+    () => {
+      const query = variantSearch.trim().toLowerCase();
+      if (!query) return variants;
+      return variants.filter(
+        (variant) =>
+          variant.kim.includes(query) ||
+          variant.title.toLowerCase().includes(query),
+      );
+    },
+    [variantSearch, variants],
   );
 
   const openExamVariant = async (kim: string) => {
-    if (examLoading) return;
-    setExamLoading(true);
+    if (openingVariantKim) return;
+    setOpeningVariantKim(kim);
     try {
       const response = await fetch(`/data/variants/${kim}.json`);
       if (!response.ok) throw new Error("Вариант не загрузился");
@@ -1925,7 +1944,7 @@ export default function Home() {
     } catch {
       notify("Не удалось открыть экзаменационную станцию");
     } finally {
-      setExamLoading(false);
+      setOpeningVariantKim("");
     }
   };
 
@@ -2152,24 +2171,53 @@ export default function Home() {
             <PageHeading
               eyebrow="Экзаменационный режим"
               title="Варианты"
-              description="Решайте полный вариант в интерфейсе, приближенном к станции ЕГЭ."
+              description="345 вариантов КЕГЭ в интерфейсе, приближенном к экзаменационной станции."
             />
+            <div className="variant-toolbar">
+              <label>
+                <span>Найти вариант</span>
+                <input
+                  inputMode="search"
+                  value={variantSearch}
+                  onChange={(event) => {
+                    setVariantSearch(event.target.value);
+                    setVisibleVariantCount(36);
+                  }}
+                  placeholder="КИМ или название"
+                />
+              </label>
+              <span>{filteredVariants.length} вариантов</span>
+            </div>
             <section className="variant-list" aria-label="Доступные варианты">
-              {variants.map((variant) => (
+              {variantsLoading && (
+                <div className="variant-catalog-state">Загружаем каталог вариантов…</div>
+              )}
+              {filteredVariants.slice(0, visibleVariantCount).map((variant) => (
                   <article className="variant-card exam-variant-card" key={variant.kim}>
-                    <div className="variant-number">27</div>
+                    <div className="variant-number">{variant.taskCount}</div>
                     <div className="variant-copy">
                       <span className="variant-kim">КИМ № {variant.kim}</span>
-                      <h2>{variant.title} · {variant.date}</h2>
-                      <p>{variant.description}</p>
+                      <h2>{variant.title}</h2>
+                      <p>Полный вариант в режиме экзаменационной станции.</p>
                     </div>
                     <span className="variant-count">3 ч 55 мин</span>
-                    <button onClick={() => void openExamVariant(variant.kim)} disabled={examLoading}>
-                      {examLoading ? "Открываем…" : "Начать вариант"}
+                    <button
+                      onClick={() => void openExamVariant(variant.kim)}
+                      disabled={Boolean(openingVariantKim)}
+                    >
+                      {openingVariantKim === variant.kim ? "Открываем…" : "Начать вариант"}
                     </button>
                   </article>
               ))}
             </section>
+            {visibleVariantCount < filteredVariants.length && (
+              <button
+                className="variants-more"
+                onClick={() => setVisibleVariantCount((count) => count + 36)}
+              >
+                Показать ещё 36
+              </button>
+            )}
             <section className="variant-station-note">
               <span>Режим станции</span>
               <p>

@@ -2671,7 +2671,66 @@ footer {
 .variant-list {
   display: grid;
   gap: 12px;
-  margin-top: 52px;
+  margin-top: 18px;
+}
+
+.variant-toolbar {
+  align-items: end;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  margin-top: 44px;
+}
+
+.variant-toolbar label {
+  display: grid;
+  gap: 8px;
+  max-width: 460px;
+  width: 100%;
+}
+
+.variant-toolbar label > span,
+.variant-toolbar > span {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.variant-toolbar input {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 0;
+  color: var(--text);
+  font: inherit;
+  min-height: 44px;
+  outline: 0;
+  padding: 0 2px;
+  width: 100%;
+}
+
+.variant-toolbar input:focus {
+  border-bottom-color: var(--accent);
+}
+
+.variant-catalog-state {
+  color: var(--muted);
+  padding: 36px 2px;
+}
+
+.variants-more {
+  background: var(--surface);
+  border-radius: 14px;
+  color: var(--text-soft);
+  display: block;
+  font-size: 12px;
+  margin: 18px auto 0;
+  min-height: 44px;
+  padding: 0 20px;
+}
+
+.variants-more:hover {
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .variant-card {
@@ -9141,6 +9200,13 @@ footer {
   .dashboard-content,
   .premium-placeholder {
     margin-top: 40px;
+  }
+
+  .variant-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 34px;
   }
 
   .premium-placeholder {
