@@ -36,6 +36,24 @@ const EXAM_DURATION_SECONDS = 3 * 60 * 60 + 55 * 60;
 const STORAGE_KEY = "egege-exam-25135392-v2";
 const LEGACY_STORAGE_KEY = "egege-exam-25135392-v1";
 
+function normalizeAnswers(value: unknown): Answers {
+  if (!value || typeof value !== "object") return {};
+
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([key, answer]) => {
+      const taskNumber = Number(key);
+      if (!Number.isInteger(taskNumber)) return [];
+      if (Array.isArray(answer)) {
+        return [[taskNumber, answer.map((item) => String(item ?? ""))]];
+      }
+      if (typeof answer === "string" || typeof answer === "number") {
+        return [[taskNumber, [String(answer)]]];
+      }
+      return [];
+    }),
+  );
+}
+
 function readExamDraft() {
   if (typeof window === "undefined") {
     return {
@@ -55,8 +73,8 @@ function readExamDraft() {
       secondsLeft?: number;
     };
     return {
-      answers: saved.answers ?? {},
-      drafts: saved.drafts ?? saved.answers ?? {},
+      answers: normalizeAnswers(saved.answers),
+      drafts: normalizeAnswers(saved.drafts ?? saved.answers),
       secondsLeft:
         typeof saved.secondsLeft === "number" ? saved.secondsLeft : EXAM_DURATION_SECONDS,
     };
@@ -154,7 +172,7 @@ function AnswerFields({
   ) => {
     const clipboard = event.clipboardData.getData("text").replace(/\r/g, "");
     const lines = clipboard.split("\n");
-    while (lines.length > 1 && lines.at(-1) === "") lines.pop();
+    while (lines.length > 1 && lines[lines.length - 1] === "") lines.pop();
 
     const matrix = lines.map((line) => line.split("\t"));
     const containsTable = matrix.length > 1 || matrix.some((line) => line.length > 1);
@@ -176,7 +194,8 @@ function AnswerFields({
     });
 
     if (startIndex === 0) {
-      fieldsRef.current?.querySelector(".exam-answer-table-scroll")?.scrollTo({ top: 0 });
+      const scrollArea = fieldsRef.current?.querySelector<HTMLElement>(".exam-answer-table-scroll");
+      if (scrollArea) scrollArea.scrollTop = 0;
     }
   };
 
