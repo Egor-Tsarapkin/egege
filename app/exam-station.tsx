@@ -113,6 +113,10 @@ function normalizeAnswer(values: string[] | string | undefined) {
   return text.toLowerCase().replace(/\s+/g, "");
 }
 
+function formatResultAnswer(value: string | undefined) {
+  return (value ?? "").replace(/\\n/g, "\n").replace(/\r/g, "").trim();
+}
+
 function getInputCount(task: ExamTask) {
   const cols = Math.max(1, task.table.cols || 1);
   const rows = Math.max(1, task.table.rows || 1);
@@ -285,25 +289,36 @@ export default function ExamStation({
   const [finished, setFinished] = useState(false);
   const [navWindowStart, setNavWindowStart] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
-  const currentTask = variant.tasks.find((task) => task.number === currentNumber) ?? null;
-  const answeredCount = useMemo(
-    () => variant.tasks.filter((task) => isAnswerFilled(answers[task.number])).length,
-    [answers, variant.tasks],
+  const examTasks = useMemo(
+    () => Array.from(
+      variant.tasks.reduce((tasks, task) => {
+        if (!tasks.has(task.number)) tasks.set(task.number, task);
+        return tasks;
+      }, new Map<number, ExamTask>()).values(),
+    ).sort((a, b) => a.number - b.number),
+    [variant.tasks],
   );
-  const resultRows = useMemo(() => variant.tasks.map((task) => {
+  const currentTask = examTasks.find((task) => task.number === currentNumber) ?? null;
+  const answeredCount = useMemo(
+    () => examTasks.filter((task) => isAnswerFilled(answers[task.number])).length,
+    [answers, examTasks],
+  );
+  const resultRows = useMemo(() => examTasks.map((task) => {
     const userAnswer = answers[task.number] ?? [];
     const correct = Boolean(task.answer) &&
       normalizeAnswer(userAnswer) === normalizeAnswer(task.answer);
     const maxPoints = task.number === 26 || task.number === 27 ? 2 : 1;
     return {
       task,
-      userAnswer: userAnswer.join(" "),
+      userAnswer: formatResultAnswer(userAnswer.join("\n")),
+      correctAnswer: formatResultAnswer(task.answer),
       correct,
       points: correct ? maxPoints : 0,
     };
-  }), [answers, variant.tasks]);
+  }), [answers, examTasks]);
   const primaryScore = resultRows.reduce((total, row) => total + row.points, 0);
   const testScore = SCORE_SCALE[primaryScore] ?? 0;
+  const correctCount = resultRows.filter((row) => row.correct).length;
   const changeTask = useCallback((number: number) => {
     const nextNumber = Math.max(0, Math.min(27, number));
     setCurrentNumber(nextNumber);
@@ -394,32 +409,84 @@ export default function ExamStation({
   if (finished) {
     return (
       <div className="exam-station exam-result-screen">
-        <header className="exam-results-title">Единый государственный экзамен · Информатика</header>
-        <section className="exam-result-card">
-          <div className="exam-result-summary">
-            <p>Результат экзамена</p>
-            <strong>{testScore}<small>/100</small></strong>
-            <span>Первичный балл: {primaryScore}/29</span>
-            <span>Дано ответов: {answeredCount}/27</span>
-          </div>
-          <div className="exam-result-table-wrap">
-            <h1>КИМ № {variant.kim}</h1>
-            <div className="exam-result-table">
-              {resultRows.map(({ task, userAnswer, points }) => (
-                <div className="exam-result-row" key={`${task.number}-${task.id}`}>
-                  <b>№{task.number}</b>
-                  <span className={points ? "is-correct" : ""}>{points} б.</span>
-                  <span>{userAnswer || "—"}</span>
-                  <span>{task.answer || "—"}</span>
-                </div>
-              ))}
+        <header className="exam-results-title">
+          <span>EGEGE</span>
+          <b>Результаты варианта</b>
+          <button onClick={onClose} aria-label="Закрыть результаты">
+            <X aria-hidden="true" />
+          </button>
+        </header>
+        <main className="exam-result-card">
+          <section className="exam-result-hero">
+            <div className="exam-result-heading">
+              <p>Экзамен завершён</p>
+              <h1>КИМ № {variant.kim}</h1>
+              <span>Все ответы собраны в одной понятной сводке.</span>
             </div>
-          </div>
+            <div className="exam-result-score">
+              <span>Тестовый балл</span>
+              <strong>{testScore}<small>/100</small></strong>
+            </div>
+            <div className="exam-result-metrics">
+              <div>
+                <strong>{primaryScore}<small>/29</small></strong>
+                <span>первичный балл</span>
+              </div>
+              <div>
+                <strong>{correctCount}<small>/27</small></strong>
+                <span>верных ответов</span>
+              </div>
+              <div>
+                <strong>{answeredCount}<small>/27</small></strong>
+                <span>ответов дано</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="exam-result-table-wrap">
+            <div className="exam-result-section-heading">
+              <div>
+                <p>Подробная проверка</p>
+                <h2>Ответы по заданиям</h2>
+              </div>
+              <div className="exam-result-legend">
+                <span><i className="is-correct" /> Верно</span>
+                <span><i className="is-wrong" /> Ошибка</span>
+                <span><i className="is-empty" /> Нет ответа</span>
+              </div>
+            </div>
+            <div className="exam-result-table" role="table" aria-label="Результаты по заданиям">
+              <div className="exam-result-row exam-result-row-head" role="row">
+                <span>№</span>
+                <span>Балл</span>
+                <span>Ваш ответ</span>
+                <span>Правильный ответ</span>
+              </div>
+              {resultRows.map(({ task, userAnswer, correctAnswer, correct, points }) => {
+                const status = !userAnswer ? "is-empty" : correct ? "is-correct" : "is-wrong";
+                return (
+                  <div className={`exam-result-row ${status}`} key={task.number} role="row">
+                    <b><i />{task.number}</b>
+                    <span className="exam-result-points">{points} из {task.number >= 26 ? 2 : 1}</span>
+                    <span className="exam-result-answer">{userAnswer || "Ответ не дан"}</span>
+                    <span className="exam-result-answer">{correctAnswer || "—"}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
           <div className="exam-result-actions">
-            <button onClick={() => setFinished(false)}>Вернуться к работе</button>
-            <button className="is-primary" onClick={onClose}>К вариантам</button>
+            <button onClick={() => setFinished(false)}>
+              <ArrowLeft aria-hidden="true" />
+              Вернуться к варианту
+            </button>
+            <button className="is-primary" onClick={onClose}>
+              К списку вариантов
+              <ArrowRight aria-hidden="true" />
+            </button>
           </div>
-        </section>
+        </main>
       </div>
     );
   }
