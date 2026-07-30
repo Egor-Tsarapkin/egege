@@ -31,6 +31,16 @@ type ExamVariant = {
   tasks: ExamTask[];
 };
 
+export type ExamAttempt = {
+  kim: string;
+  title: string;
+  testScore: number;
+  correctCount: number;
+  answeredCount: number;
+  durationSeconds: number;
+  completedAt: string;
+};
+
 type Answers = Record<number, string[]>;
 
 const EXAM_DURATION_SECONDS = 3 * 60 * 60 + 55 * 60;
@@ -276,9 +286,11 @@ function AnswerFields({
 export default function ExamStation({
   variant,
   onClose,
+  onFinish,
 }: {
   variant: ExamVariant;
   onClose: () => void;
+  onFinish?: (attempt: ExamAttempt) => void;
 }) {
   const [currentNumber, setCurrentNumber] = useState(0);
   const [answers, setAnswers] = useState<Answers>(() => readExamDraft(variant.kim).answers);
@@ -319,6 +331,11 @@ export default function ExamStation({
   const primaryScore = resultRows.reduce((total, row) => total + row.points, 0);
   const testScore = SCORE_SCALE[primaryScore] ?? 0;
   const correctCount = resultRows.filter((row) => row.correct).length;
+  const durationSeconds = EXAM_DURATION_SECONDS - secondsLeft;
+  const resultColumns = [
+    resultRows.slice(0, Math.ceil(resultRows.length / 2)),
+    resultRows.slice(Math.ceil(resultRows.length / 2)),
+  ];
   const changeTask = useCallback((number: number) => {
     const nextNumber = Math.max(0, Math.min(27, number));
     setCurrentNumber(nextNumber);
@@ -429,8 +446,8 @@ export default function ExamStation({
             </div>
             <div className="exam-result-metrics">
               <div>
-                <strong>{primaryScore}<small>/29</small></strong>
-                <span>первичный балл</span>
+                <strong>{formatTime(durationSeconds)}</strong>
+                <span>время решения</span>
               </div>
               <div>
                 <strong>{correctCount}<small>/27</small></strong>
@@ -455,24 +472,28 @@ export default function ExamStation({
                 <span><i className="is-empty" /> Нет ответа</span>
               </div>
             </div>
-            <div className="exam-result-table" role="table" aria-label="Результаты по заданиям">
-              <div className="exam-result-row exam-result-row-head" role="row">
-                <span>№</span>
-                <span>Балл</span>
-                <span>Ваш ответ</span>
-                <span>Правильный ответ</span>
-              </div>
-              {resultRows.map(({ task, userAnswer, correctAnswer, correct, points }) => {
-                const status = !userAnswer ? "is-empty" : correct ? "is-correct" : "is-wrong";
-                return (
-                  <div className={`exam-result-row ${status}`} key={task.number} role="row">
-                    <b><i />{task.number}</b>
-                    <span className="exam-result-points">{points} из {task.number >= 26 ? 2 : 1}</span>
-                    <span className="exam-result-answer">{userAnswer || "Ответ не дан"}</span>
-                    <span className="exam-result-answer">{correctAnswer || "—"}</span>
+            <div className="exam-result-tables">
+              {resultColumns.map((rows, column) => (
+                <div className="exam-result-table" role="table" aria-label={`Результаты, часть ${column + 1}`} key={column}>
+                  <div className="exam-result-row exam-result-row-head" role="row">
+                    <span>№</span>
+                    <span>Балл</span>
+                    <span>Ваш ответ</span>
+                    <span>Правильный ответ</span>
                   </div>
-                );
-              })}
+                  {rows.map(({ task, userAnswer, correctAnswer, correct, points }) => {
+                    const status = !userAnswer ? "is-empty" : correct ? "is-correct" : "is-wrong";
+                    return (
+                      <div className={`exam-result-row ${status}`} key={task.number} role="row">
+                        <b><i />{task.number}</b>
+                        <span className="exam-result-points">{points} из {task.number >= 26 ? 2 : 1}</span>
+                        <span className="exam-result-answer">{userAnswer || "Ответ не дан"}</span>
+                        <span className="exam-result-answer">{correctAnswer || "—"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </section>
 
@@ -529,7 +550,9 @@ export default function ExamStation({
         <button
           className="exam-nav-arrow"
           disabled={navWindowStart === 0}
-          onClick={() => setNavWindowStart((value) => Math.max(0, value - 4))}
+          onClick={() => setNavWindowStart((value) => Math.max(0, value - (
+            window.innerWidth <= 390 ? 2 : window.innerWidth <= 720 ? 3 : 4
+          )))}
           aria-label="Предыдущие номера"
         >
           <ArrowUp aria-hidden="true" />
@@ -559,7 +582,9 @@ export default function ExamStation({
         <button
           className="exam-nav-arrow"
           disabled={navWindowStart >= 19}
-          onClick={() => setNavWindowStart((value) => Math.min(19, value + 4))}
+          onClick={() => setNavWindowStart((value) => Math.min(19, value + (
+            window.innerWidth <= 390 ? 2 : window.innerWidth <= 720 ? 3 : 4
+          )))}
           aria-label="Следующие номера"
         >
           <ArrowDown aria-hidden="true" />
@@ -688,6 +713,15 @@ export default function ExamStation({
                   <button className="is-primary" onClick={() => {
                     setConfirmFinish(false);
                     setFinished(true);
+                    onFinish?.({
+                      kim: variant.kim,
+                      title: variant.title,
+                      testScore,
+                      correctCount,
+                      answeredCount,
+                      durationSeconds,
+                      completedAt: new Date().toISOString(),
+                    });
                   }}>
                     Завершить
                   </button>

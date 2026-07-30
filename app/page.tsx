@@ -3,12 +3,13 @@
 import type { Provider, User } from "@supabase/supabase-js";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import type { ExamAttempt } from "./exam-station";
 
 const TypingTrainer = lazy(() => import("./typing-trainer"));
 const TheorySpace = lazy(() => import("./theory-space"));
 const ExamStation = lazy(() => import("./exam-station"));
 
-type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "dashboard";
+type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "dashboard" | "profile";
 type GateSection = Extract<Section, "theory" | "game" | "trainer" | "dashboard">;
 type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
@@ -134,6 +135,7 @@ type ClaimResult = {
 };
 
 const PREFERENCES_KEY = "egege-preferences-v1";
+const EXAM_HISTORY_KEY = "egege-exam-history-v1";
 const PREMIUM_KEY = "egege-premium-demo-v1";
 const PENDING_ACCESS_KEY = "egege-pending-access-v1";
 const sectionPaths: Record<Section, string> = {
@@ -144,6 +146,7 @@ const sectionPaths: Record<Section, string> = {
   game: "/game",
   trainer: "/trainer",
   dashboard: "/dashboard",
+  profile: "/profile",
 };
 
 function sectionFromPath(pathname: string): Section {
@@ -1516,6 +1519,95 @@ function Dashboard({
   );
 }
 
+function StudentCabinet({
+  user,
+  attempts,
+  preferences,
+  onPreference,
+}: {
+  user: User;
+  attempts: ExamAttempt[];
+  preferences: Preferences;
+  onPreference: (next: Partial<Preferences>) => void;
+}) {
+  const scores = attempts.map((attempt) => attempt.testScore);
+  const average = scores.length
+    ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length)
+    : 0;
+  const averageSeconds = attempts.length
+    ? Math.round(attempts.reduce((total, attempt) => total + attempt.durationSeconds, 0) / attempts.length)
+    : 0;
+  const formatDuration = (seconds: number) =>
+    `${Math.floor(seconds / 3600)} ч ${Math.floor((seconds % 3600) / 60)} мин`;
+  const name = user.user_metadata?.name ?? user.email ?? "Ученик EGEGE";
+
+  return (
+    <div className="student-cabinet">
+      <section className="cabinet-hero">
+        <div>
+          <p>Личный кабинет</p>
+          <h1>{name}</h1>
+          <span>Здесь собираются результаты завершённых вариантов на этом устройстве.</span>
+        </div>
+        <div className="cabinet-avatar">{name.trim().charAt(0).toUpperCase() || "Е"}</div>
+      </section>
+
+      <section className="cabinet-stats" aria-label="Статистика вариантов">
+        <div><span>Средний балл</span><strong>{average}</strong></div>
+        <div><span>Лучший</span><strong>{scores.length ? Math.max(...scores) : "—"}</strong></div>
+        <div><span>Худший</span><strong>{scores.length ? Math.min(...scores) : "—"}</strong></div>
+        <div><span>Среднее время</span><strong>{attempts.length ? formatDuration(averageSeconds) : "—"}</strong></div>
+      </section>
+
+      <div className="cabinet-grid">
+        <section className="cabinet-history">
+          <div className="cabinet-section-title">
+            <div><p>История</p><h2>Завершённые варианты</h2></div>
+            <span>{attempts.length}</span>
+          </div>
+          {attempts.length ? (
+            <div className="cabinet-attempts">
+              {attempts.map((attempt) => (
+                <article key={`${attempt.kim}-${attempt.completedAt}`}>
+                  <div><strong>КИМ № {attempt.kim}</strong><span>{new Date(attempt.completedAt).toLocaleDateString("ru-RU")}</span></div>
+                  <b>{attempt.testScore}<small>/100</small></b>
+                  <span>{formatDuration(attempt.durationSeconds)}</span>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="cabinet-empty">Завершите первый вариант — результат появится здесь.</div>
+          )}
+        </section>
+
+        <section className="cabinet-settings">
+          <div className="cabinet-section-title"><div><p>Оформление</p><h2>Настройки сайта</h2></div></div>
+          <fieldset className="settings-block">
+            <legend>Тема</legend>
+            <div className="segmented-control">
+              <button className={preferences.theme === "dark" ? "is-selected" : ""} onClick={() => onPreference({ theme: "dark" })}>Тёмная</button>
+              <button className={preferences.theme === "light" ? "is-selected" : ""} onClick={() => onPreference({ theme: "light" })}>Светлая</button>
+            </div>
+          </fieldset>
+          <fieldset className="settings-block">
+            <legend>Акцентный цвет</legend>
+            <div className="accent-options">
+              {(["lime", "blue", "red", "pink", "beige"] as Accent[]).map((accent) => (
+                <button
+                  className={`accent-swatch accent-${accent} ${preferences.accent === accent ? "is-selected" : ""}`}
+                  onClick={() => onPreference({ accent })}
+                  aria-label={`Выбрать цвет ${accent}`}
+                  key={accent}
+                />
+              ))}
+            </div>
+          </fieldset>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [section, setSection] = useState<Section>("home");
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -1544,6 +1636,14 @@ export default function Home() {
   const [isPremium, setIsPremium] = useState(false);
   const [authConfigured, setAuthConfigured] = useState<boolean | null>(null);
   const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
+  const [examAttempts, setExamAttempts] = useState<ExamAttempt[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(window.localStorage.getItem(EXAM_HISTORY_KEY) ?? "[]") as ExamAttempt[];
+    } catch {
+      return [];
+    }
+  });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstId = useRef(0);
@@ -1999,7 +2099,7 @@ export default function Home() {
       authConfigured={authConfigured}
       preferences={preferences}
       isPremium={isPremium}
-      onToggle={() => setProfileOpen((current) => !current)}
+      onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
       onPreference={updatePreferences}
       onPremiumChange={updatePremium}
       onEmailLogin={sendMagicLink}
@@ -2059,6 +2159,18 @@ export default function Home() {
     } finally {
       setOpeningVariantKim("");
     }
+  };
+
+  const saveExamAttempt = (attempt: ExamAttempt) => {
+    setExamAttempts((current) => {
+      const next = [attempt, ...current].slice(0, 50);
+      try {
+        window.localStorage.setItem(EXAM_HISTORY_KEY, JSON.stringify(next));
+      } catch {
+        // The result remains visible even when browser storage is unavailable.
+      }
+      return next;
+    });
   };
 
   const resetFilters = () => {
@@ -2129,7 +2241,7 @@ export default function Home() {
           authConfigured={authConfigured}
           preferences={preferences}
           isPremium={isPremium}
-          onToggle={() => setProfileOpen((current) => !current)}
+          onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
           onPreference={updatePreferences}
           onPremiumChange={updatePremium}
           onEmailLogin={sendMagicLink}
@@ -2409,6 +2521,15 @@ export default function Home() {
             />
           </>
         )}
+
+        {section === "profile" && user && (
+          <StudentCabinet
+            user={user}
+            attempts={examAttempts}
+            preferences={preferences}
+            onPreference={updatePreferences}
+          />
+        )}
       </div>
 
       <footer>
@@ -2436,7 +2557,11 @@ export default function Home() {
       </button>
       {examVariant && (
         <Suspense fallback={<div className="exam-loading-screen">Готовим вариант…</div>}>
-          <ExamStation variant={examVariant} onClose={() => setExamVariant(null)} />
+          <ExamStation
+            variant={examVariant}
+            onClose={() => setExamVariant(null)}
+            onFinish={saveExamAttempt}
+          />
         </Suspense>
       )}
       <div className="xp-layer" aria-hidden="true">
