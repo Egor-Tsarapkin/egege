@@ -3062,25 +3062,23 @@ footer {
 }
 
 .exam-workspace {
-  background: var(--bg);
+  background: var(--exam-panel);
   display: grid;
   grid-area: workspace;
   grid-template-columns: 88px minmax(0, 1fr) 88px;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  padding: 14px 10px 0;
+  padding: 0;
 }
 
 .exam-paper {
   background: var(--exam-panel);
-  border-radius: 14px 14px 0 0;
-  box-shadow: inset 0 0 0 1px var(--line);
   min-height: 0;
   min-width: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: clamp(24px, 3.4vw, 54px);
+  padding: clamp(24px, 3vw, 48px) clamp(18px, 2.6vw, 44px);
   scrollbar-color: var(--accent) var(--surface-soft);
   scrollbar-width: thin;
 }
@@ -3160,8 +3158,8 @@ footer {
 .exam-task-html {
   font-size: clamp(16px, 1.35vw, 21px);
   line-height: 1.62;
-  margin: 0 auto;
-  max-width: 1120px;
+  margin: 0;
+  max-width: none;
   overflow-wrap: anywhere;
   text-wrap: pretty;
 }
@@ -3196,17 +3194,59 @@ footer {
   filter: invert(0.88) hue-rotate(180deg);
 }
 
-.exam-task-html table {
-  border-collapse: collapse;
-  display: block;
+.exam-table-scroll {
+  margin: 20px 0;
   max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-color: var(--accent) var(--surface-soft);
+  scrollbar-width: thin;
 }
 
-.exam-task-html td,
-.exam-task-html th {
+.exam-task-html .exam-table-scroll table {
+  background: transparent;
+  border-collapse: collapse;
+  height: auto !important;
+  margin: 0;
+  table-layout: fixed;
+  width: min(100%, 620px) !important;
+}
+
+.exam-task-html .exam-table-scroll col {
+  width: auto !important;
+}
+
+.exam-task-html .exam-table-scroll td,
+.exam-task-html .exam-table-scroll th {
   border: 1px solid var(--line-strong);
-  padding: 7px 10px;
+  font-size: 0.95em;
+  height: 44px !important;
+  min-width: 62px;
+  padding: 7px 14px !important;
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.exam-task-html .task-formula-inline {
+  display: inline;
+  white-space: nowrap;
+}
+
+.exam-task-html .task-formula-display {
+  display: block;
+  margin: 18px 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.exam-task-html .katex {
+  font-size: 1.04em;
+}
+
+.exam-task-html .katex-display {
+  margin: 0;
+  text-align: left;
 }
 
 .exam-task-html code,
@@ -3216,8 +3256,8 @@ footer {
 }
 
 .exam-intro {
-  margin: 0 auto;
-  max-width: 1120px;
+  margin: 0;
+  max-width: none;
 }
 
 .exam-intro-kicker {
@@ -3278,13 +3318,17 @@ footer {
 .exam-footer {
   align-items: center;
   background: var(--exam-panel);
+  border-top: 0;
   box-shadow: inset 0 1px var(--line);
   display: grid;
   gap: 20px;
   grid-area: footer;
   grid-template-columns: minmax(0, 1fr) auto;
-  min-height: 108px;
-  padding: 12px 30px;
+  margin: 0;
+  max-width: none;
+  min-height: 96px;
+  padding: 12px 24px;
+  width: 100%;
 }
 
 .exam-files {
@@ -3332,7 +3376,7 @@ footer {
   align-items: end;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(210px, 330px);
+  grid-template-columns: minmax(240px, 420px);
 }
 
 .exam-answer-fields.is-table {
@@ -3356,7 +3400,7 @@ footer {
 .exam-answer-fields input {
   background: var(--surface-soft);
   border: 1px solid var(--line-strong);
-  border-radius: 9px;
+  border-radius: 8px;
   color: var(--text);
   font-size: 18px;
   font-variant-numeric: tabular-nums;
@@ -3369,6 +3413,58 @@ footer {
     border-color 140ms ease-out,
     box-shadow 140ms ease-out;
   width: 100%;
+}
+
+.exam-answer-actions {
+  align-items: end;
+  display: flex;
+  gap: 10px;
+  justify-self: end;
+  min-width: 0;
+}
+
+.exam-save-answer {
+  align-self: end;
+  align-items: center;
+  background: var(--accent);
+  border-radius: 8px;
+  color: var(--accent-ink);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 680;
+  gap: 8px;
+  height: 46px;
+  justify-content: center;
+  min-width: 176px;
+  padding: 0 16px;
+  transition:
+    background-color 140ms ease-out,
+    opacity 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.exam-save-answer:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.exam-save-answer:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.exam-save-answer:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.exam-save-answer.is-saved {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.exam-save-answer svg {
+  height: 17px;
+  stroke-width: 1.8;
+  width: 17px;
 }
 
 .exam-answer-fields input:focus {
@@ -3759,6 +3855,14 @@ footer {
     padding: 10px 12px max(10px, env(safe-area-inset-bottom));
   }
 
+  .exam-answer-actions {
+    align-items: stretch;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+  }
+
   .exam-files {
     display: none;
   }
@@ -3772,6 +3876,10 @@ footer {
 
   .exam-answer-fields:not(.is-table) {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .exam-save-answer {
+    min-width: 148px;
   }
 
   .exam-mobile-pager {
@@ -3840,6 +3948,18 @@ footer {
 
   .exam-paper {
     padding-inline: 14px;
+  }
+
+  .exam-answer-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .exam-save-answer {
+    width: 100%;
+  }
+
+  .exam-task-html .exam-table-scroll table {
+    min-width: 430px;
   }
 }
 

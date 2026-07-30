@@ -11,6 +11,7 @@ import {
   Expand,
   HelpCircle,
   Info,
+  Save,
   X,
 } from "lucide-react";
 
@@ -32,24 +33,39 @@ type ExamVariant = {
 type Answers = Record<number, string[]>;
 
 const EXAM_DURATION_SECONDS = 3 * 60 * 60 + 55 * 60;
-const STORAGE_KEY = "egege-exam-25135392-v1";
+const STORAGE_KEY = "egege-exam-25135392-v2";
+const LEGACY_STORAGE_KEY = "egege-exam-25135392-v1";
 
 function readExamDraft() {
   if (typeof window === "undefined") {
-    return { answers: {} as Answers, secondsLeft: EXAM_DURATION_SECONDS };
+    return {
+      answers: {} as Answers,
+      drafts: {} as Answers,
+      secondsLeft: EXAM_DURATION_SECONDS,
+    };
   }
   try {
-    const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}") as {
+    const saved = JSON.parse(
+      window.localStorage.getItem(STORAGE_KEY) ??
+        window.localStorage.getItem(LEGACY_STORAGE_KEY) ??
+        "{}",
+    ) as {
       answers?: Answers;
+      drafts?: Answers;
       secondsLeft?: number;
     };
     return {
       answers: saved.answers ?? {},
+      drafts: saved.drafts ?? saved.answers ?? {},
       secondsLeft:
         typeof saved.secondsLeft === "number" ? saved.secondsLeft : EXAM_DURATION_SECONDS,
     };
   } catch {
-    return { answers: {} as Answers, secondsLeft: EXAM_DURATION_SECONDS };
+    return {
+      answers: {} as Answers,
+      drafts: {} as Answers,
+      secondsLeft: EXAM_DURATION_SECONDS,
+    };
   }
 }
 
@@ -88,7 +104,7 @@ function ExamIntro() {
       </div>
       <div className="exam-intro-note">
         <Info aria-hidden="true" />
-        <span>Ответы сохраняются на этом устройстве автоматически.</span>
+        <span>После ввода нажмите «Сохранить ответ». Ответ останется на этом устройстве.</span>
       </div>
     </div>
   );
@@ -133,6 +149,7 @@ export default function ExamStation({
 }) {
   const [currentNumber, setCurrentNumber] = useState(0);
   const [answers, setAnswers] = useState<Answers>(() => readExamDraft().answers);
+  const [drafts, setDrafts] = useState<Answers>(() => readExamDraft().drafts);
   const [secondsLeft, setSecondsLeft] = useState(() => readExamDraft().secondsLeft);
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -176,11 +193,14 @@ export default function ExamStation({
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ answers, secondsLeft }));
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ answers, drafts, secondsLeft }),
+      );
     } catch {
       // The exam remains usable if local storage is unavailable.
     }
-  }, [answers, secondsLeft]);
+  }, [answers, drafts, secondsLeft]);
 
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -204,12 +224,26 @@ export default function ExamStation({
 
   const updateAnswer = (index: number, value: string) => {
     if (!currentTask) return;
-    setAnswers((current) => {
+    setDrafts((current) => {
       const nextValues = [...(current[currentTask.number] ?? [])];
       nextValues[index] = value;
       return { ...current, [currentTask.number]: nextValues };
     });
   };
+
+  const saveCurrentAnswer = () => {
+    if (!currentTask) return;
+    const nextValues = drafts[currentTask.number] ?? [];
+    if (!isAnswerFilled(nextValues)) return;
+    setAnswers((current) => ({ ...current, [currentTask.number]: [...nextValues] }));
+  };
+
+  const currentDraft = currentTask ? drafts[currentTask.number] ?? [] : [];
+  const currentSavedAnswer = currentTask ? answers[currentTask.number] ?? [] : [];
+  const hasCurrentDraft = isAnswerFilled(currentDraft);
+  const isCurrentAnswerSaved =
+    hasCurrentDraft &&
+    JSON.stringify(currentDraft) === JSON.stringify(currentSavedAnswer);
 
   const visibleTaskNumbers = Array.from({ length: 8 }, (_, index) => navWindowStart + index + 1)
     .filter((number) => number <= 27);
@@ -359,11 +393,22 @@ export default function ExamStation({
           {!currentTask && <span>{variant.title}</span>}
         </div>
         {currentTask ? (
-          <AnswerFields
-            task={currentTask}
-            values={answers[currentTask.number] ?? []}
-            onChange={updateAnswer}
-          />
+          <div className="exam-answer-actions">
+            <AnswerFields
+              task={currentTask}
+              values={currentDraft}
+              onChange={updateAnswer}
+            />
+            <button
+              className={`exam-save-answer ${isCurrentAnswerSaved ? "is-saved" : ""}`}
+              disabled={!hasCurrentDraft || isCurrentAnswerSaved}
+              onClick={saveCurrentAnswer}
+              type="button"
+            >
+              {isCurrentAnswerSaved ? <Check aria-hidden="true" /> : <Save aria-hidden="true" />}
+              <span>{isCurrentAnswerSaved ? "Ответ сохранён" : "Сохранить ответ"}</span>
+            </button>
+          </div>
         ) : (
           <button className="exam-start-button" onClick={() => changeTask(1)}>
             Начать вариант <ArrowRight aria-hidden="true" />
