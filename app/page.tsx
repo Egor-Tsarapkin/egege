@@ -771,7 +771,7 @@ function TaskItem({
   };
 
   return (
-    <article className="task-item">
+    <article className="task-item" data-task-number={task.number}>
       <div className="task-heading-row">
         <span className="task-number-badge">{task.number === 19 ? "19–21" : task.number}</span>
         <div>

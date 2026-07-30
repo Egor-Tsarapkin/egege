@@ -2533,6 +2533,26 @@ p,
   text-align: center;
 }
 
+.task-item[data-task-number="2"] .task-html table {
+  display: table;
+  overflow: visible;
+  table-layout: fixed;
+  width: auto;
+}
+
+.task-item[data-task-number="2"] .task-html col {
+  width: auto !important;
+}
+
+.task-item[data-task-number="2"] .task-html td,
+.task-item[data-task-number="2"] .task-html th {
+  box-sizing: border-box;
+  height: 46px;
+  min-width: 0;
+  padding: 6px;
+  width: clamp(46px, 6vw, 76px);
+}
+
 .task-html pre {
   background: var(--surface);
   border-radius: 14px;
