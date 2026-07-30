@@ -3321,13 +3321,13 @@ footer {
   border-top: 0;
   box-shadow: inset 0 1px var(--line);
   display: grid;
-  gap: 20px;
+  gap: 16px;
   grid-area: footer;
   grid-template-columns: minmax(0, 1fr) auto;
   margin: 0;
   max-width: none;
-  min-height: 96px;
-  padding: 12px 24px;
+  min-height: 82px;
+  padding: 10px 20px;
   width: 100%;
 }
 
@@ -3349,8 +3349,8 @@ footer {
   display: flex;
   font-size: 12px;
   gap: 8px;
-  min-height: 44px;
-  padding: 0 13px;
+  min-height: 40px;
+  padding: 0 12px;
   transition:
     background-color 140ms ease-out,
     color 140ms ease-out,
@@ -3421,7 +3421,11 @@ footer {
   border-radius: 10px;
   min-width: 0;
   overflow: hidden;
-  width: min(48vw, 560px);
+  width: min(38vw, 420px);
+}
+
+.exam-answer-table.is-compact {
+  width: min(30vw, 320px);
 }
 
 .exam-answer-table-heading {
@@ -3431,8 +3435,8 @@ footer {
   display: flex;
   gap: 12px;
   justify-content: space-between;
-  min-height: 38px;
-  padding: 7px 11px;
+  min-height: 32px;
+  padding: 5px 9px;
 }
 
 .exam-answer-table-heading strong {
@@ -3448,7 +3452,7 @@ footer {
 }
 
 .exam-answer-table-scroll {
-  max-height: 176px;
+  max-height: 148px;
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -3465,7 +3469,7 @@ footer {
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   border-right: 1px solid var(--line);
-  height: 42px;
+  height: 34px;
   padding: 0;
   text-align: center;
 }
@@ -3475,7 +3479,7 @@ footer {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   font-weight: 650;
-  width: 42px;
+  width: 34px;
 }
 
 .exam-answer-table thead th {
@@ -3506,12 +3510,12 @@ footer {
   border-radius: 0;
   color: var(--text);
   font-family: var(--font-mono), monospace;
-  font-size: 16px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
   height: 100%;
   min-width: 0;
   outline: none;
-  padding: 0 9px;
+  padding: 0 7px;
   text-align: center;
   width: 100%;
 }
@@ -3525,7 +3529,7 @@ footer {
   border-top: 1px solid var(--line-strong);
   line-height: 1.35;
   margin: 0;
-  padding: 7px 11px;
+  padding: 5px 9px;
 }
 
 .exam-save-answer {
@@ -3824,6 +3828,20 @@ footer {
   }
 }
 
+@media (min-width: 721px) and (max-width: 900px) {
+  .exam-footer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .exam-answer-actions {
+    justify-self: stretch;
+  }
+
+  .exam-answer-table {
+    width: min(52vw, 360px);
+  }
+}
+
 @media (max-width: 720px) {
   .exam-station {
     grid-template-areas:
@@ -3981,7 +3999,8 @@ footer {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .exam-answer-table {
+  .exam-answer-table,
+  .exam-answer-table.is-compact {
     width: 100%;
   }
 

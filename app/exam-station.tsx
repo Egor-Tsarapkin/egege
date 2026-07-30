@@ -200,7 +200,7 @@ function AnswerFields({
   };
 
   return (
-    <div className="exam-answer-table" ref={fieldsRef}>
+    <div className={`exam-answer-table ${count <= 4 ? "is-compact" : ""}`} ref={fieldsRef}>
       <div className="exam-answer-table-heading">
         <strong>Ответ в виде таблицы</strong>
         <span>Можно вставить весь массив сразу</span>
@@ -420,7 +420,7 @@ export default function ExamStation({
         <button
           className="exam-nav-arrow"
           disabled={navWindowStart === 0}
-          onClick={() => setNavWindowStart((value) => Math.max(0, value - 1))}
+          onClick={() => setNavWindowStart((value) => Math.max(0, value - 4))}
           aria-label="Предыдущие номера"
         >
           <ArrowUp aria-hidden="true" />
@@ -450,7 +450,7 @@ export default function ExamStation({
         <button
           className="exam-nav-arrow"
           disabled={navWindowStart >= 19}
-          onClick={() => setNavWindowStart((value) => Math.min(19, value + 1))}
+          onClick={() => setNavWindowStart((value) => Math.min(19, value + 4))}
           aria-label="Следующие номера"
         >
           <ArrowDown aria-hidden="true" />
