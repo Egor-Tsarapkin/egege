@@ -161,6 +161,7 @@ async function importVariant(entry, index, total) {
       id: String(task.taskId),
       number: Number(task.number),
       html: prepareTaskHtml(task.text),
+      answer: String(task.answer ?? ""),
       table: {
         cols: Math.max(1, Number(task.table?.cols ?? 1)),
         rows: Math.max(1, Number(task.table?.rows ?? 1)),

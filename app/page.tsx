@@ -34,12 +34,34 @@ type Task = {
   files: Array<{ name: string; href: string; meta: string }>;
 };
 
+type TaskSourceKind = "official" | "author" | "kege";
+
 type Variant = {
   kim: string;
   title: string;
   taskCount: number;
   sourceUrl: string;
 };
+
+type VariantYearGroup = {
+  year: string;
+  official: Variant[];
+  teachers: Variant[];
+};
+
+function groupVariants(variants: Variant[]): VariantYearGroup[] {
+  const boundaries = [
+    { year: "2025/26", start: 0, end: 77, officialEnd: 12 },
+    { year: "2024/25", start: 77, end: 135, officialEnd: 91 },
+    { year: "2023/24", start: 135, end: 196, officialEnd: 145 },
+  ];
+
+  return boundaries.map(({ year, start, end, officialEnd }) => ({
+    year,
+    official: variants.slice(start, Math.min(officialEnd, variants.length)),
+    teachers: variants.slice(Math.min(officialEnd, variants.length), Math.min(end, variants.length)),
+  })).filter((group) => group.official.length || group.teachers.length);
+}
 
 type ExamVariantData = {
   kim: string;
@@ -51,6 +73,7 @@ type ExamVariantData = {
     html: string;
     table: { cols: number; rows: number };
     files: Array<{ name: string; href: string }>;
+    answer?: string;
   }>;
 };
 
@@ -726,6 +749,13 @@ function TaskItem({
 }) {
   const [answerOpen, setAnswerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const sourceKind = getTaskSourceKind(task);
+  const sourceLabel =
+    sourceKind === "official"
+      ? "Официальный источник"
+      : sourceKind === "author"
+        ? "Авторская задача"
+        : "База КЕГЭ";
 
   const markCorrect = async (event: React.MouseEvent<HTMLButtonElement>) => {
     if (completed || saving) return;
@@ -739,14 +769,17 @@ function TaskItem({
 
   return (
     <article className="task-item">
-      <div className="task-meta">
-        <span className="task-id">{task.id}</span>
-        <span>№{task.number}</span>
-        <span>{task.difficulty}</span>
-        <span>{task.source}</span>
+      <div className="task-heading-row">
+        <span className="task-number-badge">{task.number === 19 ? "19–21" : task.number}</span>
+        <div>
+          <p className="task-primary-source">{task.note || sourceLabel}</p>
+          <div className="task-meta">
+            <span className="task-id">ID {task.id}</span>
+            <span>{task.difficulty}</span>
+            <span className={`task-source-tag is-${sourceKind}`}>{sourceLabel}</span>
+          </div>
+        </div>
       </div>
-      <h2>{task.title}</h2>
-      {task.note && <p className="task-note">{task.note}</p>}
       <div
         className="task-body task-html"
         dangerouslySetInnerHTML={{ __html: task.html }}
@@ -792,6 +825,45 @@ function TaskItem({
       </div>
     </article>
   );
+}
+
+const OFFICIAL_SOURCE_PATTERN =
+  /(демовер|досроч|основн|пересдач|резерв|открыт(?:ый|ого)\s+вариант|егкр)/i;
+
+function getTaskSourceKind(task: Task): TaskSourceKind {
+  if (OFFICIAL_SOURCE_PATTERN.test(task.note ?? "")) return "official";
+  if (/<a\b[^>]*href=/i.test(task.html)) return "author";
+  return "kege";
+}
+
+function mergeGameTasks(groups: Task[][]): Task[] {
+  const byId = new Map<string, Partial<Record<19 | 20 | 21, Task>>>();
+  for (const group of groups) {
+    for (const task of group) {
+      const part = task.number as 19 | 20 | 21;
+      const parentId = part === 19 ? task.id : task.id.replace(/(?:20|21)$/, "");
+      const entry = byId.get(parentId) ?? {};
+      entry[part] = task;
+      byId.set(parentId, entry);
+    }
+  }
+
+  return [...byId.entries()].flatMap(([id, parts]) => {
+    const base = parts[19];
+    if (!base) return [];
+    const available = ([19, 20, 21] as const).filter((number) => parts[number]);
+    return [{
+      ...base,
+      id,
+      number: 19,
+      title: "Задание №19–21",
+      html: available.map((number) =>
+        `<section class="game-task-part"><h3>Задание №${number}</h3>${parts[number]!.html}</section>`,
+      ).join(""),
+      answer: available.map((number) => `№${number}: ${parts[number]!.answer}`).join(" · "),
+      files: available.flatMap((number) => parts[number]!.files),
+    }];
+  });
 }
 
 function PageHeading({
@@ -1455,9 +1527,9 @@ export default function Home() {
   const [variants, setVariants] = useState<Variant[]>([]);
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantSearch, setVariantSearch] = useState("");
-  const [visibleVariantCount, setVisibleVariantCount] = useState(36);
   const [examVariant, setExamVariant] = useState<ExamVariantData | null>(null);
   const [openingVariantKim, setOpeningVariantKim] = useState("");
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [activity, setActivity] = useState<Activity>({});
   const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(() => new Set());
   const [community, setCommunity] = useState<CommunityPayload | null>(null);
@@ -1485,6 +1557,21 @@ export default function Home() {
     window.addEventListener("popstate", syncSectionFromUrl);
     return () => window.removeEventListener("popstate", syncSectionFromUrl);
   }, []);
+
+  useEffect(() => {
+    if (section !== "tasks") {
+      queueMicrotask(() => setShowScrollTop(false));
+      return;
+    }
+    let previousY = window.scrollY;
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      setShowScrollTop(currentY > 650 && currentY < previousY);
+      previousY = currentY;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [section]);
 
   useEffect(() => {
     let restored = defaultPreferences;
@@ -1585,11 +1672,25 @@ export default function Home() {
       setTasksLoading(true);
     });
 
-    void fetch(`/data/tasks/${type}.json`, { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error("Не удалось загрузить задания");
-        return response.json() as Promise<Task[]>;
-      })
+    const taskRequest =
+      type === "19"
+        ? Promise.all(
+            [19, 20, 21].map(async (number) => {
+              const response = await fetch(`/data/tasks/${number}.json`, {
+                signal: controller.signal,
+              });
+              if (!response.ok) throw new Error("Не удалось загрузить задания");
+              return response.json() as Promise<Task[]>;
+            }),
+          ).then(mergeGameTasks)
+        : fetch(`/data/tasks/${type}.json`, { signal: controller.signal }).then(
+            (response) => {
+              if (!response.ok) throw new Error("Не удалось загрузить задания");
+              return response.json() as Promise<Task[]>;
+            },
+          );
+
+    void taskRequest
       .then((data) => {
         setTasks(data);
       })
@@ -1911,27 +2012,39 @@ export default function Home() {
     () =>
       tasks.filter((task) => {
         const normalizedSearch = search.trim();
+        const sourceKind = getTaskSourceKind(task);
         return (
           (!normalizedSearch || task.id.includes(normalizedSearch)) &&
           task.number === Number(type) &&
           (difficulty === "all" || task.difficulty === difficulty) &&
-          (source === "all" || task.source === source)
+          (source === "all" || source === "kege" || source === sourceKind)
         );
+      }).sort((a, b) => {
+        const order: Record<TaskSourceKind, number> = {
+          official: 0,
+          author: 1,
+          kege: 2,
+        };
+        return order[getTaskSourceKind(a)] - order[getTaskSourceKind(b)];
       }),
     [tasks, search, type, difficulty, source],
   );
 
-  const filteredVariants = useMemo(
-    () => {
-      const query = variantSearch.trim().toLowerCase();
-      if (!query) return variants;
-      return variants.filter(
-        (variant) =>
-          variant.kim.includes(query) ||
-          variant.title.toLowerCase().includes(query),
-      );
-    },
-    [variantSearch, variants],
+  const variantYears = useMemo(() => {
+    const query = variantSearch.trim().toLowerCase();
+    return groupVariants(variants).map((group) => ({
+      ...group,
+      official: group.official.filter((variant) =>
+        !query || variant.kim.includes(query) || variant.title.toLowerCase().includes(query),
+      ),
+      teachers: group.teachers.filter((variant) =>
+        !query || variant.kim.includes(query) || variant.title.toLowerCase().includes(query),
+      ),
+    })).filter((group) => group.official.length || group.teachers.length);
+  }, [variantSearch, variants]);
+  const visibleVariantTotal = variantYears.reduce(
+    (total, group) => total + group.official.length + group.teachers.length,
+    0,
   );
 
   const openExamVariant = async (kim: string) => {
@@ -1959,7 +2072,9 @@ export default function Home() {
     const nextSearch = value.replace(/\D/g, "");
     setSearch(nextSearch);
     const matchedNumber = taskIndex.current[nextSearch];
-    if (matchedNumber) setType(String(matchedNumber));
+    if (matchedNumber) {
+      setType(String(matchedNumber === 20 || matchedNumber === 21 ? 19 : matchedNumber));
+    }
   };
 
   const mutateCommunity = async (payload: Record<string, string>) => {
@@ -2098,9 +2213,13 @@ export default function Home() {
                 <span>Номер задания</span>
                 <select value={type} onChange={(event) => setType(event.target.value)}>
                   <option value="" disabled>Выберите номер</option>
-                  {Array.from({ length: 27 }, (_, index) => index + 1).map((number) => (
-                    <option value={number} key={number}>№{number}</option>
-                  ))}
+                  {Array.from({ length: 27 }, (_, index) => index + 1)
+                    .filter((number) => number !== 20 && number !== 21)
+                    .map((number) => (
+                      <option value={number} key={number}>
+                        {number === 19 ? "№19–21 · Теория игр" : `№${number}`}
+                      </option>
+                    ))}
                 </select>
               </label>
               <label>
@@ -2116,7 +2235,9 @@ export default function Home() {
                 <span>Источник</span>
                 <select value={source} onChange={(event) => setSource(event.target.value)}>
                   <option value="all">Все источники</option>
-                  <option>КЕГЭ</option>
+                  <option value="official">Официальные источники</option>
+                  <option value="author">Авторские задачи</option>
+                  <option value="kege">КЕГЭ</option>
                 </select>
               </label>
               <button className="reset-button" onClick={resetFilters}>
@@ -2171,7 +2292,7 @@ export default function Home() {
             <PageHeading
               eyebrow="Экзаменационный режим"
               title="Варианты"
-              description="345 вариантов КЕГЭ в интерфейсе, приближенном к экзаменационной станции."
+              description="Актуальные варианты КЕГЭ с 2023/24 учебного года."
             />
             <div className="variant-toolbar">
               <label>
@@ -2179,45 +2300,58 @@ export default function Home() {
                 <input
                   inputMode="search"
                   value={variantSearch}
-                  onChange={(event) => {
-                    setVariantSearch(event.target.value);
-                    setVisibleVariantCount(36);
-                  }}
+                  onChange={(event) => setVariantSearch(event.target.value)}
                   placeholder="КИМ или название"
                 />
               </label>
-              <span>{filteredVariants.length} вариантов</span>
+              <span>{visibleVariantTotal} вариантов</span>
             </div>
-            <section className="variant-list" aria-label="Доступные варианты">
+            <section className="variant-catalog" aria-label="Доступные варианты">
               {variantsLoading && (
                 <div className="variant-catalog-state">Загружаем каталог вариантов…</div>
               )}
-              {filteredVariants.slice(0, visibleVariantCount).map((variant) => (
-                  <article className="variant-card exam-variant-card" key={variant.kim}>
-                    <div className="variant-number">{variant.taskCount}</div>
-                    <div className="variant-copy">
-                      <span className="variant-kim">КИМ № {variant.kim}</span>
-                      <h2>{variant.title}</h2>
-                      <p>Полный вариант в режиме экзаменационной станции.</p>
+              {variantYears.map((group) => (
+                <section className="variant-year" key={group.year}>
+                  <h2>Варианты за {group.year} учебный год</h2>
+                  {group.official.length > 0 && (
+                    <div className="variant-group">
+                      <h3>Открытые пробники и реальные варианты</h3>
+                      <div className="variant-tiles">
+                        {group.official.map((variant) => (
+                          <button
+                            className="variant-tile is-official"
+                            onClick={() => void openExamVariant(variant.kim)}
+                            disabled={Boolean(openingVariantKim)}
+                            key={variant.kim}
+                          >
+                            <span>{variant.title}</span>
+                            <small>КИМ {variant.kim}</small>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <span className="variant-count">3 ч 55 мин</span>
-                    <button
-                      onClick={() => void openExamVariant(variant.kim)}
-                      disabled={Boolean(openingVariantKim)}
-                    >
-                      {openingVariantKim === variant.kim ? "Открываем…" : "Начать вариант"}
-                    </button>
-                  </article>
+                  )}
+                  {group.teachers.length > 0 && (
+                    <div className="variant-group">
+                      <h3>Варианты преподавателей и авторов</h3>
+                      <div className="variant-tiles">
+                        {group.teachers.map((variant) => (
+                          <button
+                            className="variant-tile"
+                            onClick={() => void openExamVariant(variant.kim)}
+                            disabled={Boolean(openingVariantKim)}
+                            key={variant.kim}
+                          >
+                            <span>{variant.title}</span>
+                            <small>КИМ {variant.kim}</small>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </section>
               ))}
             </section>
-            {visibleVariantCount < filteredVariants.length && (
-              <button
-                className="variants-more"
-                onClick={() => setVisibleVariantCount((count) => count + 36)}
-              >
-                Показать ещё 36
-              </button>
-            )}
             <section className="variant-station-note">
               <span>Режим станции</span>
               <p>
@@ -2293,6 +2427,13 @@ export default function Home() {
         />
       )}
       <Toast message={toast} />
+      <button
+        className={`scroll-to-top ${showScrollTop ? "is-visible" : ""}`}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label="Вернуться к фильтрам"
+      >
+        ↑
+      </button>
       {examVariant && (
         <Suspense fallback={<div className="exam-loading-screen">Готовим вариант…</div>}>
           <ExamStation variant={examVariant} onClose={() => setExamVariant(null)} />

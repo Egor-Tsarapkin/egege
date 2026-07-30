@@ -21,6 +21,7 @@ type ExamTask = {
   html: string;
   table: { cols: number; rows: number };
   files: Array<{ name: string; href: string }>;
+  answer?: string;
 };
 
 type ExamVariant = {
@@ -33,8 +34,13 @@ type ExamVariant = {
 type Answers = Record<number, string[]>;
 
 const EXAM_DURATION_SECONDS = 3 * 60 * 60 + 55 * 60;
-const STORAGE_KEY = "egege-exam-25135392-v2";
 const LEGACY_STORAGE_KEY = "egege-exam-25135392-v1";
+const SCORE_SCALE: Record<number, number> = {
+  0: 0, 1: 7, 2: 14, 3: 20, 4: 27, 5: 34, 6: 40, 7: 43, 8: 46,
+  9: 48, 10: 51, 11: 54, 12: 56, 13: 59, 14: 62, 15: 64, 16: 67,
+  17: 70, 18: 72, 19: 75, 20: 78, 21: 80, 22: 83, 23: 85, 24: 88,
+  25: 90, 26: 93, 27: 95, 28: 98, 29: 100,
+};
 
 function normalizeAnswers(value: unknown): Answers {
   if (!value || typeof value !== "object") return {};
@@ -54,7 +60,11 @@ function normalizeAnswers(value: unknown): Answers {
   );
 }
 
-function readExamDraft() {
+function getStorageKey(kim: string) {
+  return `egege-exam-${kim}-v3`;
+}
+
+function readExamDraft(kim: string) {
   if (typeof window === "undefined") {
     return {
       answers: {} as Answers,
@@ -64,8 +74,8 @@ function readExamDraft() {
   }
   try {
     const saved = JSON.parse(
-      window.localStorage.getItem(STORAGE_KEY) ??
-        window.localStorage.getItem(LEGACY_STORAGE_KEY) ??
+      window.localStorage.getItem(getStorageKey(kim)) ??
+        (kim === "25135392" ? window.localStorage.getItem(LEGACY_STORAGE_KEY) : null) ??
         "{}",
     ) as {
       answers?: Answers;
@@ -96,6 +106,11 @@ function formatTime(seconds: number) {
 
 function isAnswerFilled(values: string[] | undefined) {
   return Boolean(values?.some((value) => value.trim()));
+}
+
+function normalizeAnswer(values: string[] | string | undefined) {
+  const text = Array.isArray(values) ? values.join(" ") : values ?? "";
+  return text.toLowerCase().replace(/\s+/g, "");
 }
 
 function getInputCount(task: ExamTask) {
@@ -262,9 +277,9 @@ export default function ExamStation({
   onClose: () => void;
 }) {
   const [currentNumber, setCurrentNumber] = useState(0);
-  const [answers, setAnswers] = useState<Answers>(() => readExamDraft().answers);
-  const [drafts, setDrafts] = useState<Answers>(() => readExamDraft().drafts);
-  const [secondsLeft, setSecondsLeft] = useState(() => readExamDraft().secondsLeft);
+  const [answers, setAnswers] = useState<Answers>(() => readExamDraft(variant.kim).answers);
+  const [drafts, setDrafts] = useState<Answers>(() => readExamDraft(variant.kim).drafts);
+  const [secondsLeft, setSecondsLeft] = useState(() => readExamDraft(variant.kim).secondsLeft);
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -275,6 +290,20 @@ export default function ExamStation({
     () => variant.tasks.filter((task) => isAnswerFilled(answers[task.number])).length,
     [answers, variant.tasks],
   );
+  const resultRows = useMemo(() => variant.tasks.map((task) => {
+    const userAnswer = answers[task.number] ?? [];
+    const correct = Boolean(task.answer) &&
+      normalizeAnswer(userAnswer) === normalizeAnswer(task.answer);
+    const maxPoints = task.number === 26 || task.number === 27 ? 2 : 1;
+    return {
+      task,
+      userAnswer: userAnswer.join(" "),
+      correct,
+      points: correct ? maxPoints : 0,
+    };
+  }), [answers, variant.tasks]);
+  const primaryScore = resultRows.reduce((total, row) => total + row.points, 0);
+  const testScore = SCORE_SCALE[primaryScore] ?? 0;
   const changeTask = useCallback((number: number) => {
     const nextNumber = Math.max(0, Math.min(27, number));
     setCurrentNumber(nextNumber);
@@ -308,13 +337,13 @@ export default function ExamStation({
   useEffect(() => {
     try {
       window.localStorage.setItem(
-        STORAGE_KEY,
+        getStorageKey(variant.kim),
         JSON.stringify({ answers, drafts, secondsLeft }),
       );
     } catch {
       // The exam remains usable if local storage is unavailable.
     }
-  }, [answers, drafts, secondsLeft]);
+  }, [answers, drafts, secondsLeft, variant.kim]);
 
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -365,14 +394,27 @@ export default function ExamStation({
   if (finished) {
     return (
       <div className="exam-station exam-result-screen">
+        <header className="exam-results-title">Единый государственный экзамен · Информатика</header>
         <section className="exam-result-card">
-          <span className="exam-result-icon"><Check aria-hidden="true" /></span>
-          <p className="exam-result-kicker">Вариант завершён</p>
-          <h1>Ответы сохранены</h1>
-          <p>
-            Вы ответили на <b>{answeredCount}</b> из 27 заданий. В этой тестовой версии
-            станция не отправляет работу на проверку.
-          </p>
+          <div className="exam-result-summary">
+            <p>Результат экзамена</p>
+            <strong>{testScore}<small>/100</small></strong>
+            <span>Первичный балл: {primaryScore}/29</span>
+            <span>Дано ответов: {answeredCount}/27</span>
+          </div>
+          <div className="exam-result-table-wrap">
+            <h1>КИМ № {variant.kim}</h1>
+            <div className="exam-result-table">
+              {resultRows.map(({ task, userAnswer, points }) => (
+                <div className="exam-result-row" key={`${task.number}-${task.id}`}>
+                  <b>№{task.number}</b>
+                  <span className={points ? "is-correct" : ""}>{points} б.</span>
+                  <span>{userAnswer || "—"}</span>
+                  <span>{task.answer || "—"}</span>
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="exam-result-actions">
             <button onClick={() => setFinished(false)}>Вернуться к работе</button>
             <button className="is-primary" onClick={onClose}>К вариантам</button>

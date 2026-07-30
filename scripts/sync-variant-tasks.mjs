@@ -31,6 +31,7 @@ for (const name of await readdir(variantsDirectory)) {
     return {
       ...task,
       html: canonical.html,
+      answer: canonical.answer,
       table: canonical.table,
       files: canonical.files,
     };
