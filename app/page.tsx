@@ -1524,11 +1524,13 @@ function StudentCabinet({
   attempts,
   preferences,
   onPreference,
+  onDeleteAttempt,
 }: {
   user: User;
   attempts: ExamAttempt[];
   preferences: Preferences;
   onPreference: (next: Partial<Preferences>) => void;
+  onDeleteAttempt: (attempt: ExamAttempt) => void;
 }) {
   const scores = attempts.map((attempt) => attempt.testScore);
   const average = scores.length
@@ -1572,6 +1574,14 @@ function StudentCabinet({
                   <div><strong>КИМ № {attempt.kim}</strong><span>{new Date(attempt.completedAt).toLocaleDateString("ru-RU")}</span></div>
                   <b>{attempt.testScore}<small>/100</small></b>
                   <span>{formatDuration(attempt.durationSeconds)}</span>
+                  <button
+                    className="cabinet-attempt-delete"
+                    onClick={() => onDeleteAttempt(attempt)}
+                    aria-label={`Удалить попытку КИМ № ${attempt.kim}`}
+                    title="Удалить попытку"
+                  >
+                    Удалить
+                  </button>
                 </article>
               ))}
             </div>
@@ -2173,6 +2183,22 @@ export default function Home() {
     });
   };
 
+  const deleteExamAttempt = (attempt: ExamAttempt) => {
+    if (!window.confirm(`Удалить попытку КИМ № ${attempt.kim}?`)) return;
+    setExamAttempts((current) => {
+      const next = current.filter((item) =>
+        item.kim !== attempt.kim || item.completedAt !== attempt.completedAt
+      );
+      try {
+        window.localStorage.setItem(EXAM_HISTORY_KEY, JSON.stringify(next));
+      } catch {
+        // The attempt is still removed from the current session.
+      }
+      return next;
+    });
+    notify("Попытка удалена");
+  };
+
   const resetFilters = () => {
     setSearch("");
     setType("");
@@ -2528,6 +2554,7 @@ export default function Home() {
             attempts={examAttempts}
             preferences={preferences}
             onPreference={updatePreferences}
+            onDeleteAttempt={deleteExamAttempt}
           />
         )}
       </div>
