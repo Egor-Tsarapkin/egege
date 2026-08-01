@@ -1987,6 +1987,44 @@ p,
   padding: 24px;
 }
 
+.cabinet-settings .settings-block {
+  margin-top: 22px;
+}
+
+.cabinet-reaction-options button {
+  min-height: 72px;
+}
+
+.cabinet-account {
+  background: var(--surface-raised);
+  border-radius: 16px;
+  margin-top: 22px;
+  padding: 14px;
+}
+
+.cabinet-account .premium-demo {
+  margin-bottom: 14px;
+}
+
+.cabinet-account .profile-person {
+  min-width: 0;
+  padding: 2px 2px 4px;
+}
+
+.cabinet-account .profile-person > div {
+  min-width: 0;
+}
+
+.cabinet-account .profile-person strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cabinet-account .secondary-auth {
+  background: var(--surface);
+}
+
 .cabinet-section-title {
   align-items: center;
   display: flex;

@@ -604,6 +604,21 @@ function ProfileMenu({
     setAuthBusy(false);
   };
 
+  if (isRegistered) {
+    return (
+      <div className={`profile ${home ? "profile-home" : ""}`}>
+        <button
+          className={`profile-trigger is-user ${isPremium ? "is-premium" : ""}`}
+          onClick={onToggle}
+          aria-label="Открыть личный кабинет"
+        >
+          {isPremium && <i className="premium-crown" aria-hidden="true" />}
+          <span>{userInitial}</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className={`profile ${home ? "profile-home" : ""}`}>
       <button
@@ -1578,18 +1593,22 @@ function StudentCabinet({
   user,
   attempts,
   preferences,
+  isPremium,
   isAdmin,
   onPreference,
   onDeleteAttempt,
   onOpenAdmin,
+  onLogout,
 }: {
   user: User;
   attempts: ExamAttempt[];
   preferences: Preferences;
+  isPremium: boolean;
   isAdmin: boolean;
   onPreference: (next: Partial<Preferences>) => void;
   onDeleteAttempt: (attempt: ExamAttempt) => void;
   onOpenAdmin: () => void;
+  onLogout: () => Promise<void>;
 }) {
   const scores = attempts.map((attempt) => attempt.testScore);
   const average = scores.length
@@ -1601,6 +1620,15 @@ function StudentCabinet({
   const formatDuration = (seconds: number) =>
     `${Math.floor(seconds / 3600)} ч ${Math.floor((seconds % 3600) / 60)} мин`;
   const name = user.user_metadata?.name ?? user.email ?? "Ученик EGEGE";
+  const userInitial = name.trim().charAt(0).toUpperCase() || "Е";
+  const reactions: Array<{ value: Reaction; label: string; icon: string }> = [
+    { value: "xp", label: "XP", icon: "+10" },
+    { value: "hearts", label: "Сердца", icon: "♥" },
+    { value: "letters", label: "Буквы", icon: "ЯA" },
+    { value: "fire", label: "Огоньки", icon: "🔥" },
+    { value: "fireworks", label: "Салют", icon: "✦" },
+    { value: "random", label: "Случайно", icon: "?" },
+  ];
 
   return (
     <div className="student-cabinet">
@@ -1674,6 +1702,49 @@ function StudentCabinet({
               ))}
             </div>
           </fieldset>
+          <fieldset className="settings-block">
+            <legend>Анимация ответа</legend>
+            <div className="reaction-options cabinet-reaction-options">
+              {reactions.map((reaction) => (
+                <button
+                  className={preferences.reaction === reaction.value ? "is-selected" : ""}
+                  onClick={() => onPreference({ reaction: reaction.value })}
+                  key={reaction.value}
+                >
+                  <i>{reaction.icon}</i>
+                  <span>{reaction.label}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="cabinet-account">
+            <div className={`premium-demo is-readonly ${isPremium ? "is-active" : ""}`}>
+              <div>
+                <span className="premium-label">
+                  <i className="premium-crown is-inline" aria-hidden="true" />
+                  {isPremium ? "Премиум активен" : "Обычный аккаунт"}
+                </span>
+                <small>
+                  {isPremium ? "Премиум-возможности доступны" : "Премиум выдаётся преподавателем"}
+                </small>
+              </div>
+              <span className={`premium-status-dot ${isPremium ? "is-active" : ""}`} />
+            </div>
+            <div className="profile-person">
+              <span className={isPremium ? "has-premium" : ""}>
+                {isPremium && <i className="premium-crown" aria-hidden="true" />}
+                {userInitial}
+              </span>
+              <div>
+                <strong>{name}</strong>
+                <small>{isPremium ? "Премиум-профиль" : "Обычный профиль"}</small>
+              </div>
+            </div>
+            <button className="secondary-auth" onClick={() => void onLogout()}>
+              Выйти
+            </button>
+          </div>
         </section>
       </div>
     </div>
@@ -2677,10 +2748,12 @@ export default function Home() {
             user={user}
             attempts={examAttempts}
             preferences={preferences}
+            isPremium={isPremium}
             isAdmin={isAdmin}
             onPreference={updatePreferences}
             onDeleteAttempt={deleteExamAttempt}
             onOpenAdmin={() => navigate("admin")}
+            onLogout={logout}
           />
         )}
       </div>
