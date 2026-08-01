@@ -31,6 +31,22 @@ type ExamVariant = {
   tasks: ExamTask[];
 };
 
+function getDownloadHref(href: string) {
+  if (!href.startsWith("/api/task-file?")) return href;
+  try {
+    const source = new URLSearchParams(href.split("?")[1] ?? "").get("source");
+    return source && new URL(source).hostname === "kompege.ru" ? source : href;
+  } catch {
+    return href;
+  }
+}
+
+function getExamTaskHtml(task: ExamTask) {
+  if (task.number !== 20 && task.number !== 21) return task.html;
+  const referenceStart = task.html.search(/<p[^>]*>\s*Для игры,\s*описанной в задании\s*19/i);
+  return referenceStart > 0 ? task.html.slice(referenceStart) : task.html;
+}
+
 export type ExamAttempt = {
   kim: string;
   title: string;
@@ -200,26 +216,13 @@ function AnswerFields({
     startIndex: number,
   ) => {
     const clipboard = event.clipboardData.getData("text").replace(/\r/g, "");
-    const lines = clipboard.split("\n");
-    while (lines.length > 1 && lines[lines.length - 1] === "") lines.pop();
-
-    const matrix = lines.map((line) => line.split("\t"));
-    const containsTable = matrix.length > 1 || matrix.some((line) => line.length > 1);
-    if (!containsTable) return;
+    const cells = clipboard.trim().split(/\s+/).filter(Boolean);
+    if (cells.length <= 1) return;
 
     event.preventDefault();
-    const startRow = Math.floor(startIndex / cols);
-    const startCol = startIndex % cols;
-
-    matrix.forEach((line, rowOffset) => {
-      line.forEach((cell, colOffset) => {
-        const row = startRow + rowOffset;
-        const col = startCol + colOffset;
-        const index = row * cols + col;
-        if (row < rows && col < cols && index < count) {
-          onChange(index, cell.trim());
-        }
-      });
+    cells.forEach((cell, offset) => {
+      const index = startIndex + offset;
+      if (index < count) onChange(index, cell);
     });
 
     if (startIndex === 0) {
@@ -612,7 +615,7 @@ export default function ExamStation({
               </div>
               <div
                 className="exam-task-html"
-                dangerouslySetInnerHTML={{ __html: currentTask.html }}
+                dangerouslySetInnerHTML={{ __html: getExamTaskHtml(currentTask) }}
               />
             </>
           ) : (
@@ -629,15 +632,14 @@ export default function ExamStation({
         </button>
       </main>
 
-      <footer className="exam-footer">
+      <footer className={`exam-footer ${currentTask?.files.length ? "has-files" : "no-files"}`}>
         <div className="exam-files">
           {currentTask?.files.map((file) => (
-            <a href={file.href} key={file.href} target="_blank" rel="noreferrer">
+            <a href={getDownloadHref(file.href)} key={file.href} target="_blank" rel="noreferrer">
               <Download aria-hidden="true" />
               <span>{file.name}</span>
             </a>
           ))}
-          {!currentTask?.files.length && currentTask && <span>Дополнительных файлов нет</span>}
           {!currentTask && <span>{variant.title}</span>}
         </div>
         {currentTask ? (

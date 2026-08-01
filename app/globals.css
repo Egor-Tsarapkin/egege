@@ -3836,6 +3836,18 @@ footer {
   width: 100%;
 }
 
+.exam-footer.no-files {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.exam-footer.no-files .exam-files {
+  display: none;
+}
+
+.exam-footer.no-files .exam-answer-actions {
+  justify-self: end;
+}
+
 .exam-files {
   align-items: center;
   color: var(--dim);
@@ -3914,10 +3926,14 @@ footer {
 
 .exam-answer-actions {
   align-items: end;
+  background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 12px;
   display: flex;
   gap: 10px;
   justify-self: end;
   min-width: 0;
+  padding: 8px;
 }
 
 .exam-answer-table {
@@ -3926,11 +3942,11 @@ footer {
   border-radius: 10px;
   min-width: 0;
   overflow: hidden;
-  width: min(38vw, 420px);
+  width: min(34vw, 390px);
 }
 
 .exam-answer-table.is-compact {
-  width: min(30vw, 320px);
+  width: min(27vw, 290px);
 }
 
 .exam-answer-table-heading {

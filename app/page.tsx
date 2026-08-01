@@ -57,11 +57,21 @@ function groupVariants(variants: Variant[]): VariantYearGroup[] {
     { year: "2023/24", start: 135, end: 196, officialEnd: 145 },
   ];
 
-  return boundaries.map(({ year, start, end, officialEnd }) => ({
+  return boundaries.map(({ year, start, officialEnd }) => ({
     year,
     official: variants.slice(start, Math.min(officialEnd, variants.length)),
-    teachers: variants.slice(Math.min(officialEnd, variants.length), Math.min(end, variants.length)),
-  })).filter((group) => group.official.length || group.teachers.length);
+    teachers: [],
+  })).filter((group) => group.official.length);
+}
+
+function getDownloadHref(href: string) {
+  if (!href.startsWith("/api/task-file?")) return href;
+  try {
+    const source = new URLSearchParams(href.split("?")[1] ?? "").get("source");
+    return source && new URL(source).hostname === "kompege.ru" ? source : href;
+  } catch {
+    return href;
+  }
 }
 
 type ExamVariantData = {
@@ -790,7 +800,13 @@ function TaskItem({
       {task.files.length > 0 && (
         <div className="task-files">
           {task.files.map((file) => (
-            <a className="file-link" href={file.href} download key={file.href}>
+            <a
+              className="file-link"
+              href={getDownloadHref(file.href)}
+              target="_blank"
+              rel="noreferrer"
+              key={file.href}
+            >
               <span className="file-icon" aria-hidden="true">↓</span>
               <span>
                 <b>{file.name}</b>
@@ -2153,7 +2169,7 @@ export default function Home() {
     })).filter((group) => group.official.length || group.teachers.length);
   }, [variantSearch, variants]);
   const visibleVariantTotal = variantYears.reduce(
-    (total, group) => total + group.official.length + group.teachers.length,
+    (total, group) => total + group.official.length,
     0,
   );
 
@@ -2430,7 +2446,7 @@ export default function Home() {
             <PageHeading
               eyebrow="Экзаменационный режим"
               title="Варианты"
-              description="Актуальные варианты КЕГЭ с 2023/24 учебного года."
+              description="Официальные варианты КЕГЭ с 2023/24 учебного года."
             />
             <div className="variant-toolbar">
               <label>
@@ -2458,24 +2474,6 @@ export default function Home() {
                         {group.official.map((variant) => (
                           <button
                             className="variant-tile is-official"
-                            onClick={() => void openExamVariant(variant.kim)}
-                            disabled={Boolean(openingVariantKim)}
-                            key={variant.kim}
-                          >
-                            <span>{variant.title}</span>
-                            <small>КИМ {variant.kim}</small>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {group.teachers.length > 0 && (
-                    <div className="variant-group">
-                      <h3>Варианты преподавателей и авторов</h3>
-                      <div className="variant-tiles">
-                        {group.teachers.map((variant) => (
-                          <button
-                            className="variant-tile"
                             onClick={() => void openExamVariant(variant.kim)}
                             disabled={Boolean(openingVariantKim)}
                             key={variant.kim}
