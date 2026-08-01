@@ -42,13 +42,6 @@ export async function GET(request: Request) {
     return Response.json({ error: "Этот источник не разрешён" }, { status: 403 });
   }
 
-  // The public Sites deployment protects dynamic API routes. Sending the
-  // browser to the already validated KЕГЭ material URL keeps downloads
-  // available to guests as well as signed-in students.
-  if (url.searchParams.get("direct") !== "0") {
-    return Response.redirect(source.href, 307);
-  }
-
   const bucket = (env as unknown as FileEnvironment).FILES;
   const key = `kompege${source.pathname}`;
 

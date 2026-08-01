@@ -31,16 +31,6 @@ type ExamVariant = {
   tasks: ExamTask[];
 };
 
-function getDownloadHref(href: string) {
-  if (!href.startsWith("/api/task-file?")) return href;
-  try {
-    const source = new URLSearchParams(href.split("?")[1] ?? "").get("source");
-    return source && new URL(source).hostname === "kompege.ru" ? source : href;
-  } catch {
-    return href;
-  }
-}
-
 function getExamTaskHtml(task: ExamTask) {
   if (task.number !== 20 && task.number !== 21) return task.html;
 
@@ -644,7 +634,7 @@ export default function ExamStation({
       <footer className={`exam-footer ${currentTask?.files.length ? "has-files" : "no-files"}`}>
         <div className="exam-files">
           {currentTask?.files.map((file) => (
-            <a href={getDownloadHref(file.href)} key={file.href} target="_blank" rel="noreferrer">
+            <a href={file.href} download={file.name} key={file.href}>
               <Download aria-hidden="true" />
               <span>{file.name}</span>
             </a>

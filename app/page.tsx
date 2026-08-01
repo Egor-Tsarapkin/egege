@@ -8,8 +8,9 @@ import type { ExamAttempt } from "./exam-station";
 const TypingTrainer = lazy(() => import("./typing-trainer"));
 const TheorySpace = lazy(() => import("./theory-space"));
 const ExamStation = lazy(() => import("./exam-station"));
+const AdminDashboard = lazy(() => import("./admin-dashboard"));
 
-type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "dashboard" | "profile";
+type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "dashboard" | "profile" | "admin";
 type GateSection = Extract<Section, "theory" | "game" | "trainer" | "dashboard">;
 type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
@@ -62,16 +63,6 @@ function groupVariants(variants: Variant[]): VariantYearGroup[] {
     official: variants.slice(start, Math.min(officialEnd, variants.length)),
     teachers: [],
   })).filter((group) => group.official.length);
-}
-
-function getDownloadHref(href: string) {
-  if (!href.startsWith("/api/task-file?")) return href;
-  try {
-    const source = new URLSearchParams(href.split("?")[1] ?? "").get("source");
-    return source && new URL(source).hostname === "kompege.ru" ? source : href;
-  } catch {
-    return href;
-  }
 }
 
 type ExamVariantData = {
@@ -146,8 +137,8 @@ type ClaimResult = {
 
 const PREFERENCES_KEY = "egege-preferences-v1";
 const EXAM_HISTORY_KEY = "egege-exam-history-v1";
-const PREMIUM_KEY = "egege-premium-demo-v1";
 const PENDING_ACCESS_KEY = "egege-pending-access-v1";
+const ANALYTICS_SESSION_KEY = "egege-analytics-session-v1";
 const sectionPaths: Record<Section, string> = {
   home: "/",
   tasks: "/tasks",
@@ -157,6 +148,7 @@ const sectionPaths: Record<Section, string> = {
   trainer: "/trainer",
   dashboard: "/dashboard",
   profile: "/profile",
+  admin: "/admin",
 };
 
 function sectionFromPath(pathname: string): Section {
@@ -562,7 +554,6 @@ function ProfileMenu({
   isPremium,
   onToggle,
   onPreference,
-  onPremiumChange,
   onEmailLogin,
   onGoogleLogin,
   onLogout,
@@ -575,7 +566,6 @@ function ProfileMenu({
   isPremium: boolean;
   onToggle: () => void;
   onPreference: (next: Partial<Preferences>) => void;
-  onPremiumChange: (next: boolean) => void;
   onEmailLogin: (email: string) => Promise<string>;
   onGoogleLogin: () => Promise<string>;
   onLogout: () => Promise<void>;
@@ -698,27 +688,19 @@ function ProfileMenu({
         <div className="profile-auth">
           {isRegistered ? (
             <>
-              <div className={`premium-demo ${isPremium ? "is-active" : ""}`}>
+              <div className={`premium-demo is-readonly ${isPremium ? "is-active" : ""}`}>
                 <div>
                   <span className="premium-label">
                     <i className="premium-crown is-inline" aria-hidden="true" />
-                    Тестовый премиум
+                    {isPremium ? "Премиум активен" : "Обычный аккаунт"}
                   </span>
                   <small>
                     {isPremium
                       ? "Теория открыта"
-                      : "Включите, чтобы проверить раздел теории"}
+                      : "Премиум выдаётся преподавателем"}
                   </small>
                 </div>
-                <button
-                  className="premium-switch"
-                  role="switch"
-                  aria-checked={isPremium}
-                  aria-label="Переключить тестовый премиум"
-                  onClick={() => onPremiumChange(!isPremium)}
-                >
-                  <span />
-                </button>
+                <span className={`premium-status-dot ${isPremium ? "is-active" : ""}`} />
               </div>
               <div className="profile-person">
                 <span className={isPremium ? "has-premium" : ""}>
@@ -844,9 +826,8 @@ function TaskItem({
           {task.files.map((file) => (
             <a
               className="file-link"
-              href={getDownloadHref(file.href)}
-              target="_blank"
-              rel="noreferrer"
+              href={file.href}
+              download={file.name}
               key={file.href}
             >
               <span className="file-icon" aria-hidden="true">↓</span>
@@ -1597,14 +1578,18 @@ function StudentCabinet({
   user,
   attempts,
   preferences,
+  isAdmin,
   onPreference,
   onDeleteAttempt,
+  onOpenAdmin,
 }: {
   user: User;
   attempts: ExamAttempt[];
   preferences: Preferences;
+  isAdmin: boolean;
   onPreference: (next: Partial<Preferences>) => void;
   onDeleteAttempt: (attempt: ExamAttempt) => void;
+  onOpenAdmin: () => void;
 }) {
   const scores = attempts.map((attempt) => attempt.testScore);
   const average = scores.length
@@ -1625,7 +1610,10 @@ function StudentCabinet({
           <h1>{name}</h1>
           <span>Здесь собираются результаты завершённых вариантов на этом устройстве.</span>
         </div>
-        <div className="cabinet-avatar">{name.trim().charAt(0).toUpperCase() || "Е"}</div>
+        <div className="cabinet-hero-actions">
+          {isAdmin && <button className="cabinet-admin-button" onClick={onOpenAdmin}>Админ-панель</button>}
+          <div className="cabinet-avatar">{name.trim().charAt(0).toUpperCase() || "Е"}</div>
+        </div>
       </section>
 
       <section className="cabinet-stats" aria-label="Статистика вариантов">
@@ -1718,6 +1706,7 @@ export default function Home() {
   const [rattlingSection, setRattlingSection] = useState<GateSection | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isPremium, setIsPremium] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [authConfigured, setAuthConfigured] = useState<boolean | null>(null);
   const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
   const [examAttempts, setExamAttempts] = useState<ExamAttempt[]>(() => {
@@ -1733,6 +1722,7 @@ export default function Home() {
   const burstId = useRef(0);
   const claimingTasks = useRef(new Set<string>());
   const taskIndex = useRef<Record<string, number>>({});
+  const analyticsSession = useRef("");
   const isRegistered = Boolean(user);
 
   useEffect(() => {
@@ -1783,6 +1773,16 @@ export default function Home() {
     queueMicrotask(() => setPreferences(restored));
   }, []);
 
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(ANALYTICS_SESSION_KEY);
+      analyticsSession.current = saved || `s_${crypto.randomUUID().replace(/-/g, "")}`;
+      if (!saved) window.localStorage.setItem(ANALYTICS_SESSION_KEY, analyticsSession.current);
+    } catch {
+      analyticsSession.current = `s_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+    }
+  }, []);
+
   const notify = (message: string) => {
     setToast("");
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -1803,17 +1803,26 @@ export default function Home() {
   };
 
   useEffect(() => {
-    queueMicrotask(() => {
-      if (!user) {
+    if (!user) {
+      queueMicrotask(() => {
         setIsPremium(false);
-        return;
-      }
-      try {
-        setIsPremium(window.localStorage.getItem(`${PREMIUM_KEY}:${user.id}`) === "true");
-      } catch {
+        setIsAdmin(false);
+      });
+      return;
+    }
+    let active = true;
+    void communityRequest<{ premium: boolean; isAdmin: boolean }>("/api/account")
+      .then((access) => {
+        if (!active) return;
+        setIsPremium(access.premium);
+        setIsAdmin(access.isAdmin);
+      })
+      .catch(() => {
+        if (!active) return;
         setIsPremium(false);
-      }
-    });
+        setIsAdmin(false);
+      });
+    return () => { active = false; };
   }, [user]);
 
   useEffect(() => {
@@ -1952,6 +1961,37 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!analyticsSession.current) return;
+    let disposed = false;
+    const send = async (eventType: "page_view" | "login" | "heartbeat", activeSeconds = 0) => {
+      const client = await getSupabaseBrowserClient();
+      const { data } = client ? await client.auth.getSession() : { data: { session: null } };
+      if (disposed) return;
+      void fetch("/api/analytics", {
+        method: "POST",
+        keepalive: true,
+        headers: {
+          "content-type": "application/json",
+          ...(data.session?.access_token ? { authorization: `Bearer ${data.session.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          sessionId: analyticsSession.current,
+          eventType,
+          path: sectionPaths[section],
+          activeSeconds,
+        }),
+      }).catch(() => undefined);
+    };
+    void send("page_view");
+    if (user) void send("login");
+    const timer = window.setInterval(() => void send("heartbeat", document.hidden ? 0 : 30), 30_000);
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+    };
+  }, [section, user]);
+
+  useEffect(() => {
     if (!isRegistered) return;
     let pending: GateSection | null = null;
     try {
@@ -1987,6 +2027,10 @@ export default function Home() {
   };
 
   const navigate = (nextSection: Section) => {
+    if (nextSection === "admin" && (!isRegistered || !isAdmin)) {
+      notify("Админ-панель доступна только администратору");
+      return;
+    }
     if (
       (nextSection === "dashboard" || nextSection === "game" || nextSection === "trainer") &&
       !isRegistered
@@ -2117,20 +2161,6 @@ export default function Home() {
     });
   };
 
-  const updatePremium = (next: boolean) => {
-    if (!user) return;
-    setIsPremium(next);
-    try {
-      window.localStorage.setItem(`${PREMIUM_KEY}:${user.id}`, String(next));
-    } catch {
-      // The demo switch still works for the current session.
-    }
-    if (!next && section === "theory") {
-      setSection("dashboard");
-    }
-    notify(next ? "Премиум включён — теория открыта" : "Премиум выключен");
-  };
-
   const sendMagicLink = async (email: string) => {
     const client = await getSupabaseBrowserClient();
     if (!client) return "Нужно подключить Supabase — инструкция уже подготовлена.";
@@ -2168,7 +2198,8 @@ export default function Home() {
       section === "dashboard" ||
       section === "theory" ||
       section === "game" ||
-      section === "trainer"
+      section === "trainer" ||
+      section === "admin"
     ) {
       setSection("tasks");
     }
@@ -2185,7 +2216,6 @@ export default function Home() {
       isPremium={isPremium}
       onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
       onPreference={updatePreferences}
-      onPremiumChange={updatePremium}
       onEmailLogin={sendMagicLink}
       onGoogleLogin={loginWithGoogle}
       onLogout={logout}
@@ -2238,6 +2268,15 @@ export default function Home() {
       const response = await fetch(`/data/variants/${kim}.json`);
       if (!response.ok) throw new Error("Вариант не загрузился");
       setExamVariant(await response.json() as ExamVariantData);
+      if (analyticsSession.current) {
+        const client = await getSupabaseBrowserClient();
+        const { data } = client ? await client.auth.getSession() : { data: { session: null } };
+        void fetch("/api/analytics", {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(data.session?.access_token ? { authorization: `Bearer ${data.session.access_token}` } : {}) },
+          body: JSON.stringify({ sessionId: analyticsSession.current, eventType: "exam_start", path: "/variants" }),
+        }).catch(() => undefined);
+      }
     } catch {
       notify("Не удалось открыть экзаменационную станцию");
     } finally {
@@ -2255,6 +2294,18 @@ export default function Home() {
       }
       return next;
     });
+    if (user) {
+      void communityRequest("/api/exam-attempts", {
+        method: "POST",
+        body: JSON.stringify(attempt),
+      }).catch(() => undefined);
+      if (analyticsSession.current) {
+        void communityRequest("/api/analytics", {
+          method: "POST",
+          body: JSON.stringify({ sessionId: analyticsSession.current, eventType: "exam_complete", path: "/variants" }),
+        }).catch(() => undefined);
+      }
+    }
   };
 
   const deleteExamAttempt = (attempt: ExamAttempt) => {
@@ -2343,7 +2394,6 @@ export default function Home() {
           isPremium={isPremium}
           onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
           onPreference={updatePreferences}
-          onPremiumChange={updatePremium}
           onEmailLogin={sendMagicLink}
           onGoogleLogin={loginWithGoogle}
           onLogout={logout}
@@ -2377,6 +2427,24 @@ export default function Home() {
           />
         )}
         <Toast message={toast} />
+      </main>
+    );
+  }
+
+  if (section === "admin") {
+    return (
+      <main className="admin-page-shell">
+        {user && isAdmin ? (
+          <Suspense fallback={<div className="admin-state"><span>•••</span><p>Открываем админ-панель</p></div>}>
+            <AdminDashboard user={user} onExit={() => navigate("profile")} />
+          </Suspense>
+        ) : (
+          <div className="admin-state is-error">
+            <h1>Нет доступа</h1>
+            <p>Этот раздел доступен только администратору EGEGE.</p>
+            <button onClick={() => navigate(user ? "profile" : "home")}>Вернуться на сайт</button>
+          </div>
+        )}
       </main>
     );
   }
@@ -2609,8 +2677,10 @@ export default function Home() {
             user={user}
             attempts={examAttempts}
             preferences={preferences}
+            isAdmin={isAdmin}
             onPreference={updatePreferences}
             onDeleteAttempt={deleteExamAttempt}
+            onOpenAdmin={() => navigate("admin")}
           />
         )}
       </div>

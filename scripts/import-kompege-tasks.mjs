@@ -139,7 +139,14 @@ function prepareMarkup(html) {
     .replace(/<\/table>/gi, "</table></div>");
 }
 
-async function downloadTaskFiles(files, taskId) {
+function publicDownloadName(number, index, count, sourceName, remoteUrl) {
+  const extension = extname(sourceName || remoteUrl.pathname) || extname(remoteUrl.pathname);
+  if (count === 1) return `${number}${extension}`;
+  if (index < 26) return `${number}_${String.fromCharCode(65 + index)}${extension}`;
+  return `${number}_${index + 1}${extension}`;
+}
+
+async function downloadTaskFiles(files, taskId, number) {
   return mapLimit(files ?? [], 1, async (file, index) => {
     const remoteUrl = new URL(file.url, SITE_ROOT);
     const originalName = safeFilePart(file.name || basename(remoteUrl.pathname)) || `file-${index + 1}`;
@@ -164,9 +171,13 @@ async function downloadTaskFiles(files, taskId) {
       exists = true;
     }
 
+    const downloadName = publicDownloadName(number, index, files.length, file.name, remoteUrl);
+
     return {
-      name: file.name || nameWithExtension,
-      href: downloadFiles && exists ? publicHref : remoteUrl.href,
+      name: downloadName,
+      href: downloadFiles && exists
+        ? publicHref
+        : `/api/task-file?source=${encodeURIComponent(remoteUrl.href)}&name=${encodeURIComponent(downloadName)}`,
       sourceUrl: remoteUrl.href,
       meta: "Файл к заданию",
     };
@@ -188,7 +199,7 @@ async function makeTask(source, number, id, text, answer, table = source.table) 
       cols: Math.max(1, Number(table?.cols ?? 1)),
       rows: Math.max(1, Number(table?.rows ?? 1)),
     },
-    files: await downloadTaskFiles(source.files, id),
+    files: await downloadTaskFiles(source.files, id, number),
   };
 }
 
