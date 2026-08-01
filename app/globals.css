@@ -2468,6 +2468,28 @@ p,
   text-transform: uppercase;
 }
 
+/* The linked game tasks are one continuous statement, so keep their parts
+   visually close and use only a little more of the reserved reading width. */
+.task-item[data-task-number="19"] .task-body {
+  line-height: 1.68;
+  max-width: 850px;
+}
+
+.task-item[data-task-number="19"] .game-task-part + .game-task-part {
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.task-item[data-task-number="19"] .game-task-part h3 {
+  margin-bottom: 8px;
+}
+
+.task-item[data-task-number="19"] .game-task-part p,
+.task-item[data-task-number="19"] .game-task-part ul,
+.task-item[data-task-number="19"] .game-task-part ol {
+  margin-block: 0.55em;
+}
+
 .scroll-to-top {
   align-items: center;
   background: var(--surface-raised);
