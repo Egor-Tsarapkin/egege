@@ -858,8 +858,14 @@ function getTaskSourceKind(task: Task): TaskSourceKind {
 function getGameTaskPartHtml(task: Task) {
   if (task.number !== 20 && task.number !== 21) return task.html;
 
+  const secondParagraphStart = task.html.search(/<\/p>\s*<p(?:\s|>)/i);
+  if (secondParagraphStart >= 0) {
+    const nextParagraph = task.html.indexOf("<p", secondParagraphStart + 4);
+    if (nextParagraph >= 0) return task.html.slice(nextParagraph);
+  }
+
   const referenceStart = task.html.search(
-    /<p[^>]*>\s*Для игры,\s*описанной в задании\s*19/i,
+    /<p[^>]*>\s*Для(?:\s|&nbsp;)*игры,(?:\s|&nbsp;)*описанной в задании(?:\s|&nbsp;)*19/i,
   );
 
   return referenceStart >= 0 ? task.html.slice(referenceStart) : task.html;
@@ -870,7 +876,7 @@ function mergeGameTasks(groups: Task[][]): Task[] {
   for (const group of groups) {
     for (const task of group) {
       const part = task.number as 19 | 20 | 21;
-      const parentId = part === 19 ? task.id : task.id.replace(/(?:20|21)$/, "");
+      const parentId = task.id;
       const entry = byId.get(parentId) ?? {};
       entry[part] = task;
       byId.set(parentId, entry);

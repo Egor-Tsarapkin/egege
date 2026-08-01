@@ -43,8 +43,17 @@ function getDownloadHref(href: string) {
 
 function getExamTaskHtml(task: ExamTask) {
   if (task.number !== 20 && task.number !== 21) return task.html;
-  const referenceStart = task.html.search(/<p[^>]*>\s*Для игры,\s*описанной в задании\s*19/i);
-  return referenceStart > 0 ? task.html.slice(referenceStart) : task.html;
+
+  const secondParagraphStart = task.html.search(/<\/p>\s*<p(?:\s|>)/i);
+  if (secondParagraphStart >= 0) {
+    const nextParagraph = task.html.indexOf("<p", secondParagraphStart + 4);
+    if (nextParagraph >= 0) return task.html.slice(nextParagraph);
+  }
+
+  const referenceStart = task.html.search(
+    /<p[^>]*>\s*Для(?:\s|&nbsp;)*игры,(?:\s|&nbsp;)*описанной в задании(?:\s|&nbsp;)*19/i,
+  );
+  return referenceStart >= 0 ? task.html.slice(referenceStart) : task.html;
 }
 
 export type ExamAttempt = {
