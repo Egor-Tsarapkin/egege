@@ -876,7 +876,7 @@ function mergeGameTasks(groups: Task[][]): Task[] {
   for (const group of groups) {
     for (const task of group) {
       const part = task.number as 19 | 20 | 21;
-      const parentId = task.id;
+      const parentId = part === 19 ? task.id : task.id.replace(/(?:20|21)$/, "");
       const entry = byId.get(parentId) ?? {};
       entry[part] = task;
       byId.set(parentId, entry);
