@@ -452,6 +452,9 @@ function AppHeader({
   profile: React.ReactNode;
 }) {
   const navRef = useRef<HTMLElement | null>(null);
+  const scrollFrame = useRef<number | null>(null);
+  const lastScrollY = useRef(0);
+  const [isAutoHidden, setIsAutoHidden] = useState(false);
   const navItems: Array<{
     section: Exclude<Section, "home">;
     label: string;
@@ -477,8 +480,47 @@ function AppHeader({
       ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
   }, [section]);
 
+  useEffect(() => {
+    if (section !== "tasks") {
+      queueMicrotask(() => setIsAutoHidden(false));
+      return;
+    }
+
+    lastScrollY.current = window.scrollY;
+
+    const onScroll = () => {
+      if (scrollFrame.current !== null) return;
+
+      scrollFrame.current = window.requestAnimationFrame(() => {
+        const currentY = window.scrollY;
+        const distance = currentY - lastScrollY.current;
+
+        if (currentY <= 20) {
+          setIsAutoHidden(false);
+        } else if (distance > 5 && currentY > 96) {
+          setIsAutoHidden(true);
+        } else if (distance < -5) {
+          setIsAutoHidden(false);
+        }
+
+        lastScrollY.current = currentY;
+        scrollFrame.current = null;
+      });
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (scrollFrame.current !== null) {
+        window.cancelAnimationFrame(scrollFrame.current);
+        scrollFrame.current = null;
+      }
+    };
+  }, [section]);
+
   return (
-    <header className="topbar">
+    <header className={`topbar ${isAutoHidden ? "is-auto-hidden" : ""}`}>
       <button className="wordmark" onClick={() => navigate("home")}>
         <span className="mini-mark">Е</span>
         <span className="wordmark-name"><b>EGE</b>GE</span>
