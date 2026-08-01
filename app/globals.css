@@ -2847,6 +2847,12 @@ p,
   white-space: pre-line;
 }
 
+.task-item[data-task-number="19"] .answer-value {
+  display: grid;
+  gap: 8px;
+  line-height: 1.35;
+}
+
 .network-figure {
   background: var(--surface);
   border-radius: 22px;
@@ -4289,12 +4295,17 @@ footer {
   color: var(--muted);
   display: flex;
   height: 38px;
+  justify-content: center;
   justify-self: end;
+  line-height: 0;
+  padding: 0;
   width: 38px;
 }
 
 .exam-results-title button svg {
+  display: block;
   height: 17px;
+  margin: 0;
   width: 17px;
 }
 

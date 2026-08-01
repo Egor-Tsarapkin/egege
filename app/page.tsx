@@ -855,6 +855,16 @@ function getTaskSourceKind(task: Task): TaskSourceKind {
   return "kege";
 }
 
+function getGameTaskPartHtml(task: Task) {
+  if (task.number !== 20 && task.number !== 21) return task.html;
+
+  const referenceStart = task.html.search(
+    /<p[^>]*>\s*Для игры,\s*описанной в задании\s*19/i,
+  );
+
+  return referenceStart >= 0 ? task.html.slice(referenceStart) : task.html;
+}
+
 function mergeGameTasks(groups: Task[][]): Task[] {
   const byId = new Map<string, Partial<Record<19 | 20 | 21, Task>>>();
   for (const group of groups) {
@@ -877,9 +887,9 @@ function mergeGameTasks(groups: Task[][]): Task[] {
       number: 19,
       title: "Задание №19–21",
       html: available.map((number) =>
-        `<section class="game-task-part"><h3>Задание №${number}</h3>${parts[number]!.html}</section>`,
+        `<section class="game-task-part"><h3>Задание №${number}</h3>${getGameTaskPartHtml(parts[number]!)}</section>`,
       ).join(""),
-      answer: available.map((number) => `№${number}: ${parts[number]!.answer}`).join(" · "),
+      answer: available.map((number) => `№${number}: ${parts[number]!.answer}`).join("\n"),
       files: available.flatMap((number) => parts[number]!.files),
     }];
   });
