@@ -421,7 +421,7 @@ function Dock({
         >
           {item.icon}
           <span>{item.label}</span>
-          {item.locked && <AccessBadge premium={item.premium} />}
+          {item.locked && <AccessBadge premium={item.premium} compact />}
         </button>
       ))}
     </div>
@@ -554,7 +554,6 @@ function ProfileMenu({
   isPremium,
   onToggle,
   onPreference,
-  onEmailLogin,
   onGoogleLogin,
   onLogout,
   home = false,
@@ -566,12 +565,10 @@ function ProfileMenu({
   isPremium: boolean;
   onToggle: () => void;
   onPreference: (next: Partial<Preferences>) => void;
-  onEmailLogin: (email: string) => Promise<string>;
   onGoogleLogin: () => Promise<string>;
   onLogout: () => Promise<void>;
   home?: boolean;
 }) {
-  const [email, setEmail] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
   const isRegistered = Boolean(user);
@@ -733,7 +730,7 @@ function ProfileMenu({
             </>
           ) : (
             <>
-              <p>Войдите удобным способом — пароль создавать не нужно.</p>
+              <p>Войдите через Google — пароль создавать не нужно.</p>
               <div className="social-auth-list">
                 <button
                   className="social-auth google-auth"
@@ -744,35 +741,6 @@ function ProfileMenu({
                   Продолжить с Google
                 </button>
               </div>
-              <div className="auth-divider"><span>или по почте</span></div>
-              <form
-                className="auth-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void runAuth(() => onEmailLogin(email));
-                }}
-              >
-                <label>
-                  <span>Электронная почта</span>
-                  <input
-                    autoComplete="email"
-                    inputMode="email"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="name@example.ru"
-                    required
-                    disabled={!authConfigured || authBusy}
-                  />
-                </label>
-                <button
-                  className="primary-auth"
-                  type="submit"
-                  disabled={!authConfigured || authBusy}
-                >
-                  {authBusy ? "Отправляем…" : "Получить ссылку"}
-                </button>
-              </form>
               {authConfigured === null && <p className="auth-status">Проверяем подключение…</p>}
               {authConfigured === false && (
                 <p className="auth-status is-warning">
@@ -2232,20 +2200,6 @@ export default function Home() {
     });
   };
 
-  const sendMagicLink = async (email: string) => {
-    const client = await getSupabaseBrowserClient();
-    if (!client) return "Нужно подключить Supabase — инструкция уже подготовлена.";
-
-    const { error } = await client.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
-      },
-    });
-    if (error) return `Не удалось отправить письмо: ${error.message}`;
-    return "Ссылка отправлена. Проверьте почту.";
-  };
-
   const loginWithProvider = async (provider: Provider, label: string) => {
     const client = await getSupabaseBrowserClient();
     if (!client) return "Нужно подключить Supabase — инструкция уже подготовлена.";
@@ -2287,7 +2241,6 @@ export default function Home() {
       isPremium={isPremium}
       onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
       onPreference={updatePreferences}
-      onEmailLogin={sendMagicLink}
       onGoogleLogin={loginWithGoogle}
       onLogout={logout}
     />
@@ -2465,7 +2418,6 @@ export default function Home() {
           isPremium={isPremium}
           onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
           onPreference={updatePreferences}
-          onEmailLogin={sendMagicLink}
           onGoogleLogin={loginWithGoogle}
           onLogout={logout}
           home
