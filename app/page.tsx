@@ -4,6 +4,7 @@ import type { Provider, User } from "@supabase/supabase-js";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { ExamAttempt } from "./exam-station";
+import OnboardingTour from "./onboarding-tour";
 
 const TypingTrainer = lazy(() => import("./typing-trainer"));
 const TheorySpace = lazy(() => import("./theory-space"));
@@ -139,6 +140,7 @@ const PREFERENCES_KEY = "egege-preferences-v1";
 const EXAM_HISTORY_KEY = "egege-exam-history-v1";
 const PENDING_ACCESS_KEY = "egege-pending-access-v1";
 const ANALYTICS_SESSION_KEY = "egege-analytics-session-v1";
+const ONBOARDING_KEY = "egege-onboarding-v1";
 const sectionPaths: Record<Section, string> = {
   home: "/",
   tasks: "/tasks",
@@ -580,6 +582,7 @@ function ProfileMenu({
           className={`profile-trigger is-user ${isPremium ? "is-premium" : ""}`}
           onClick={onToggle}
           aria-label="Открыть личный кабинет"
+          data-tour="profile"
         >
           {isPremium && <i className="premium-crown" aria-hidden="true" />}
           <span>{userInitial}</span>
@@ -597,6 +600,7 @@ function ProfileMenu({
         onClick={onToggle}
         aria-expanded={open}
         aria-label={isRegistered ? "Открыть профиль" : "Войти"}
+        data-tour="profile"
       >
         {isRegistered ? (
           <>
@@ -760,7 +764,7 @@ function TaskItem({
   };
 
   return (
-    <article className="task-item" data-task-number={task.number}>
+    <article className="task-item" data-task-number={task.number} data-tour="task">
       <div className="task-heading-row">
         <span className="task-number-badge">{task.number === 19 ? "19–21" : task.number}</span>
         <div>
@@ -1435,7 +1439,7 @@ function Dashboard({
                 required
               />
               <button disabled={busyKey === "add"}>
-                {busyKey === "add" ? "Ищем…" : "Добавить"}
+                {busyKey === "add" ? "Отправляем…" : "Отправить запрос"}
               </button>
             </div>
           </form>
@@ -1713,6 +1717,7 @@ export default function Home() {
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [toast, setToast] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const [gateSection, setGateSection] = useState<GateSection | null>(null);
   const [rattlingSection, setRattlingSection] = useState<GateSection | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -1742,6 +1747,27 @@ export default function Home() {
     window.addEventListener("popstate", syncSectionFromUrl);
     return () => window.removeEventListener("popstate", syncSectionFromUrl);
   }, []);
+
+  useEffect(() => {
+    let timer = 0;
+    try {
+      if (!window.localStorage.getItem(ONBOARDING_KEY)) {
+        timer = window.setTimeout(() => setTourOpen(true), 900);
+      }
+    } catch {
+      timer = window.setTimeout(() => setTourOpen(true), 900);
+    }
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const finishOnboarding = () => {
+    setTourOpen(false);
+    try {
+      window.localStorage.setItem(ONBOARDING_KEY, "done");
+    } catch {
+      // The tour may be offered again when storage is unavailable.
+    }
+  };
 
   useEffect(() => {
     if (section !== "tasks") {
@@ -2426,6 +2452,13 @@ export default function Home() {
           />
         )}
         <Toast message={toast} />
+        <OnboardingTour
+          open={tourOpen}
+          onNavigate={(next) => navigate(next)}
+          onPrepareTask={() => setType("1")}
+          onCloseExam={() => setExamVariant(null)}
+          onFinish={finishOnboarding}
+        />
       </main>
     );
   }
@@ -2472,7 +2505,7 @@ export default function Home() {
               description="Выберите тему — все подходящие задания появятся ниже."
             />
 
-            <section className="filter-panel" aria-label="Фильтры заданий">
+            <section className="filter-panel" aria-label="Фильтры заданий" data-tour="task-filters">
               <label className="search-field">
                 <span>Поиск по ID</span>
                 <div>
@@ -2585,7 +2618,7 @@ export default function Home() {
               </label>
               <span>{visibleVariantTotal} вариантов</span>
             </div>
-            <section className="variant-catalog" aria-label="Доступные варианты">
+            <section className="variant-catalog" aria-label="Доступные варианты" data-tour="variant-catalog">
               {variantsLoading && (
                 <div className="variant-catalog-state">Загружаем каталог вариантов…</div>
               )}
@@ -2599,6 +2632,7 @@ export default function Home() {
                         {group.official.map((variant) => (
                           <button
                             className="variant-tile is-official"
+                            data-tour="variant"
                             onClick={() => void openExamVariant(variant.kim)}
                             disabled={Boolean(openingVariantKim)}
                             key={variant.kim}
@@ -2702,6 +2736,13 @@ export default function Home() {
         />
       )}
       <Toast message={toast} />
+      <OnboardingTour
+        open={tourOpen}
+        onNavigate={(next) => navigate(next)}
+        onPrepareTask={() => setType("1")}
+        onCloseExam={() => setExamVariant(null)}
+        onFinish={finishOnboarding}
+      />
       <button
         className={`scroll-to-top ${showScrollTop ? "is-visible" : ""}`}
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

@@ -76,6 +76,54 @@ for char in text:
     if char != " ":
         result += char
 print(result)`,
+    `numbers = list(map(int, input().split()))
+count = 0
+for number in numbers:
+    if number % 3 == 0 and number % 5 != 0:
+        count += 1
+print(count)`,
+    `number = int(input())
+maximum = 0
+while number > 0:
+    digit = number % 10
+    if digit > maximum:
+        maximum = digit
+    number //= 10
+print(maximum)`,
+    `text = input()
+result = ""
+for index in range(len(text) - 1, -1, -1):
+    result += text[index]
+print(result)`,
+    `start = int(input())
+finish = int(input())
+total = 0
+for value in range(start, finish + 1):
+    if value % 4 == 0:
+        total += value
+print(total)`,
+    `values = list(map(int, input().split()))
+minimum = values[0]
+for value in values[1:]:
+    if value < minimum:
+        minimum = value
+print(minimum)`,
+    `def is_valid(number):
+    return number % 2 == 0 and number % 7 == 0
+
+for value in range(10, 100):
+    if is_valid(value):
+        print(value)`,
+    `word = input()
+longest = ""
+for part in word.split("_"):
+    if len(part) > len(longest):
+        longest = part
+print(longest)`,
+    `a, b = map(int, input().split())
+while b != 0:
+    a, b = b, a % b
+print(a)`,
   ],
   russian: [
     "Точный код начинается со спокойного ритма и правильной постановки рук.",
@@ -94,6 +142,17 @@ print(result)`,
     "{key: value for key, value in pairs}",
   ],
 };
+
+function shuffledIndexes(length: number, excluded = -1) {
+  const indexes = Array.from({ length }, (_, index) => index).filter(
+    (index) => index !== excluded,
+  );
+  for (let index = indexes.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [indexes[index], indexes[randomIndex]] = [indexes[randomIndex], indexes[index]];
+  }
+  return indexes;
+}
 
 const KEYBOARD_ROWS: KeyDefinition[][] = [
   [
@@ -478,6 +537,11 @@ export default function TypingTrainer({ userId }: { userId: string }) {
   const codeScrollRef = useRef<HTMLDivElement>(null);
   const startedAtRef = useRef<number | null>(null);
   const elapsedRef = useRef(0);
+  const exerciseBags = useRef<Record<TrainerMode, number[]>>({
+    python: [],
+    russian: [],
+    symbols: [],
+  });
 
   const target = EXERCISES[mode][exerciseIndex % EXERCISES[mode].length];
   const completed = typed.length === target.length && target.length > 0;
@@ -560,6 +624,17 @@ export default function TypingTrainer({ userId }: { userId: string }) {
       codeScrollRef.current.scrollLeft = 0;
     }
     requestAnimationFrame(() => captureRef.current?.focus({ preventScroll: true }));
+  };
+
+  const nextRandomExercise = (nextMode = mode) => {
+    let bag = exerciseBags.current[nextMode];
+    const currentIndex = nextMode === mode ? exerciseIndex : -1;
+    if (!bag.length) {
+      bag = shuffledIndexes(EXERCISES[nextMode].length, currentIndex);
+    }
+    const [nextIndex, ...remaining] = bag;
+    exerciseBags.current[nextMode] = remaining;
+    reset(nextMode, nextIndex ?? 0);
   };
 
   const startTimer = () => {
@@ -649,7 +724,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
             {MODE_OPTIONS.map((option) => (
               <button
                 className={mode === option.id ? "is-active" : ""}
-                onClick={() => reset(option.id, 0)}
+                onClick={() => nextRandomExercise(option.id)}
                 aria-pressed={mode === option.id}
                 key={option.id}
               >
@@ -677,7 +752,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
 
       <section className={`trainer-stage ${focused ? "is-focused" : ""} ${completed ? "is-complete" : ""}`}>
         <div className="trainer-stage-toolbar">
-          <span>Упражнение {exerciseIndex + 1} из {EXERCISES[mode].length}</span>
+          <span>Случайное упражнение · {EXERCISES[mode].length} вариантов</span>
           <div>
             {best > 0 && <span>Лучший: <b>{best}</b> зн/мин</span>}
             <button onClick={pause} disabled={!running}>Пауза</button>
@@ -747,9 +822,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
             <div className="trainer-result-actions">
               <button onClick={() => reset()}>Повторить</button>
               <button
-                onClick={() =>
-                  reset(mode, (exerciseIndex + 1) % EXERCISES[mode].length)
-                }
+                onClick={() => nextRandomExercise(mode)}
               >
                 Следующее
               </button>
