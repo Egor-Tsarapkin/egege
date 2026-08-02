@@ -318,8 +318,11 @@ function AccessBadge({
 function repelAccessLock(event: React.PointerEvent<HTMLButtonElement>) {
   if (window.matchMedia("(hover: none)").matches) return;
   const lock = event.currentTarget.querySelector<HTMLElement>(".chain-padlock");
-  if (!lock) return;
-  const box = lock.getBoundingClientRect();
+  const anchor = event.currentTarget.querySelector<HTMLElement>(".access-lock");
+  if (!lock || !anchor) return;
+  // Measure the stationary badge, not the already-transformed padlock. Measuring
+  // the moving element creates a feedback loop in Safari and makes it jitter.
+  const box = anchor.getBoundingClientRect();
   const deltaX = box.left + box.width / 2 - event.clientX;
   const deltaY = box.top + box.height / 2 - event.clientY;
   const distance = Math.max(1, Math.hypot(deltaX, deltaY));
