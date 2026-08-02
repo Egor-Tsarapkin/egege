@@ -327,9 +327,14 @@ function repelAccessLock(event: React.PointerEvent<HTMLButtonElement>) {
   const deltaY = box.top + box.height / 2 - event.clientY;
   const distance = Math.max(1, Math.hypot(deltaX, deltaY));
   const strength = Math.max(0, 1 - distance / 105) * 18;
-  lock.style.setProperty("--lock-away-x", `${(deltaX / distance) * strength}px`);
-  lock.style.setProperty("--lock-away-y", `${(deltaY / distance) * strength}px`);
-  lock.style.setProperty("--lock-tilt", `${(deltaX / distance) * 9}deg`);
+  // Whole-pixel values keep Safari from repainting the tiny lock between two
+  // subpixel positions while the parent Dock item is scaling.
+  const awayX = Math.round((deltaX / distance) * strength);
+  const awayY = Math.round((deltaY / distance) * strength);
+  const tilt = Math.round((deltaX / distance) * 9);
+  lock.style.setProperty("--lock-away-x", `${awayX}px`);
+  lock.style.setProperty("--lock-away-y", `${awayY}px`);
+  lock.style.setProperty("--lock-tilt", `${tilt}deg`);
 }
 
 function resetAccessLock(event: React.PointerEvent<HTMLButtonElement>) {
@@ -359,11 +364,16 @@ function Dock({
     dockFrame.current = requestAnimationFrame(() => {
       dockFrame.current = null;
       const buttons = dockRef.current?.querySelectorAll<HTMLButtonElement>(".dock-item");
-      if (!buttons) return;
+      const dock = dockRef.current;
+      if (!buttons || !dock) return;
+      const dockBox = dock.getBoundingClientRect();
       setScales(
         Array.from(buttons).map((button) => {
-          const box = button.getBoundingClientRect();
-          const distance = Math.abs(clientX - (box.left + box.width / 2));
+          // offsetLeft/offsetWidth are the untransformed layout coordinates.
+          // Reading getBoundingClientRect() here fed the current scale back into
+          // the next scale calculation and made Safari oscillate on hover.
+          const center = dockBox.left + button.offsetLeft + button.offsetWidth / 2;
+          const distance = Math.abs(clientX - center);
           return 1 + Math.max(0, 1 - distance / 140) * 0.18;
         }),
       );
