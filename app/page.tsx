@@ -315,35 +315,6 @@ function AccessBadge({
   );
 }
 
-function repelAccessLock(event: React.PointerEvent<HTMLButtonElement>) {
-  if (window.matchMedia("(hover: none)").matches) return;
-  const lock = event.currentTarget.querySelector<HTMLElement>(".chain-padlock");
-  const anchor = event.currentTarget.querySelector<HTMLElement>(".access-lock");
-  if (!lock || !anchor) return;
-  // Measure the stationary badge, not the already-transformed padlock. Measuring
-  // the moving element creates a feedback loop in Safari and makes it jitter.
-  const box = anchor.getBoundingClientRect();
-  const deltaX = box.left + box.width / 2 - event.clientX;
-  const deltaY = box.top + box.height / 2 - event.clientY;
-  const distance = Math.max(1, Math.hypot(deltaX, deltaY));
-  const strength = Math.max(0, 1 - distance / 105) * 18;
-  // Whole-pixel values keep Safari from repainting the tiny lock between two
-  // subpixel positions while the parent Dock item is scaling.
-  const awayX = Math.round((deltaX / distance) * strength);
-  const awayY = Math.round((deltaY / distance) * strength);
-  const tilt = Math.round((deltaX / distance) * 9);
-  lock.style.setProperty("--lock-away-x", `${awayX}px`);
-  lock.style.setProperty("--lock-away-y", `${awayY}px`);
-  lock.style.setProperty("--lock-tilt", `${tilt}deg`);
-}
-
-function resetAccessLock(event: React.PointerEvent<HTMLButtonElement>) {
-  const lock = event.currentTarget.querySelector<HTMLElement>(".chain-padlock");
-  lock?.style.removeProperty("--lock-away-x");
-  lock?.style.removeProperty("--lock-away-y");
-  lock?.style.removeProperty("--lock-tilt");
-}
-
 function Dock({
   navigate,
   isRegistered,
@@ -355,31 +326,6 @@ function Dock({
   isPremium: boolean;
   rattlingSection: GateSection | null;
 }) {
-  const dockRef = useRef<HTMLDivElement>(null);
-  const dockFrame = useRef<number | null>(null);
-  const [scales, setScales] = useState([1, 1, 1]);
-
-  const reactToPointer = (clientX: number) => {
-    if (dockFrame.current !== null || window.matchMedia("(hover: none)").matches) return;
-    dockFrame.current = requestAnimationFrame(() => {
-      dockFrame.current = null;
-      const buttons = dockRef.current?.querySelectorAll<HTMLButtonElement>(".dock-item");
-      const dock = dockRef.current;
-      if (!buttons || !dock) return;
-      const dockBox = dock.getBoundingClientRect();
-      setScales(
-        Array.from(buttons).map((button) => {
-          // offsetLeft/offsetWidth are the untransformed layout coordinates.
-          // Reading getBoundingClientRect() here fed the current scale back into
-          // the next scale calculation and made Safari oscillate on hover.
-          const center = dockBox.left + button.offsetLeft + button.offsetWidth / 2;
-          const distance = Math.abs(clientX - center);
-          return 1 + Math.max(0, 1 - distance / 140) * 0.18;
-        }),
-      );
-    });
-  };
-
   const items: Array<{
     section: Section;
     label: string;
@@ -417,22 +363,13 @@ function Dock({
   ];
 
   return (
-    <div
-      className="dock"
-      ref={dockRef}
-      onPointerMove={(event) => reactToPointer(event.clientX)}
-      onPointerLeave={() => setScales(items.map(() => 1))}
-      aria-label="Основная навигация"
-    >
+    <div className="dock" aria-label="Основная навигация">
       {items.map((item, index) => (
         <button
           className={`dock-item ${item.locked ? "is-locked" : ""} ${
             rattlingSection === item.section ? "is-rattling" : ""
           }`}
-          style={{ "--dock-scale": scales[index] ?? 1 } as React.CSSProperties}
           onClick={() => navigate(item.section)}
-          onPointerMove={item.locked ? repelAccessLock : undefined}
-          onPointerLeave={item.locked ? resetAccessLock : undefined}
           aria-label={
             item.locked
               ? `${item.label}: ${item.premium ? "нужны регистрация и премиум" : "нужна регистрация"}`
@@ -547,8 +484,6 @@ function AppHeader({
                 item.locked ? "is-locked" : ""
               } ${rattlingSection === item.section ? "is-rattling" : ""}`}
               onClick={() => navigate(item.section)}
-              onPointerMove={item.locked ? repelAccessLock : undefined}
-              onPointerLeave={item.locked ? resetAccessLock : undefined}
               aria-label={
                 item.locked
                   ? `${item.label}: ${item.premium ? "нужны регистрация и премиум" : "нужна регистрация"}`
@@ -2079,11 +2014,8 @@ export default function Home() {
 
   const showAccessGate = (target: GateSection) => {
     if (gateTimer.current) clearTimeout(gateTimer.current);
-    setRattlingSection(target);
-    gateTimer.current = setTimeout(() => {
-      setRattlingSection(null);
-      setGateSection(target);
-    }, 420);
+    setRattlingSection(null);
+    setGateSection(target);
   };
 
   const navigate = (nextSection: Section) => {

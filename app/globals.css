@@ -1183,7 +1183,6 @@ p,
 }
 
 .dock-item {
-  --dock-scale: 1;
   align-items: center;
   background: transparent;
   border-radius: 20px;
@@ -1194,12 +1193,9 @@ p,
   justify-content: center;
   min-width: 124px;
   position: relative;
-  transform: scale(var(--dock-scale));
-  transform-origin: center bottom;
   transition:
     background-color 140ms ease-out,
-    color 140ms ease-out,
-    transform 140ms cubic-bezier(0.2, 0, 0, 1);
+    color 140ms ease-out;
 }
 
 .dock-item:hover {
@@ -1212,7 +1208,13 @@ p,
 }
 
 .dock-item.is-locked:hover {
+  background: transparent;
   color: var(--text-soft);
+}
+
+.dock-item.is-locked:active {
+  background: transparent;
+  transform: none !important;
 }
 
 .dock-item:first-child:hover {
@@ -1220,7 +1222,7 @@ p,
 }
 
 .dock-item:active {
-  transform: scale(calc(var(--dock-scale) * 0.96));
+  background: var(--surface-soft);
 }
 
 .dock-item > span:not(.dock-icon):not(.access-lock) {
@@ -1263,11 +1265,9 @@ p,
   z-index: 2;
 }
 
-/* Safari can paint transformed chain links outside an overflow-clipped child
-   of a scaled flex item. Clip the decorative layer itself to the Dock button. */
 .dock-item > .access-lock {
-  -webkit-clip-path: inset(0 round 19px);
-  clip-path: inset(0 round 19px);
+  -webkit-clip-path: none;
+  clip-path: none;
 }
 
 .access-lock.is-premium {
@@ -1278,11 +1278,11 @@ p,
    nodes. This keeps its geometry identical in Safari, Chromium and Firefox. */
 .access-chain-art {
   height: 66px;
-  left: 50%;
+  left: calc(50% - 54px);
   overflow: visible;
   position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  top: calc(50% - 33px);
+  transform: none;
   width: 108px;
 }
 
@@ -1302,6 +1302,8 @@ p,
 
 .access-lock.is-compact .access-chain-art {
   height: 48px;
+  left: calc(50% - 40px);
+  top: calc(50% - 24px);
   width: 80px;
 }
 
@@ -1312,6 +1314,8 @@ p,
 
 .topbar .access-chain-art {
   height: 38px;
+  left: calc(50% - 31px);
+  top: calc(50% - 19px);
   width: 62px;
 }
 
@@ -1381,9 +1385,6 @@ p,
 }
 
 .chain-padlock {
-  --lock-away-x: 0px;
-  --lock-away-y: 0px;
-  --lock-tilt: 0deg;
   background: var(--surface-raised);
   border-radius: 5px;
   box-shadow:
@@ -1391,18 +1392,10 @@ p,
     0 4px 9px color-mix(in srgb, var(--bg) 32%, transparent);
   color: var(--accent);
   height: 18px;
-  left: 50%;
+  left: calc(50% - 9px);
   position: absolute;
-  top: 50%;
-  transform:
-    translate3d(
-      calc(-50% + var(--lock-away-x)),
-      calc(-50% + var(--lock-away-y)),
-      0
-    )
-    rotate(var(--lock-tilt));
-  transition: transform 150ms cubic-bezier(0.2, 0, 0, 1);
-  will-change: transform;
+  top: calc(50% - 9px);
+  transform: none;
   width: 18px;
 }
 
@@ -1473,8 +1466,10 @@ p,
 
 .access-lock.is-compact .chain-padlock {
   border-radius: 4px;
-  height: 13px;
-  width: 13px;
+  height: 14px;
+  left: calc(50% - 7px);
+  top: calc(50% - 7px);
+  width: 14px;
 }
 
 .access-lock.is-compact .chain-padlock::before {
@@ -1501,11 +1496,11 @@ p,
 
 .is-rattling .chain-strand,
 .is-rattling .access-chain-art {
-  animation: chain-rattle 420ms cubic-bezier(0.2, 0, 0, 1);
+  animation: none;
 }
 
 .is-rattling .chain-padlock {
-  animation: lock-rattle 420ms cubic-bezier(0.2, 0, 0, 1);
+  animation: none;
 }
 
 @keyframes chain-rattle {
@@ -10251,8 +10246,8 @@ footer {
   }
 
   .dock-item .access-lock {
-    -webkit-clip-path: inset(0 round 16px);
-    clip-path: inset(0 round 16px);
+    -webkit-clip-path: none;
+    clip-path: none;
     transform: none;
   }
 
