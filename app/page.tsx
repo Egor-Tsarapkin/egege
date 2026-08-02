@@ -326,6 +326,7 @@ function Dock({
   isPremium: boolean;
   rattlingSection: GateSection | null;
 }) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const items: Array<{
     section: Section;
     label: string;
@@ -363,12 +364,27 @@ function Dock({
   ];
 
   return (
-    <div className="dock" aria-label="Основная навигация">
+    <div
+      className="dock"
+      aria-label="Основная навигация"
+      onPointerLeave={() => setHoveredIndex(null)}
+    >
       {items.map((item, index) => (
         <button
           className={`dock-item ${item.locked ? "is-locked" : ""} ${
             rattlingSection === item.section ? "is-rattling" : ""
+          } ${hoveredIndex === index ? "is-dock-hovered" : ""} ${
+            hoveredIndex !== null && Math.abs(hoveredIndex - index) === 1
+              ? "is-dock-neighbor"
+              : ""
+          } ${
+            hoveredIndex !== null && Math.abs(hoveredIndex - index) === 2
+              ? "is-dock-far-neighbor"
+              : ""
           }`}
+          onPointerEnter={(event) => {
+            if (event.pointerType !== "touch") setHoveredIndex(index);
+          }}
           onClick={() => navigate(item.section)}
           aria-label={
             item.locked
@@ -2015,7 +2031,14 @@ export default function Home() {
   const showAccessGate = (target: GateSection) => {
     if (gateTimer.current) clearTimeout(gateTimer.current);
     setRattlingSection(null);
-    setGateSection(target);
+    window.requestAnimationFrame(() => {
+      setRattlingSection(target);
+      gateTimer.current = window.setTimeout(() => {
+        setRattlingSection(null);
+        setGateSection(target);
+        gateTimer.current = null;
+      }, 460);
+    });
   };
 
   const navigate = (nextSection: Section) => {
