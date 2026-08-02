@@ -1223,7 +1223,7 @@ p,
   transform: scale(calc(var(--dock-scale) * 0.96));
 }
 
-.dock-item > span:not(.dock-icon) {
+.dock-item > span:not(.dock-icon):not(.access-lock) {
   font-size: 12px;
   font-weight: 520;
   margin-top: 9px;
@@ -1249,12 +1249,25 @@ p,
 }
 
 .access-lock {
+  border-radius: inherit;
+  box-sizing: border-box;
   color: var(--muted);
-  inset: 0;
+  contain: paint;
+  height: 100%;
+  left: 0;
   overflow: hidden;
   pointer-events: none;
   position: absolute;
+  top: 0;
+  width: 100%;
   z-index: 2;
+}
+
+/* Safari can paint transformed chain links outside an overflow-clipped child
+   of a scaled flex item. Clip the decorative layer itself to the Dock button. */
+.dock-item > .access-lock {
+  -webkit-clip-path: inset(0 round 19px);
+  clip-path: inset(0 round 19px);
 }
 
 .access-lock.is-premium {
@@ -10183,7 +10196,7 @@ footer {
     transform: scale(0.96) !important;
   }
 
-  .dock-item > span:not(.dock-icon) {
+  .dock-item > span:not(.dock-icon):not(.access-lock) {
     font-size: 11px;
     letter-spacing: -0.02em;
     margin-top: 7px;
@@ -10194,7 +10207,8 @@ footer {
   }
 
   .dock-item .access-lock {
-    inset: 0;
+    -webkit-clip-path: inset(0 round 16px);
+    clip-path: inset(0 round 16px);
     transform: none;
   }
 
