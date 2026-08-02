@@ -1274,6 +1274,47 @@ p,
   color: var(--muted);
 }
 
+/* The chain is one fixed SVG drawing instead of a row of transformed DOM
+   nodes. This keeps its geometry identical in Safari, Chromium and Firefox. */
+.access-chain-art {
+  height: 66px;
+  left: 50%;
+  overflow: visible;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 108px;
+}
+
+.access-chain-row path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.access-chain-row rect {
+  fill: var(--surface-raised);
+  stroke: currentColor;
+  stroke-width: 2.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.access-lock.is-compact .access-chain-art {
+  height: 48px;
+  width: 80px;
+}
+
+.dock-item .access-chain-art {
+  height: 48px;
+  width: 80px;
+}
+
+.topbar .access-chain-art {
+  height: 38px;
+  width: 62px;
+}
+
 .chain-strand {
   align-items: center;
   display: flex;
@@ -1456,7 +1497,8 @@ p,
   width: 1.5px;
 }
 
-.is-rattling .chain-strand {
+.is-rattling .chain-strand,
+.is-rattling .access-chain-art {
   animation: chain-rattle 420ms cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -17824,6 +17866,7 @@ footer {
   }
 
   .is-rattling .chain-strand,
+  .is-rattling .access-chain-art,
   .is-rattling .chain-padlock,
   .gate-overlay,
   .gate-modal,

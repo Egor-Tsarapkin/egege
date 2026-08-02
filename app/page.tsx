@@ -294,14 +294,22 @@ function AccessBadge({
       className={`access-lock ${premium ? "is-premium" : ""} ${compact ? "is-compact" : ""}`}
       aria-hidden="true"
     >
-      <span className="chain-strand chain-forward">
-        {Array.from({ length: 5 }, (_, index) => <i key={index} />)}
-      </span>
-      {premium && (
-        <span className="chain-strand chain-reverse">
-          {Array.from({ length: 5 }, (_, index) => <i key={index} />)}
-        </span>
-      )}
+      <svg className="access-chain-art" viewBox="0 0 120 72" focusable="false">
+        <g className="access-chain-row access-chain-forward" transform="rotate(22 60 36)">
+          <path d="M13 36H107" />
+          {[20, 36, 52, 68, 84, 100].map((x) => (
+            <rect x={x - 7} y="30" width="14" height="12" rx="6" key={x} />
+          ))}
+        </g>
+        {premium && (
+          <g className="access-chain-row access-chain-reverse" transform="rotate(-22 60 36)">
+            <path d="M13 36H107" />
+            {[20, 36, 52, 68, 84, 100].map((x) => (
+              <rect x={x - 7} y="30" width="14" height="12" rx="6" key={x} />
+            ))}
+          </g>
+        )}
+      </svg>
       <span className="chain-padlock"><i /></span>
     </span>
   );
