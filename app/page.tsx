@@ -2,7 +2,10 @@
 
 import type { Provider, User } from "@supabase/supabase-js";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import {
+  getSupabaseAuthRedirectUrl,
+  getSupabaseBrowserClient,
+} from "@/lib/supabase-browser";
 import type { ExamAttempt } from "./exam-station";
 import OnboardingTour from "./onboarding-tour";
 
@@ -2205,11 +2208,12 @@ export default function Home() {
   const loginWithProvider = async (provider: Provider, label: string) => {
     const client = await getSupabaseBrowserClient();
     if (!client) return "Нужно подключить Supabase — инструкция уже подготовлена.";
+    const redirectTo = await getSupabaseAuthRedirectUrl();
 
     const { error } = await client.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/`,
+        redirectTo,
       },
     });
     return error ? `Не удалось войти: ${error.message}` : `Открываем ${label}…`;
