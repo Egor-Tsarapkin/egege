@@ -18,7 +18,7 @@ type GateSection = Extract<Section, "theory" | "game" | "trainer" | "dashboard">
 type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
 type Theme = "dark" | "light";
-type SiteStyle = "base" | "animals" | "antique" | "garage";
+type SiteStyle = "base" | "animals" | "antique" | "what" | "brainstorm";
 type Accent =
   | "lime"
   | "blue"
@@ -38,6 +38,7 @@ type Preferences = {
   reaction: Reaction;
   siteStyle: SiteStyle;
   styleMotion: boolean;
+  taskGifs: boolean;
 };
 
 type Task = {
@@ -179,6 +180,7 @@ const defaultPreferences: Preferences = {
   reaction: "xp",
   siteStyle: "base",
   styleMotion: true,
+  taskGifs: true,
 };
 const accentOptions: Array<{ value: Accent; label: string }> = [
   { value: "lime", label: "Лаймовый сорбет" },
@@ -195,37 +197,42 @@ const accentOptions: Array<{ value: Accent; label: string }> = [
 const siteStyleOptions: Array<{ value: SiteStyle; label: string; note: string }> = [
   { value: "base", label: "Базовый", note: "Чистый интерфейс" },
   { value: "animals", label: "Зверинец", note: "Кошки и собаки" },
-  { value: "antique", label: "Античный разум", note: "Статуи и мозги" },
-  { value: "garage", label: "Гараж", note: "Винтажные машины" },
+  { value: "antique", label: "Древний Рим", note: "Античные образы" },
+  { value: "what", label: "Что это?", note: "Странные формы" },
+  { value: "brainstorm", label: "Мозговой штурм", note: "Идеи и движение" },
 ];
 
-type StyleAsset = { animated: string; poster: string; className: string };
-const homeStyleAssets: Record<Exclude<SiteStyle, "base">, StyleAsset[]> = {
-  animals: [
-    { animated: "/style-assets/animal-cat-sassy.webp", poster: "/style-assets/animal-cat-sassy-poster.webp", className: "is-one" },
-    { animated: "/style-assets/animal-cat-box.webp", poster: "/style-assets/animal-cat-box-poster.webp", className: "is-two" },
-    { animated: "/style-assets/animal-dog.webp", poster: "/style-assets/animal-dog-poster.webp", className: "is-three" },
-    { animated: "/style-assets/animal-cat-jump.webp", poster: "/style-assets/animal-cat-jump-poster.webp", className: "is-four" },
-  ],
-  antique: [
-    { animated: "/style-assets/antique-statue.webp", poster: "/style-assets/antique-statue-poster.webp", className: "is-one" },
-    { animated: "/style-assets/antique-line.webp", poster: "/style-assets/antique-line-poster.webp", className: "is-two" },
-    { animated: "/style-assets/antique-pop.gif", poster: "/style-assets/antique-pop-poster.webp", className: "is-three" },
-    { animated: "/style-assets/antique-brain.gif", poster: "/style-assets/antique-brain-poster.webp", className: "is-four" },
-  ],
-  garage: [
-    { animated: "/style-assets/garage-arrow.gif", poster: "/style-assets/garage-arrow-poster.webp", className: "is-one" },
-    { animated: "/style-assets/garage-master.webp", poster: "/style-assets/garage-master-poster.webp", className: "is-two" },
-    { animated: "/style-assets/garage-speed.gif", poster: "/style-assets/garage-speed-poster.webp", className: "is-three" },
-    { animated: "/style-assets/garage-time.webp", poster: "/style-assets/garage-time-poster.webp", className: "is-four" },
-  ],
+type StyleAsset = { animated: string; poster: string; className?: string };
+const styleAssetCounts: Record<Exclude<SiteStyle, "base">, Record<Theme, number>> = {
+  animals: { light: 8, dark: 9 },
+  antique: { light: 4, dark: 4 },
+  what: { light: 7, dark: 7 },
+  brainstorm: { light: 4, dark: 4 },
 };
+
+function getStyleAssets(style: Exclude<SiteStyle, "base">, theme: Theme): StyleAsset[] {
+  return Array.from({ length: styleAssetCounts[style][theme] }, (_, index) => {
+    const stem = `/theme-gifs/${style}-${theme}-${String(index + 1).padStart(2, "0")}`;
+    return { animated: `${stem}.webp`, poster: `${stem}-poster.webp` };
+  });
+}
+
+function pickRandomAssets(assets: StyleAsset[], count = 4): StyleAsset[] {
+  const shuffled = [...assets];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+  return shuffled.slice(0, count);
+}
 
 function HomeStyleScene({
   style,
+  theme,
   motion,
 }: {
   style: SiteStyle;
+  theme: Theme;
   motion: boolean;
 }) {
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -247,14 +254,19 @@ function HomeStyleScene({
     };
   }, []);
 
+  const selectedAssets = useMemo(
+    () => style === "base" ? [] : pickRandomAssets(getStyleAssets(style, theme)),
+    [style, theme],
+  );
+
   if (style === "base" || !canShowScene) return null;
   const shouldAnimate = motion && !reduceMotion;
 
   return (
     <div className={`home-style-scene home-style-scene-${style}`} aria-hidden="true">
       <div className="home-style-atmosphere" />
-      {homeStyleAssets[style].map((asset) => (
-        <figure className={`home-style-asset ${asset.className}`} key={asset.animated}>
+      {selectedAssets.map((asset, index) => (
+        <figure className={`home-style-asset is-${["one", "two", "three", "four"][index]}`} key={asset.animated}>
           <img
             alt=""
             decoding="async"
@@ -265,6 +277,34 @@ function HomeStyleScene({
         </figure>
       ))}
     </div>
+  );
+}
+
+function TaskStyleDecoration({ asset, motion }: { asset: StyleAsset; motion: boolean }) {
+  const [visible, setVisible] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    const screenMedia = window.matchMedia("(min-width: 1440px)");
+    const motionMedia = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => {
+      setVisible(screenMedia.matches);
+      setReduceMotion(motionMedia.matches);
+    };
+    sync();
+    screenMedia.addEventListener("change", sync);
+    motionMedia.addEventListener("change", sync);
+    return () => {
+      screenMedia.removeEventListener("change", sync);
+      motionMedia.removeEventListener("change", sync);
+    };
+  }, []);
+
+  if (!visible) return null;
+  return (
+    <figure className="task-style-decoration" aria-hidden="true">
+      <img alt="" decoding="async" loading="lazy" src={motion && !reduceMotion ? asset.animated : asset.poster} />
+    </figure>
   );
 }
 
@@ -777,6 +817,17 @@ function ProfileMenu({
               {preferences.styleMotion ? "Включено" : "Выключено"}
             </button>
           </div>
+          <div className="style-motion-control">
+            <span>GIF в базе заданий</span>
+            <button
+              className={preferences.taskGifs ? "is-active" : ""}
+              onClick={() => onPreference({ taskGifs: !preferences.taskGifs })}
+              aria-pressed={preferences.taskGifs}
+            >
+              <i />
+              {preferences.taskGifs ? "Включены" : "Выключены"}
+            </button>
+          </div>
         </fieldset>
 
         <fieldset className="settings-block">
@@ -859,11 +910,15 @@ function TaskItem({
   completed,
   onCorrect,
   onIncorrect,
+  decoration,
+  decorationMotion,
 }: {
   task: Task;
   completed: boolean;
   onCorrect: (taskId: string, event: React.MouseEvent<HTMLButtonElement>) => Promise<void>;
   onIncorrect: () => void;
+  decoration?: StyleAsset;
+  decorationMotion?: boolean;
 }) {
   const [answerOpen, setAnswerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -946,6 +1001,7 @@ function TaskItem({
           </div>
         </div>
       </div>
+      {decoration && <TaskStyleDecoration asset={decoration} motion={decorationMotion !== false} />}
     </article>
   );
 }
@@ -1795,6 +1851,17 @@ function StudentCabinet({
                 {preferences.styleMotion ? "Включено" : "Выключено"}
               </button>
             </div>
+            <div className="style-motion-control">
+              <span>GIF в базе заданий</span>
+              <button
+                className={preferences.taskGifs ? "is-active" : ""}
+                onClick={() => onPreference({ taskGifs: !preferences.taskGifs })}
+                aria-pressed={preferences.taskGifs}
+              >
+                <i />
+                {preferences.taskGifs ? "Включены" : "Выключены"}
+              </button>
+            </div>
           </fieldset>
           <fieldset className="settings-block">
             <legend>Анимация ответа</legend>
@@ -1889,6 +1956,12 @@ export default function Home() {
   const taskIndex = useRef<Record<string, number>>({});
   const analyticsSession = useRef("");
   const isRegistered = Boolean(user);
+  const taskStyleAssets = useMemo(
+    () => section === "tasks" && preferences.siteStyle !== "base"
+      ? pickRandomAssets(getStyleAssets(preferences.siteStyle, preferences.theme))
+      : [],
+    [section, preferences.siteStyle, preferences.theme],
+  );
 
   useEffect(() => {
     const syncSectionFromUrl = () => setSection(sectionFromPath(window.location.pathname));
@@ -1932,6 +2005,7 @@ export default function Home() {
           ? (saved.siteStyle as SiteStyle)
           : defaultPreferences.siteStyle,
         styleMotion: saved.styleMotion !== false,
+        taskGifs: saved.taskGifs !== false,
       };
     } catch {
       // Invalid local preferences are replaced with safe defaults.
@@ -2545,7 +2619,11 @@ export default function Home() {
   if (section === "home") {
     return (
       <main className={`home home-style-${preferences.siteStyle}`}>
-        <HomeStyleScene style={preferences.siteStyle} motion={preferences.styleMotion} />
+        <HomeStyleScene
+          style={preferences.siteStyle}
+          theme={preferences.theme}
+          motion={preferences.styleMotion}
+        />
         <ProfileMenu
           open={profileOpen}
           user={user}
@@ -2622,7 +2700,7 @@ export default function Home() {
       <div
         className={`tasks-shell ${section === "trainer" ? "is-trainer-shell" : ""} ${
           section === "theory" ? "is-theory-shell" : ""
-        }`}
+        } ${section === "tasks" && preferences.taskGifs && taskStyleAssets.length ? "has-task-style" : ""}`}
       >
         {section === "tasks" && (
           <>
@@ -2706,10 +2784,14 @@ export default function Home() {
                   <p>База откроется через несколько секунд.</p>
                 </div>
               ) : filteredTasks.length ? (
-                filteredTasks.map((task) => (
+                filteredTasks.map((task, index) => (
                   <TaskItem
                     task={task}
                     completed={completedTaskIds.has(task.id)}
+                    decoration={preferences.taskGifs && taskStyleAssets.length
+                      ? taskStyleAssets[index % taskStyleAssets.length]
+                      : undefined}
+                    decorationMotion={preferences.styleMotion}
                     key={task.id}
                     {...taskProps}
                   />
