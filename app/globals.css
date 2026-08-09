@@ -2535,7 +2535,7 @@ p,
 .site-style-options {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   margin-top: 12px;
 }
 
@@ -2546,7 +2546,7 @@ p,
   border-radius: 18px;
   display: flex;
   gap: 12px;
-  min-height: 82px;
+  min-height: 78px;
   min-width: 0;
   padding: 11px;
   text-align: left;
@@ -2578,7 +2578,7 @@ p,
   font-size: 13px;
   line-height: 1.1;
   max-width: 100%;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
 }
 
 .site-style-options small {
