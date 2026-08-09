@@ -1041,6 +1041,36 @@
   --accent-ink: #30271d;
 }
 
+[data-accent="orange"] {
+  --accent: #ffbd79;
+  --accent-hover: #ffcc99;
+  --accent-ink: #382313;
+}
+
+[data-accent="purple"] {
+  --accent: #c8a7ff;
+  --accent-hover: #d6beff;
+  --accent-ink: #281d3b;
+}
+
+[data-accent="cyan"] {
+  --accent: #82ddd8;
+  --accent-hover: #a0e8e4;
+  --accent-ink: #123130;
+}
+
+[data-accent="yellow"] {
+  --accent: #f4dc67;
+  --accent-hover: #f8e98c;
+  --accent-ink: #302a10;
+}
+
+[data-accent="mint"] {
+  --accent: #8fe1ae;
+  --accent-hover: #aaeabd;
+  --accent-ink: #153121;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -2359,11 +2389,44 @@ p,
   box-shadow: 0 0 0 2px var(--text);
 }
 
+.accent-swatch::after {
+  background: var(--text);
+  border-radius: 8px;
+  bottom: calc(100% + 9px);
+  color: var(--bg);
+  content: attr(data-label);
+  font-size: 11px;
+  font-weight: 650;
+  left: 50%;
+  line-height: 1;
+  opacity: 0;
+  padding: 7px 9px;
+  pointer-events: none;
+  position: absolute;
+  transform: translate(-50%, 4px);
+  transition: opacity 130ms ease-out, transform 130ms ease-out;
+  visibility: hidden;
+  white-space: nowrap;
+  z-index: 12;
+}
+
+.accent-swatch:hover::after,
+.accent-swatch:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
+
 .accent-lime { background: #d7f57c; }
 .accent-blue { background: #a9c9ff; }
 .accent-red { background: #ffaba2; }
 .accent-pink { background: #f3afd6; }
 .accent-beige { background: #dec6a4; }
+.accent-orange { background: #ffbd79; }
+.accent-purple { background: #c8a7ff; }
+.accent-cyan { background: #82ddd8; }
+.accent-yellow { background: #f4dc67; }
+.accent-mint { background: #8fe1ae; }
 
 .reaction-options {
   display: grid;

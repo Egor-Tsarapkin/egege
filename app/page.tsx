@@ -18,7 +18,17 @@ type GateSection = Extract<Section, "theory" | "game" | "trainer" | "dashboard">
 type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
 type Theme = "dark" | "light";
-type Accent = "lime" | "blue" | "red" | "pink" | "beige";
+type Accent =
+  | "lime"
+  | "blue"
+  | "red"
+  | "pink"
+  | "beige"
+  | "orange"
+  | "purple"
+  | "cyan"
+  | "yellow"
+  | "mint";
 type Reaction = "xp" | "hearts" | "letters" | "fire" | "fireworks" | "random";
 type BurstReaction = Exclude<Reaction, "random">;
 type Preferences = {
@@ -165,6 +175,18 @@ const defaultPreferences: Preferences = {
   accent: "lime",
   reaction: "xp",
 };
+const accentOptions: Array<{ value: Accent; label: string }> = [
+  { value: "lime", label: "Лаймовый сорбет" },
+  { value: "blue", label: "Утреннее небо" },
+  { value: "red", label: "Спелая вишня" },
+  { value: "pink", label: "Розовый пион" },
+  { value: "beige", label: "Тёплый песок" },
+  { value: "orange", label: "Мандариновый рассвет" },
+  { value: "purple", label: "Лавандовый туман" },
+  { value: "cyan", label: "Ледяная лагуна" },
+  { value: "yellow", label: "Банановое солнце" },
+  { value: "mint", label: "Мятный сад" },
+];
 
 const burstParticles = [
   { x: -92, y: -104, r: -18, label: "XP" },
@@ -553,13 +575,6 @@ function ProfileMenu({
     user?.user_metadata?.name ??
     "Ученик EGEGE";
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "Е";
-  const accents: Array<{ value: Accent; label: string }> = [
-    { value: "lime", label: "Лайм" },
-    { value: "blue", label: "Синий" },
-    { value: "red", label: "Красный" },
-    { value: "pink", label: "Розовый" },
-    { value: "beige", label: "Бежевый" },
-  ];
   const reactions: Array<{ value: Reaction; label: string; icon: string }> = [
     { value: "xp", label: "XP", icon: "+10" },
     { value: "hearts", label: "Сердца", icon: "♥" },
@@ -642,7 +657,7 @@ function ProfileMenu({
         <fieldset className="settings-block">
           <legend>Акцент</legend>
           <div className="accent-options">
-            {accents.map((accent) => (
+            {accentOptions.map((accent) => (
               <button
                 className={`accent-swatch accent-${accent.value} ${
                   preferences.accent === accent.value ? "is-selected" : ""
@@ -650,6 +665,7 @@ function ProfileMenu({
                 onClick={() => onPreference({ accent: accent.value })}
                 aria-label={accent.label}
                 title={accent.label}
+                data-label={accent.label}
                 key={accent.value}
               />
             ))}
@@ -1635,12 +1651,14 @@ function StudentCabinet({
           <fieldset className="settings-block">
             <legend>Акцентный цвет</legend>
             <div className="accent-options">
-              {(["lime", "blue", "red", "pink", "beige"] as Accent[]).map((accent) => (
+              {accentOptions.map((accent) => (
                 <button
-                  className={`accent-swatch accent-${accent} ${preferences.accent === accent ? "is-selected" : ""}`}
-                  onClick={() => onPreference({ accent })}
-                  aria-label={`Выбрать цвет ${accent}`}
-                  key={accent}
+                  className={`accent-swatch accent-${accent.value} ${preferences.accent === accent.value ? "is-selected" : ""}`}
+                  onClick={() => onPreference({ accent: accent.value })}
+                  aria-label={accent.label}
+                  title={accent.label}
+                  data-label={accent.label}
+                  key={accent.value}
                 />
               ))}
             </div>
