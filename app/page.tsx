@@ -18,6 +18,7 @@ type GateSection = Extract<Section, "theory" | "game" | "trainer" | "dashboard">
 type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
 type Theme = "dark" | "light";
+type SiteStyle = "base" | "animals" | "antique" | "garage";
 type Accent =
   | "lime"
   | "blue"
@@ -35,6 +36,8 @@ type Preferences = {
   theme: Theme;
   accent: Accent;
   reaction: Reaction;
+  siteStyle: SiteStyle;
+  styleMotion: boolean;
 };
 
 type Task = {
@@ -174,6 +177,8 @@ const defaultPreferences: Preferences = {
   theme: "dark",
   accent: "lime",
   reaction: "xp",
+  siteStyle: "base",
+  styleMotion: true,
 };
 const accentOptions: Array<{ value: Accent; label: string }> = [
   { value: "lime", label: "Лаймовый сорбет" },
@@ -187,6 +192,72 @@ const accentOptions: Array<{ value: Accent; label: string }> = [
   { value: "yellow", label: "Банановое солнце" },
   { value: "mint", label: "Мятный сад" },
 ];
+const siteStyleOptions: Array<{ value: SiteStyle; label: string; note: string }> = [
+  { value: "base", label: "Базовый", note: "Чистый интерфейс" },
+  { value: "animals", label: "Зверинец", note: "Кошки и собаки" },
+  { value: "antique", label: "Античный разум", note: "Статуи и мозги" },
+  { value: "garage", label: "Гараж", note: "Винтажные машины" },
+];
+
+type StyleAsset = { animated: string; poster: string; className: string };
+const homeStyleAssets: Record<Exclude<SiteStyle, "base">, StyleAsset[]> = {
+  animals: [
+    { animated: "/style-assets/animal-cat-sassy.webp", poster: "/style-assets/animal-cat-sassy-poster.webp", className: "is-one" },
+    { animated: "/style-assets/animal-cat-box.webp", poster: "/style-assets/animal-cat-box-poster.webp", className: "is-two" },
+    { animated: "/style-assets/animal-dog.webp", poster: "/style-assets/animal-dog-poster.webp", className: "is-three" },
+    { animated: "/style-assets/animal-cat-jump.webp", poster: "/style-assets/animal-cat-jump-poster.webp", className: "is-four" },
+  ],
+  antique: [
+    { animated: "/style-assets/antique-statue.webp", poster: "/style-assets/antique-statue-poster.webp", className: "is-one" },
+    { animated: "/style-assets/antique-line.webp", poster: "/style-assets/antique-line-poster.webp", className: "is-two" },
+    { animated: "/style-assets/antique-pop.gif", poster: "/style-assets/antique-pop-poster.webp", className: "is-three" },
+    { animated: "/style-assets/antique-brain.gif", poster: "/style-assets/antique-brain-poster.webp", className: "is-four" },
+  ],
+  garage: [
+    { animated: "/style-assets/garage-arrow.gif", poster: "/style-assets/garage-arrow-poster.webp", className: "is-one" },
+    { animated: "/style-assets/garage-master.webp", poster: "/style-assets/garage-master-poster.webp", className: "is-two" },
+    { animated: "/style-assets/garage-speed.gif", poster: "/style-assets/garage-speed-poster.webp", className: "is-three" },
+    { animated: "/style-assets/garage-time.webp", poster: "/style-assets/garage-time-poster.webp", className: "is-four" },
+  ],
+};
+
+function HomeStyleScene({
+  style,
+  motion,
+}: {
+  style: SiteStyle;
+  motion: boolean;
+}) {
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduceMotion(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  if (style === "base") return null;
+  const shouldAnimate = motion && !reduceMotion;
+
+  return (
+    <div className={`home-style-scene home-style-scene-${style}`} aria-hidden="true">
+      <div className="home-style-atmosphere" />
+      {homeStyleAssets[style].map((asset) => (
+        <figure className={`home-style-asset ${asset.className}`} key={asset.animated}>
+          <img
+            alt=""
+            decoding="async"
+            draggable={false}
+            loading="lazy"
+            src={shouldAnimate ? asset.animated : asset.poster}
+          />
+        </figure>
+      ))}
+    </div>
+  );
+}
 
 const burstParticles = [
   { x: -92, y: -104, r: -18, label: "XP" },
@@ -669,6 +740,33 @@ function ProfileMenu({
                 key={accent.value}
               />
             ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="settings-block">
+          <legend>Стиль главной</legend>
+          <div className="site-style-options">
+            {siteStyleOptions.map((style) => (
+              <button
+                className={preferences.siteStyle === style.value ? "is-selected" : ""}
+                onClick={() => onPreference({ siteStyle: style.value })}
+                key={style.value}
+              >
+                <i className={`style-preview style-preview-${style.value}`} aria-hidden="true" />
+                <span><strong>{style.label}</strong><small>{style.note}</small></span>
+              </button>
+            ))}
+          </div>
+          <div className="style-motion-control">
+            <span>Движение</span>
+            <button
+              className={preferences.styleMotion ? "is-active" : ""}
+              onClick={() => onPreference({ styleMotion: !preferences.styleMotion })}
+              aria-pressed={preferences.styleMotion}
+            >
+              <i />
+              {preferences.styleMotion ? "Включено" : "Выключено"}
+            </button>
           </div>
         </fieldset>
 
@@ -1664,6 +1762,32 @@ function StudentCabinet({
             </div>
           </fieldset>
           <fieldset className="settings-block">
+            <legend>Стиль главной</legend>
+            <div className="site-style-options cabinet-style-options">
+              {siteStyleOptions.map((style) => (
+                <button
+                  className={preferences.siteStyle === style.value ? "is-selected" : ""}
+                  onClick={() => onPreference({ siteStyle: style.value })}
+                  key={style.value}
+                >
+                  <i className={`style-preview style-preview-${style.value}`} aria-hidden="true" />
+                  <span><strong>{style.label}</strong><small>{style.note}</small></span>
+                </button>
+              ))}
+            </div>
+            <div className="style-motion-control">
+              <span>Движение</span>
+              <button
+                className={preferences.styleMotion ? "is-active" : ""}
+                onClick={() => onPreference({ styleMotion: !preferences.styleMotion })}
+                aria-pressed={preferences.styleMotion}
+              >
+                <i />
+                {preferences.styleMotion ? "Включено" : "Выключено"}
+              </button>
+            </div>
+          </fieldset>
+          <fieldset className="settings-block">
             <legend>Анимация ответа</legend>
             <div className="reaction-options cabinet-reaction-options">
               {reactions.map((reaction) => (
@@ -1787,7 +1911,7 @@ export default function Home() {
         Partial<Preferences>;
       restored = {
         theme: saved.theme === "light" ? "light" : "dark",
-        accent: ["lime", "blue", "red", "pink", "beige"].includes(saved.accent ?? "")
+        accent: accentOptions.some((accent) => accent.value === saved.accent)
           ? (saved.accent as Accent)
           : defaultPreferences.accent,
         reaction: ["xp", "hearts", "letters", "fire", "fireworks", "random"].includes(
@@ -1795,6 +1919,10 @@ export default function Home() {
         )
           ? (saved.reaction as Reaction)
           : defaultPreferences.reaction,
+        siteStyle: siteStyleOptions.some((style) => style.value === saved.siteStyle)
+          ? (saved.siteStyle as SiteStyle)
+          : defaultPreferences.siteStyle,
+        styleMotion: saved.styleMotion !== false,
       };
     } catch {
       // Invalid local preferences are replaced with safe defaults.
@@ -2407,7 +2535,8 @@ export default function Home() {
 
   if (section === "home") {
     return (
-      <main className="home">
+      <main className={`home home-style-${preferences.siteStyle}`}>
+        <HomeStyleScene style={preferences.siteStyle} motion={preferences.styleMotion} />
         <ProfileMenu
           open={profileOpen}
           user={user}
