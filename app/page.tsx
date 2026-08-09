@@ -1974,7 +1974,12 @@ export default function Home() {
   const taskIndex = useRef<Record<string, number>>({});
   const analyticsSession = useRef("");
   const isRegistered = Boolean(user);
-  const taskStyleAssets = section === "tasks" ? databaseStyleAssets : [];
+  const taskStyleAssets = useMemo(
+    () => section === "tasks"
+      ? pickRandomAssets(databaseStyleAssets, databaseStyleAssets.length)
+      : [],
+    [section],
+  );
 
   useEffect(() => {
     const syncSectionFromUrl = () => setSection(sectionFromPath(window.location.pathname));
@@ -2711,7 +2716,7 @@ export default function Home() {
       />
 
       <div
-        className={`tasks-shell ${section === "trainer" ? "is-trainer-shell" : ""} ${
+        className={`tasks-shell ${section === "tasks" ? "is-task-shell" : ""} ${section === "trainer" ? "is-trainer-shell" : ""} ${
           section === "theory" ? "is-theory-shell" : ""
         } ${section === "tasks" && preferences.taskGifs && taskStyleAssets.length ? "has-task-style" : ""} ${
           section === "tasks" && !type ? "is-task-empty" : ""

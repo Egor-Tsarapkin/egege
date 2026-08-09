@@ -2570,12 +2570,15 @@ p,
   display: grid;
   gap: 5px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .site-style-options strong {
   color: var(--text);
   font-size: 13px;
   line-height: 1.1;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .site-style-options small {
@@ -3219,7 +3222,7 @@ p,
 .task-style-decoration img {
   display: block;
   height: auto;
-  max-height: 230px;
+  max-height: 380px;
   object-fit: contain;
   width: 100%;
 }
@@ -10631,21 +10634,14 @@ footer {
 }
 
 @media (min-width: 1240px) {
-  .tasks-shell.has-task-style {
+  .tasks-shell.is-task-shell {
     max-width: 1500px;
   }
 
   .tasks-shell.has-task-style > .tasks-heading,
   .tasks-shell.has-task-style > .results-bar,
   .tasks-shell.has-task-style > .task-list {
-    width: calc(100% - 270px);
-  }
-
-  .tasks-shell.has-task-style > .filter-panel {
-    margin-left: auto;
-    margin-right: auto;
-    max-width: 1080px;
-    width: 100%;
+    width: calc(100% - 380px);
   }
 
   .tasks-shell.has-task-style.is-task-empty > .task-list {
@@ -10658,14 +10654,14 @@ footer {
 
   .tasks-shell.has-task-style .task-style-decoration {
     display: block;
-    left: calc(100% + 52px);
-    top: 78px;
-    transform: rotate(3deg);
-    width: 205px;
+    left: calc(100% + 35px);
+    top: 50%;
+    transform: translateY(-50%) rotate(2deg);
+    width: 340px;
   }
 
   .tasks-shell.has-task-style .task-item:nth-child(even) .task-style-decoration {
-    transform: rotate(-4deg);
+    transform: translateY(-50%) rotate(-3deg);
   }
 }
 
