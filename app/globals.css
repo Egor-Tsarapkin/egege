@@ -10564,15 +10564,12 @@ footer {
     padding: 20px 16px;
   }
 
-  .home-content {
-    width: 100%;
+  .home-style-scene {
+    display: none;
   }
 
-  .home-style-asset {
-    opacity: 0.58;
-    right: 12px;
-    top: 78px;
-    width: 74px;
+  .home-content {
+    width: 100%;
   }
 
   .home h1 {
@@ -10768,6 +10765,12 @@ footer {
     transform: translateY(18px);
     transform-origin: bottom center;
     width: 100%;
+  }
+
+  .topbar:has(.profile-panel.is-open) {
+    pointer-events: auto;
+    transform: none;
+    will-change: auto;
   }
 
   .profile-panel.is-open {

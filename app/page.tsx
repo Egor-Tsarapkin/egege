@@ -229,16 +229,25 @@ function HomeStyleScene({
   motion: boolean;
 }) {
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [canShowScene, setCanShowScene] = useState(false);
 
   useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReduceMotion(media.matches);
+    const motionMedia = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const screenMedia = window.matchMedia("(min-width: 601px)");
+    const sync = () => {
+      setReduceMotion(motionMedia.matches);
+      setCanShowScene(screenMedia.matches);
+    };
     sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
+    motionMedia.addEventListener("change", sync);
+    screenMedia.addEventListener("change", sync);
+    return () => {
+      motionMedia.removeEventListener("change", sync);
+      screenMedia.removeEventListener("change", sync);
+    };
   }, []);
 
-  if (style === "base") return null;
+  if (style === "base" || !canShowScene) return null;
   const shouldAnimate = motion && !reduceMotion;
 
   return (
