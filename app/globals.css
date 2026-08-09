@@ -2099,7 +2099,7 @@ p,
     transform 190ms cubic-bezier(0.2, 0, 0, 1),
     visibility 190ms;
   visibility: hidden;
-  width: min(330px, calc(100vw - 28px));
+  width: min(390px, calc(100vw - 28px));
 }
 
 .profile-panel.is-open {
@@ -2534,7 +2534,7 @@ p,
 
 .site-style-options {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 12px;
 }
@@ -2543,12 +2543,12 @@ p,
   align-items: center;
   background: var(--surface-raised);
   border: 1px solid transparent;
-  border-radius: 14px;
+  border-radius: 18px;
   display: flex;
-  gap: 9px;
-  min-height: 58px;
+  gap: 12px;
+  min-height: 82px;
   min-width: 0;
-  padding: 8px;
+  padding: 11px;
   text-align: left;
   transition: background-color 140ms ease-out, border-color 140ms ease-out, transform 140ms ease-out;
 }
@@ -2566,33 +2566,41 @@ p,
   border-color: color-mix(in srgb, var(--accent) 58%, transparent);
 }
 
-.site-style-options button > span {
+.site-style-options .style-option-copy {
   display: grid;
-  gap: 3px;
+  gap: 5px;
   min-width: 0;
 }
 
 .site-style-options strong {
   color: var(--text);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.1;
 }
 
 .site-style-options small {
   color: var(--muted);
-  font-size: 9px;
-  line-height: 1.15;
+  font-size: 10px;
+  line-height: 1.25;
 }
 
 .style-preview {
-  border-radius: 10px;
+  background: var(--surface);
+  border-radius: 14px;
   box-shadow: inset 0 0 0 1px var(--line);
   display: block;
-  flex: 0 0 30px;
-  height: 30px;
+  flex: 0 0 52px;
+  height: 52px;
   overflow: hidden;
   position: relative;
-  width: 30px;
+  width: 52px;
+}
+
+.style-preview img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }
 
 .style-preview-base {
@@ -2644,16 +2652,15 @@ p,
 }
 
 .style-motion-control > button {
-  align-items: center;
-  background: var(--surface-raised);
+  background: var(--surface-soft);
   border-radius: 999px;
-  color: var(--muted);
-  display: flex;
-  font-size: 10px;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 11px 0 7px;
-  transition: background-color 140ms ease-out, color 140ms ease-out, transform 140ms ease-out;
+  box-shadow: inset 0 0 0 1px var(--line);
+  height: 28px;
+  min-height: 28px;
+  padding: 3px;
+  position: relative;
+  transition: background-color 180ms cubic-bezier(0.2, 0, 0, 1), transform 100ms ease-out;
+  width: 48px;
 }
 
 .style-motion-control > button:active {
@@ -2661,26 +2668,37 @@ p,
 }
 
 .style-motion-control button > i {
-  background: var(--dim);
+  background: #fff;
   border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
   display: block;
-  height: 20px;
-  transition: background-color 140ms ease-out;
-  width: 20px;
+  height: 22px;
+  transform: translateX(0);
+  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1);
+  width: 22px;
 }
 
 .style-motion-control > button.is-active {
-  background: var(--accent-wash);
-  color: var(--text);
+  background: var(--accent);
+  box-shadow: none;
 }
 
 .style-motion-control > button.is-active i {
-  background: var(--accent);
-  box-shadow: inset 0 0 0 5px color-mix(in srgb, var(--accent-ink) 18%, transparent);
+  transform: translateX(20px);
+}
+
+.switch-status {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 .cabinet-style-options > button {
-  min-height: 64px;
+  min-height: 88px;
 }
 
 .reaction-options {
@@ -10612,16 +10630,26 @@ footer {
   }
 }
 
-@media (min-width: 1440px) {
+@media (min-width: 1240px) {
   .tasks-shell.has-task-style {
-    max-width: 1440px;
+    max-width: 1500px;
   }
 
   .tasks-shell.has-task-style > .tasks-heading,
-  .tasks-shell.has-task-style > .filter-panel,
   .tasks-shell.has-task-style > .results-bar,
   .tasks-shell.has-task-style > .task-list {
-    width: calc(100% - 320px);
+    width: calc(100% - 270px);
+  }
+
+  .tasks-shell.has-task-style > .filter-panel {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1080px;
+    width: 100%;
+  }
+
+  .tasks-shell.has-task-style.is-task-empty > .task-list {
+    width: 100%;
   }
 
   .tasks-shell.has-task-style .task-item {
@@ -10630,10 +10658,10 @@ footer {
 
   .tasks-shell.has-task-style .task-style-decoration {
     display: block;
-    left: calc(100% + 70px);
+    left: calc(100% + 52px);
     top: 78px;
     transform: rotate(3deg);
-    width: 220px;
+    width: 205px;
   }
 
   .tasks-shell.has-task-style .task-item:nth-child(even) .task-style-decoration {

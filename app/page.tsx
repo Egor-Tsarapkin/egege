@@ -195,11 +195,11 @@ const accentOptions: Array<{ value: Accent; label: string }> = [
   { value: "mint", label: "Мятный сад" },
 ];
 const siteStyleOptions: Array<{ value: SiteStyle; label: string; note: string }> = [
-  { value: "base", label: "Базовый", note: "Чистый интерфейс" },
-  { value: "animals", label: "Зверинец", note: "Кошки и собаки" },
-  { value: "antique", label: "Древний Рим", note: "Античные образы" },
-  { value: "what", label: "Что это?", note: "Странные формы" },
-  { value: "brainstorm", label: "Мозговой штурм", note: "Идеи и движение" },
+  { value: "base", label: "Base", note: "Чистый интерфейс" },
+  { value: "animals", label: "Animals", note: "Кошки и собаки" },
+  { value: "antique", label: "Ancient Rome", note: "Античные образы" },
+  { value: "what", label: "What", note: "Странные формы" },
+  { value: "brainstorm", label: "Brainstorm", note: "Идеи и движение" },
 ];
 
 type StyleAsset = { animated: string; poster: string; className?: string };
@@ -209,6 +209,10 @@ const styleAssetCounts: Record<Exclude<SiteStyle, "base">, Record<Theme, number>
   what: { light: 7, dark: 7 },
   brainstorm: { light: 4, dark: 4 },
 };
+const databaseStyleAssets: StyleAsset[] = Array.from({ length: 59 }, (_, index) => {
+  const stem = `/database-gifs/db-${String(index + 1).padStart(2, "0")}`;
+  return { animated: `${stem}.webp`, poster: `${stem}-poster.webp` };
+});
 
 function getStyleAssets(style: Exclude<SiteStyle, "base">, theme: Theme): StyleAsset[] {
   return Array.from({ length: styleAssetCounts[style][theme] }, (_, index) => {
@@ -285,7 +289,7 @@ function TaskStyleDecoration({ asset, motion }: { asset: StyleAsset; motion: boo
   const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
-    const screenMedia = window.matchMedia("(min-width: 1440px)");
+    const screenMedia = window.matchMedia("(min-width: 1240px)");
     const motionMedia = window.matchMedia("(prefers-reduced-motion: reduce)");
     const sync = () => {
       setVisible(screenMedia.matches);
@@ -801,8 +805,13 @@ function ProfileMenu({
                 onClick={() => onPreference({ siteStyle: style.value })}
                 key={style.value}
               >
-                <i className={`style-preview style-preview-${style.value}`} aria-hidden="true" />
-                <span><strong>{style.label}</strong><small>{style.note}</small></span>
+                <span className={`style-preview style-preview-${style.value}`} aria-hidden="true">
+                  {style.value !== "base" && (() => {
+                    const preview = getStyleAssets(style.value, preferences.theme)[0];
+                    return <img alt="" src={preferences.styleMotion ? preview.animated : preview.poster} />;
+                  })()}
+                </span>
+                <span className="style-option-copy"><strong>{style.label}</strong><small>{style.note}</small></span>
               </button>
             ))}
           </div>
@@ -812,9 +821,10 @@ function ProfileMenu({
               className={preferences.styleMotion ? "is-active" : ""}
               onClick={() => onPreference({ styleMotion: !preferences.styleMotion })}
               aria-pressed={preferences.styleMotion}
+              aria-label="Движение декоративных GIF"
             >
               <i />
-              {preferences.styleMotion ? "Включено" : "Выключено"}
+              <span className="switch-status">{preferences.styleMotion ? "Включено" : "Выключено"}</span>
             </button>
           </div>
           <div className="style-motion-control">
@@ -823,9 +833,10 @@ function ProfileMenu({
               className={preferences.taskGifs ? "is-active" : ""}
               onClick={() => onPreference({ taskGifs: !preferences.taskGifs })}
               aria-pressed={preferences.taskGifs}
+              aria-label="GIF в базе заданий"
             >
               <i />
-              {preferences.taskGifs ? "Включены" : "Выключены"}
+              <span className="switch-status">{preferences.taskGifs ? "Включены" : "Выключены"}</span>
             </button>
           </div>
         </fieldset>
@@ -1835,8 +1846,13 @@ function StudentCabinet({
                   onClick={() => onPreference({ siteStyle: style.value })}
                   key={style.value}
                 >
-                  <i className={`style-preview style-preview-${style.value}`} aria-hidden="true" />
-                  <span><strong>{style.label}</strong><small>{style.note}</small></span>
+                  <span className={`style-preview style-preview-${style.value}`} aria-hidden="true">
+                    {style.value !== "base" && (() => {
+                      const preview = getStyleAssets(style.value, preferences.theme)[0];
+                      return <img alt="" src={preferences.styleMotion ? preview.animated : preview.poster} />;
+                    })()}
+                  </span>
+                  <span className="style-option-copy"><strong>{style.label}</strong><small>{style.note}</small></span>
                 </button>
               ))}
             </div>
@@ -1846,9 +1862,10 @@ function StudentCabinet({
                 className={preferences.styleMotion ? "is-active" : ""}
                 onClick={() => onPreference({ styleMotion: !preferences.styleMotion })}
                 aria-pressed={preferences.styleMotion}
+                aria-label="Движение декоративных GIF"
               >
                 <i />
-                {preferences.styleMotion ? "Включено" : "Выключено"}
+                <span className="switch-status">{preferences.styleMotion ? "Включено" : "Выключено"}</span>
               </button>
             </div>
             <div className="style-motion-control">
@@ -1857,9 +1874,10 @@ function StudentCabinet({
                 className={preferences.taskGifs ? "is-active" : ""}
                 onClick={() => onPreference({ taskGifs: !preferences.taskGifs })}
                 aria-pressed={preferences.taskGifs}
+                aria-label="GIF в базе заданий"
               >
                 <i />
-                {preferences.taskGifs ? "Включены" : "Выключены"}
+                <span className="switch-status">{preferences.taskGifs ? "Включены" : "Выключены"}</span>
               </button>
             </div>
           </fieldset>
@@ -1956,12 +1974,7 @@ export default function Home() {
   const taskIndex = useRef<Record<string, number>>({});
   const analyticsSession = useRef("");
   const isRegistered = Boolean(user);
-  const taskStyleAssets = useMemo(
-    () => section === "tasks" && preferences.siteStyle !== "base"
-      ? pickRandomAssets(getStyleAssets(preferences.siteStyle, preferences.theme))
-      : [],
-    [section, preferences.siteStyle, preferences.theme],
-  );
+  const taskStyleAssets = section === "tasks" ? databaseStyleAssets : [];
 
   useEffect(() => {
     const syncSectionFromUrl = () => setSection(sectionFromPath(window.location.pathname));
@@ -2700,7 +2713,9 @@ export default function Home() {
       <div
         className={`tasks-shell ${section === "trainer" ? "is-trainer-shell" : ""} ${
           section === "theory" ? "is-theory-shell" : ""
-        } ${section === "tasks" && preferences.taskGifs && taskStyleAssets.length ? "has-task-style" : ""}`}
+        } ${section === "tasks" && preferences.taskGifs && taskStyleAssets.length ? "has-task-style" : ""} ${
+          section === "tasks" && !type ? "is-task-empty" : ""
+        }`}
       >
         {section === "tasks" && (
           <>
