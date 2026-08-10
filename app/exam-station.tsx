@@ -14,6 +14,7 @@ import {
   Save,
   X,
 } from "lucide-react";
+import { taskDownloadHref, taskDownloadName } from "@/lib/task-download";
 
 type ExamTask = {
   id: string;
@@ -634,7 +635,12 @@ export default function ExamStation({
       <footer className={`exam-footer ${currentTask?.files.length ? "has-files" : "no-files"}`}>
         <div className="exam-files">
           {currentTask?.files.map((file) => (
-            <a href={file.href} download={file.name} key={file.href}>
+            <a
+              href={taskDownloadHref(file.href, file.name, currentTask.id)}
+              download={taskDownloadName(file.name, currentTask.id)}
+              title={file.name}
+              key={file.href}
+            >
               <Download aria-hidden="true" />
               <span>{file.name}</span>
             </a>

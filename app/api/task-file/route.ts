@@ -22,6 +22,11 @@ function cacheHeaders(contentType: string, downloadName: string) {
   };
 }
 
+function copyHeader(source: Headers, target: Record<string, string>, name: string) {
+  const value = source.get(name);
+  if (value) target[name] = value;
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const sourceValue = url.searchParams.get("source");
@@ -56,10 +61,12 @@ export async function GET(request: Request) {
     }
   }
 
+  const requestRange = request.headers.get("range");
   const sourceResponse = await fetch(source, {
     headers: {
       Accept: "*/*",
       "User-Agent": "EGEGE educational file mirror",
+      ...(requestRange ? { Range: requestRange } : {}),
     },
   });
   if (!sourceResponse.ok || !sourceResponse.body) {
@@ -67,16 +74,17 @@ export async function GET(request: Request) {
   }
 
   const contentType = sourceResponse.headers.get("content-type") ?? "application/octet-stream";
-  const bytes = await sourceResponse.arrayBuffer();
+  const headers = cacheHeaders(contentType, requestedName);
+  copyHeader(sourceResponse.headers, headers, "content-length");
+  copyHeader(sourceResponse.headers, headers, "content-range");
+  copyHeader(sourceResponse.headers, headers, "accept-ranges");
+  copyHeader(sourceResponse.headers, headers, "etag");
+  copyHeader(sourceResponse.headers, headers, "last-modified");
 
-  if (bucket) {
-    await bucket.put(key, bytes, {
-      httpMetadata: { contentType },
-      customMetadata: { source: source.href, originalName: requestedName },
-    });
-  }
-
-  return new Response(bytes, {
-    headers: cacheHeaders(contentType, requestedName),
+  // Start sending immediately. Waiting for the complete remote file here made
+  // large task attachments look broken and caused request timeouts.
+  return new Response(sourceResponse.body, {
+    status: sourceResponse.status,
+    headers,
   });
 }

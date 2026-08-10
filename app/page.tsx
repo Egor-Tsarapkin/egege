@@ -6,6 +6,7 @@ import {
   getSupabaseAuthRedirectUrl,
   getSupabaseBrowserClient,
 } from "@/lib/supabase-browser";
+import { taskDownloadHref, taskDownloadName } from "@/lib/task-download";
 import type { ExamAttempt } from "./exam-station";
 
 const TypingTrainer = lazy(() => import("./typing-trainer"));
@@ -973,8 +974,9 @@ function TaskItem({
           {task.files.map((file) => (
             <a
               className="file-link"
-              href={file.href}
-              download={file.name}
+              href={taskDownloadHref(file.href, file.name, task.id)}
+              download={taskDownloadName(file.name, task.id)}
+              title={file.name}
               key={file.href}
             >
               <span className="file-icon" aria-hidden="true">↓</span>
