@@ -363,7 +363,6 @@ export default function EgeMarathon({
     setSwipeOffset(0);
     setSwipeSettling(false);
     setPendingQuestionIndex(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const completeNavigation = (index: number) => {
@@ -543,8 +542,10 @@ export default function EgeMarathon({
             className="marathon-quiz-progress"
             aria-label={`Вопрос ${questionIndex + 1} из ${queue.length}, правильных ответов ${queueCorrectCount}`}
           >
-            <i><b style={{ width: `${((questionIndex + 1) / queue.length) * 100}%` }} /></i>
-            <i><b className="is-correct" style={{ width: `${(queueCorrectCount / queue.length) * 100}%` }} /></i>
+            <i>
+              <b className="is-position" style={{ width: `${((questionIndex + 1) / queue.length) * 100}%` }} />
+              <b className="is-correct" style={{ width: `${(queueCorrectCount / queue.length) * 100}%` }} />
+            </i>
           </div>
           <button className={favorites.has(activeQuestion.id) ? "is-favorite" : ""} onClick={() => toggleFavorite(activeQuestion.id)} aria-label="Добавить в избранное"><Star /></button>
         </header>
@@ -753,14 +754,8 @@ export default function EgeMarathon({
         </div>
       </section>
 
-      <button
-        className="marathon-primary"
-        onClick={() => answeredCount ? setShowResumePrompt(true) : start(allQuestionIds)}
-      >
-        <Timer /><span><strong>Марафон</strong><small>{correctCount} правильных ответов</small></span><ChevronRight />
-      </button>
-
       <div className="marathon-menu-grid">
+        <button className="is-marathon" onClick={() => answeredCount ? setShowResumePrompt(true) : start(allQuestionIds)}><span><Timer /></span><div><strong>Марафон</strong><small>{correctCount} правильных ответов</small></div><ChevronRight /></button>
         <button onClick={() => setScreen("themes")}><span><BookOpen /></span><div><strong>Темы</strong><small>{topics.length} подборки</small></div><ChevronRight /></button>
         <button onClick={() => setScreen("errors")}><span><AlertTriangle /></span><div><strong>Ошибки</strong><small>{errorIds.length} для повтора</small></div><ChevronRight /></button>
         <button onClick={() => setScreen("favorites")}><span><Star /></span><div><strong>Избранное</strong><small>{favorites.size} сохранено</small></div><ChevronRight /></button>

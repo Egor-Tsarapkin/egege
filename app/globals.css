@@ -365,8 +365,7 @@
 }
 
 .marathon-quiz-header > .marathon-quiz-progress {
-  display: grid;
-  gap: 5px;
+  display: block;
   padding: 0 4px;
 }
 
@@ -374,21 +373,68 @@
   background: #101110;
   border-radius: 999px;
   display: block;
-  height: 4px;
+  height: 7px;
   overflow: hidden;
+  position: relative;
   width: 100%;
 }
 
 .marathon-quiz-progress b {
-  background: #747772;
   border-radius: inherit;
   display: block;
   height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
   transition: width 360ms cubic-bezier(.22, .72, .16, 1);
+}
+
+.marathon-quiz-progress b.is-position {
+  background: #747772;
+  z-index: 1;
 }
 
 .marathon-quiz-progress b.is-correct {
   background: var(--accent);
+  z-index: 2;
+}
+
+.ege-marathon.is-quiz {
+  display: flex;
+  flex-direction: column;
+}
+
+.ege-marathon.is-quiz .marathon-question-stage {
+  flex: 1;
+  min-height: 0;
+}
+
+.ege-marathon.is-quiz .marathon-question-track {
+  align-items: stretch;
+  height: 100%;
+}
+
+.ege-marathon.is-quiz .marathon-question-card,
+.ege-marathon.is-quiz .marathon-question-preview {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+}
+
+.ege-marathon.is-quiz .marathon-question-card::-webkit-scrollbar,
+.ege-marathon.is-quiz .marathon-question-preview::-webkit-scrollbar {
+  display: none;
+}
+
+.marathon-menu-grid > button.is-marathon {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
+}
+
+.marathon-menu-grid > button.is-marathon > span {
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
 .marathon-question-strip {
@@ -11888,7 +11934,9 @@ footer {
   }
 
   .ege-marathon.is-quiz {
-    min-height: calc(100dvh - max(16px, env(safe-area-inset-top)));
+    height: calc(100dvh - max(16px, env(safe-area-inset-top)));
+    min-height: 0;
+    overflow: hidden;
   }
 
   .marathon-quiz-header {
