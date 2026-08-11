@@ -445,7 +445,6 @@
 
 .marathon-code:has(pre) { overflow-x: auto; overscroll-behavior-inline: contain; }
 .marathon-code-bar { min-width: 290px; position: sticky; left: 0; }
-.marathon-code > small { color: #7f8795; display: block; font-size: 9px; min-width: 290px; padding: 0 20px 13px; }
 .tok-keyword { color: #c792ea; }
 .tok-built-in { color: #82aaff; }
 .tok-string { color: #c3e88d; }
@@ -11864,23 +11863,22 @@ footer {
 
   .marathon-question-strip {
     gap: 6px;
-    grid-template-columns: repeat(5, minmax(0, 38px));
-    grid-template-rows: 36px;
-    margin: 0 0 5px;
-    max-height: 36px;
-    overflow: hidden;
+    grid-template-columns: repeat(5, 42px);
+    grid-template-rows: 42px;
+    margin: 0 0 8px;
+    overflow: visible;
     padding: 0;
   }
 
   .marathon-question-strip > span,
   .marathon-question-strip > button {
-    border-radius: 9px;
-    height: 36px;
-    width: 100%;
+    border-radius: 11px;
+    height: 42px;
+    width: 42px;
   }
 
   .marathon-question-strip .is-empty-slot {
-    height: 36px;
+    height: 42px;
   }
 
   .marathon-question-card,

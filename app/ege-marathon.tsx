@@ -13,7 +13,6 @@ import {
   Moon,
   Plus,
   Settings,
-  Sparkles,
   Star,
   Sun,
   Timer,
@@ -251,7 +250,6 @@ function PythonCode({ code, scale, onScale }: { code: string; scale: number; onS
         else if (["print", "int", "float", "str", "bool", "range", "len"].includes(token)) className = "tok-built-in";
         return <span className={className} key={`${index}-${token}`}>{token}</span>;
       })}</code></pre>
-      <small>Код можно прокручивать пальцем</small>
     </section>
   );
 }
@@ -285,10 +283,10 @@ export default function EgeMarathon({
   const [codeScale, setCodeScale] = useState(0.9);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [swipeSettling, setSwipeSettling] = useState(false);
+  const [pendingQuestionIndex, setPendingQuestionIndex] = useState<number | null>(null);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const [visibleQuestionRadius, setVisibleQuestionRadius] = useState(2);
   const questionStage = useRef<HTMLDivElement | null>(null);
-  const resumePromptInitialized = useRef(false);
   const swipeGesture = useRef<{
     pointerId: number;
     startX: number;
@@ -326,12 +324,6 @@ export default function EgeMarathon({
   }, [local, ready]);
 
   useEffect(() => {
-    if (!ready || resumePromptInitialized.current) return;
-    resumePromptInitialized.current = true;
-    setShowResumePrompt(Object.keys(local.answered).length > 0);
-  }, [local.answered, ready]);
-
-  useEffect(() => {
     const syncVisibleQuestions = () => {
       if (window.matchMedia("(max-width: 700px)").matches) {
         setVisibleQuestionRadius(2);
@@ -366,13 +358,24 @@ export default function EgeMarathon({
     setCodeScale(0.9);
     setSwipeOffset(0);
     setSwipeSettling(false);
+    setPendingQuestionIndex(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const goTo = (index: number) => {
-    if (autoTimer.current) window.clearTimeout(autoTimer.current);
-    setQuestionIndex(Math.max(0, Math.min(queue.length - 1, index)));
+  const completeNavigation = (index: number) => {
+    setQuestionIndex(index);
     resetAnswer();
+  };
+
+  const goTo = (index: number) => {
+    const targetIndex = Math.max(0, Math.min(queue.length - 1, index));
+    if (targetIndex === questionIndex || swipeSettling) return;
+    if (autoTimer.current) window.clearTimeout(autoTimer.current);
+    const width = questionStage.current?.clientWidth ?? window.innerWidth;
+    setPendingQuestionIndex(targetIndex);
+    setSwipeSettling(true);
+    setSwipeOffset((targetIndex > questionIndex ? -1 : 1) * (width + 16));
+    window.setTimeout(() => completeNavigation(targetIndex), 230);
   };
 
   const next = () => {
@@ -474,7 +477,9 @@ export default function EgeMarathon({
     if (wantsNext || wantsPrevious) {
       const width = questionStage.current?.clientWidth ?? window.innerWidth;
       setSwipeOffset((wantsNext ? -1 : 1) * (width + 16));
-      window.setTimeout(() => wantsNext ? next() : previous(), 230);
+      const targetIndex = questionIndex + (wantsNext ? 1 : -1);
+      setPendingQuestionIndex(targetIndex);
+      window.setTimeout(() => completeNavigation(targetIndex), 230);
       return;
     }
 
@@ -489,8 +494,14 @@ export default function EgeMarathon({
       { length: visibleQuestionRadius * 2 + 1 },
       (_, slot) => questionIndex + slot - visibleQuestionRadius,
     );
-    const previousQuestion = byId.get(queue[questionIndex - 1]);
-    const nextQuestion = byId.get(queue[questionIndex + 1]);
+    const previousPreviewIndex = pendingQuestionIndex !== null && pendingQuestionIndex < questionIndex
+      ? pendingQuestionIndex
+      : questionIndex - 1;
+    const nextPreviewIndex = pendingQuestionIndex !== null && pendingQuestionIndex > questionIndex
+      ? pendingQuestionIndex
+      : questionIndex + 1;
+    const previousQuestion = byId.get(queue[previousPreviewIndex]);
+    const nextQuestion = byId.get(queue[nextPreviewIndex]);
     const renderQuestionPreview = (question: MarathonQuestion | undefined, fallback: string) => {
       if (!question) {
         return <aside className="marathon-question-preview" aria-hidden="true"><strong>{fallback}</strong></aside>;
@@ -554,7 +565,7 @@ export default function EgeMarathon({
             {renderQuestionPreview(previousQuestion, "Начало марафона")}
 
             <article className="marathon-question-card">
-          <div className="marathon-question-meta"><span>{activeQuestion.topic}</span><small>Свайпните, чтобы листать</small></div>
+          <div className="marathon-question-meta"><span>{activeQuestion.topic}</span></div>
           <h2>{activeQuestion.prompt}</h2>
           {activeQuestion.code && <PythonCode code={activeQuestion.code} scale={codeScale} onScale={setCodeScale} />}
           <div className="marathon-options">
@@ -577,7 +588,7 @@ export default function EgeMarathon({
           {graded && selected !== activeQuestion.correct && (
             <aside className="marathon-explanation">
               <span><BookOpen /></span>
-              <div><strong>Почему этот ответ верный</strong><p>{activeQuestion.explanation}</p></div>
+              <div><strong>Комментарий</strong><p>{activeQuestion.explanation}</p></div>
             </aside>
           )}
 
@@ -724,13 +735,15 @@ export default function EgeMarathon({
         </div>
       </section>
 
-      <button className="marathon-primary" onClick={() => start(allQuestionIds, resumeIndex)}>
-        <Timer /><span><strong>{answeredCount ? "Продолжить марафон" : "Начать марафон"}</strong><small>{correctCount} правильных ответов</small></span><ChevronRight />
+      <button
+        className="marathon-primary"
+        onClick={() => answeredCount ? setShowResumePrompt(true) : start(allQuestionIds)}
+      >
+        <Timer /><span><strong>Марафон</strong><small>{correctCount} правильных ответов</small></span><ChevronRight />
       </button>
 
       <div className="marathon-menu-grid">
         <button onClick={() => setScreen("themes")}><span><BookOpen /></span><div><strong>Темы</strong><small>{topics.length} подборки</small></div><ChevronRight /></button>
-        <button onClick={() => start(allQuestionIds)}><span><Sparkles /></span><div><strong>Все вопросы</strong><small>ЕГЭ + Python</small></div><ChevronRight /></button>
         <button onClick={() => setScreen("errors")}><span><AlertTriangle /></span><div><strong>Ошибки</strong><small>{errorIds.length} для повтора</small></div><ChevronRight /></button>
         <button onClick={() => setScreen("favorites")}><span><Star /></span><div><strong>Избранное</strong><small>{favorites.size} сохранено</small></div><ChevronRight /></button>
       </div>
