@@ -13,6 +13,7 @@ const TypingTrainer = lazy(() => import("./typing-trainer"));
 const TheorySpace = lazy(() => import("./theory-space"));
 const ExamStation = lazy(() => import("./exam-station"));
 const AdminDashboard = lazy(() => import("./admin-dashboard"));
+const EgeMarathon = lazy(() => import("./ege-marathon"));
 
 type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "dashboard" | "profile" | "admin";
 type GateSection = Extract<Section, "theory" | "game" | "trainer" | "dashboard">;
@@ -495,7 +496,7 @@ function Dock({
     },
     {
       section: "game",
-      label: "Игра",
+      label: "EGE-марафон",
       icon: <GameIcon />,
       locked: !isRegistered,
     },
@@ -585,7 +586,7 @@ function AppHeader({
       locked: !isRegistered || !isPremium,
       premium: true,
     },
-    { section: "game", label: "Игра", locked: !isRegistered },
+    { section: "game", label: "EGE-марафон", locked: !isRegistered },
     { section: "trainer", label: "Тренажёр", locked: !isRegistered },
     { section: "dashboard", label: "Дашборд", locked: !isRegistered },
   ];
@@ -1230,10 +1231,10 @@ function AccessGateModal({
   const copy = {
     game: {
       eyebrow: "Бесплатно после регистрации",
-      title: "Учитесь через игру",
+      title: "Пройдите EGE-марафон",
       description:
-        "Короткие уровни с кодом, отступами и блоками. Прогресс будет сохраняться между устройствами.",
-      features: ["Уровни по 2–4 минуты", "На компьютере и телефоне"],
+        "Вопросы ЕГЭ и Python по темам, работа над ошибками и избранное в одном режиме.",
+      features: ["Вопросы по темам", "На компьютере и телефоне"],
     },
     dashboard: {
       eyebrow: "Бесплатно после регистрации",
@@ -2672,7 +2673,7 @@ export default function Home() {
           {isPremium
             ? "Премиум активен · теория открыта"
             : isRegistered
-              ? "Игра, тренажёр и дашборд открыты · теория в премиуме"
+              ? "EGE-марафон, тренажёр и дашборд открыты · теория в премиуме"
               : "Открытая база · без регистрации"}
         </p>
         {gateSection && (
@@ -2720,6 +2721,7 @@ export default function Home() {
       <div
         className={`tasks-shell ${section === "tasks" ? "is-task-shell" : ""} ${section === "trainer" ? "is-trainer-shell" : ""} ${
           section === "theory" ? "is-theory-shell" : ""
+        } ${section === "game" ? "is-marathon-shell" : ""
         } ${section === "tasks" && preferences.taskGifs && taskStyleAssets.length ? "has-task-style" : ""} ${
           section === "tasks" && !type ? "is-task-empty" : ""
         }`}
@@ -2900,7 +2902,15 @@ export default function Home() {
           </Suspense>
         )}
 
-        {section === "game" && <PremiumPlaceholder section="game" />}
+        {section === "game" && (
+          <Suspense fallback={<div className="marathon-loading"><span>•••</span><p>Готовим марафон</p></div>}>
+            <EgeMarathon
+              theme={preferences.theme}
+              accent={preferences.accent}
+              onThemeChange={(theme) => updatePreferences({ theme })}
+            />
+          </Suspense>
+        )}
 
         {section === "trainer" && user && (
           <Suspense
