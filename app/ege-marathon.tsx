@@ -333,6 +333,10 @@ export default function EgeMarathon({
 
   useEffect(() => {
     const syncVisibleQuestions = () => {
+      if (window.matchMedia("(max-width: 700px)").matches) {
+        setVisibleQuestionRadius(2);
+        return;
+      }
       const availableWidth = Math.min(window.innerWidth - 40, 850);
       const radius = Math.floor(((availableWidth / 48) - 1) / 2);
       setVisibleQuestionRadius(Math.max(2, Math.min(7, radius)));
@@ -487,6 +491,24 @@ export default function EgeMarathon({
     );
     const previousQuestion = byId.get(queue[questionIndex - 1]);
     const nextQuestion = byId.get(queue[questionIndex + 1]);
+    const renderQuestionPreview = (question: MarathonQuestion | undefined, fallback: string) => {
+      if (!question) {
+        return <aside className="marathon-question-preview" aria-hidden="true"><strong>{fallback}</strong></aside>;
+      }
+
+      return (
+        <article className="marathon-question-card marathon-question-preview is-full" aria-hidden="true">
+          <div className="marathon-question-meta"><span>{question.topic}</span><small>Следующий вопрос</small></div>
+          <h2>{question.prompt}</h2>
+          {question.code && <PythonCode code={question.code} scale={0.9} onScale={() => undefined} />}
+          <div className="marathon-options">
+            {question.options.map((option, index) => (
+              <button disabled key={option}><span>{index + 1}</span><code>{option}</code></button>
+            ))}
+          </div>
+        </article>
+      );
+    };
 
     return (
       <section
@@ -529,9 +551,7 @@ export default function EgeMarathon({
             className={`marathon-question-track ${swipeSettling ? "is-settling" : ""}`}
             style={{ "--swipe-x": `${swipeOffset}px` } as React.CSSProperties}
           >
-            <aside className="marathon-question-preview is-previous" aria-hidden="true">
-              {previousQuestion ? <><span>Вопрос {questionIndex}</span><strong>{previousQuestion.prompt}</strong></> : <strong>Начало марафона</strong>}
-            </aside>
+            {renderQuestionPreview(previousQuestion, "Начало марафона")}
 
             <article className="marathon-question-card">
           <div className="marathon-question-meta"><span>{activeQuestion.topic}</span><small>Свайпните, чтобы листать</small></div>
@@ -568,9 +588,7 @@ export default function EgeMarathon({
           )}
             </article>
 
-            <aside className="marathon-question-preview is-next" aria-hidden="true">
-              {nextQuestion ? <><span>Вопрос {questionIndex + 2}</span><strong>{nextQuestion.prompt}</strong></> : <strong>Марафон завершён</strong>}
-            </aside>
+            {renderQuestionPreview(nextQuestion, "Марафон завершён")}
           </div>
         </div>
 
