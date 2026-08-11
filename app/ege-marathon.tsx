@@ -282,8 +282,20 @@ export default function EgeMarathon({
   const [selected, setSelected] = useState<number | null>(null);
   const [graded, setGraded] = useState(false);
   const [flash, setFlash] = useState(0);
-  const [codeScale, setCodeScale] = useState(1);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const [codeScale, setCodeScale] = useState(0.9);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [swipeSettling, setSwipeSettling] = useState(false);
+  const questionStage = useRef<HTMLDivElement | null>(null);
+  const swipeGesture = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    lastX: number;
+    lastTime: number;
+    velocity: number;
+    axis: "x" | "y" | null;
+  } | null>(null);
+  const suppressAnswerUntil = useRef(0);
   const autoTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -327,7 +339,9 @@ export default function EgeMarathon({
   const resetAnswer = () => {
     setSelected(null);
     setGraded(false);
-    setCodeScale(1);
+    setCodeScale(0.9);
+    setSwipeOffset(0);
+    setSwipeSettling(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -362,7 +376,7 @@ export default function EgeMarathon({
   };
 
   const answer = (optionIndex: number) => {
-    if (graded) return;
+    if (graded || performance.now() < suppressAnswerUntil.current) return;
     const isCorrect = optionIndex === activeQuestion.correct;
     setSelected(optionIndex);
     setGraded(true);
@@ -386,28 +400,73 @@ export default function EgeMarathon({
     }));
   };
 
-  const onTouchStart = (event: React.TouchEvent<HTMLElement>) => {
-    if ((event.target as HTMLElement).closest(".marathon-code")) return;
-    const touch = event.touches[0];
-    touchStart.current = { x: touch.clientX, y: touch.clientY };
+  const onSwipeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (swipeSettling || (event.target as HTMLElement).closest(".marathon-code")) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    swipeGesture.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      lastX: event.clientX,
+      lastTime: performance.now(),
+      velocity: 0,
+      axis: null,
+    };
   };
 
-  const onTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
-    if (!touchStart.current) return;
-    const touch = event.changedTouches[0];
-    const deltaX = touch.clientX - touchStart.current.x;
-    const deltaY = touch.clientY - touchStart.current.y;
-    touchStart.current = null;
-    if (Math.abs(deltaX) < 70 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
-    if (deltaX < 0) next();
-    else previous();
+  const onSwipeMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const gesture = swipeGesture.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    if (!gesture.axis && Math.max(Math.abs(deltaX), Math.abs(deltaY)) > 9) {
+      gesture.axis = Math.abs(deltaX) > Math.abs(deltaY) * 1.15 ? "x" : "y";
+    }
+    if (gesture.axis !== "x") return;
+
+    event.preventDefault();
+    const now = performance.now();
+    const elapsed = Math.max(1, now - gesture.lastTime);
+    gesture.velocity = (event.clientX - gesture.lastX) / elapsed;
+    gesture.lastX = event.clientX;
+    gesture.lastTime = now;
+    const atStart = questionIndex === 0 && deltaX > 0;
+    const atEnd = questionIndex === queue.length - 1 && deltaX < 0;
+    setSwipeOffset(atStart || atEnd ? deltaX * 0.24 : deltaX);
+  };
+
+  const finishSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
+    const gesture = swipeGesture.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    swipeGesture.current = null;
+    if (gesture.axis !== "x") return;
+
+    suppressAnswerUntil.current = performance.now() + 320;
+    const projected = swipeOffset + gesture.velocity * 150;
+    const wantsNext = projected < -58 && questionIndex < queue.length - 1;
+    const wantsPrevious = projected > 58 && questionIndex > 0;
+    setSwipeSettling(true);
+
+    if (wantsNext || wantsPrevious) {
+      const width = questionStage.current?.clientWidth ?? window.innerWidth;
+      setSwipeOffset((wantsNext ? -1 : 1) * (width + 16));
+      window.setTimeout(() => wantsNext ? next() : previous(), 230);
+      return;
+    }
+
+    setSwipeOffset(0);
+    window.setTimeout(() => setSwipeSettling(false), 260);
   };
 
   const topics = useMemo(() => [...new Set(QUESTIONS.map((question) => question.topic))], []);
 
   if (screen === "quiz") {
+    const questionSlots = [-2, -1, 0, 1, 2].map((offset) => questionIndex + offset);
+    const previousQuestion = byId.get(queue[questionIndex - 1]);
+    const nextQuestion = byId.get(queue[questionIndex + 1]);
+
     return (
-      <section className={`ege-marathon is-quiz ${isWarmAccent ? "has-warm-accent" : ""}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <section className={`ege-marathon is-quiz ${isWarmAccent ? "has-warm-accent" : ""}`}>
         {flash > 0 && <span className="marathon-success-flash" key={flash} />}
         <header className="marathon-quiz-header">
           <button onClick={() => setScreen("home")} aria-label="Вернуться в марафон"><ArrowLeft /></button>
@@ -416,16 +475,36 @@ export default function EgeMarathon({
         </header>
 
         <nav className="marathon-question-strip" aria-label="Вопросы марафона">
-          {queue.map((id, index) => (
-            <button
-              className={`${index === questionIndex ? "is-current" : ""} ${local.answered[id] ? `is-${local.answered[id]}` : ""}`}
-              onClick={() => goTo(index)}
-              key={id}
-            >{index + 1}</button>
-          ))}
+          {questionSlots.map((index, slot) => {
+            const id = queue[index];
+            if (!id) return <span className="is-empty-slot" aria-hidden="true" key={`empty-${slot}`} />;
+            return (
+              <button
+                className={`${index === questionIndex ? "is-current" : ""} ${local.answered[id] ? `is-${local.answered[id]}` : ""}`}
+                onClick={() => goTo(index)}
+                key={id}
+              >{index + 1}</button>
+            );
+          })}
         </nav>
 
-        <article className="marathon-question-card">
+        <div
+          className="marathon-question-stage"
+          ref={questionStage}
+          onPointerDown={onSwipeStart}
+          onPointerMove={onSwipeMove}
+          onPointerUp={finishSwipe}
+          onPointerCancel={finishSwipe}
+        >
+          <div
+            className={`marathon-question-track ${swipeSettling ? "is-settling" : ""}`}
+            style={{ "--swipe-x": `${swipeOffset}px` } as React.CSSProperties}
+          >
+            <aside className="marathon-question-preview is-previous" aria-hidden="true">
+              {previousQuestion ? <><span>Вопрос {questionIndex}</span><strong>{previousQuestion.prompt}</strong></> : <strong>Начало марафона</strong>}
+            </aside>
+
+            <article className="marathon-question-card">
           <div className="marathon-question-meta"><span>{activeQuestion.topic}</span><small>Свайпните, чтобы листать</small></div>
           <h2>{activeQuestion.prompt}</h2>
           {activeQuestion.code && <PythonCode code={activeQuestion.code} scale={codeScale} onScale={setCodeScale} />}
@@ -458,7 +537,13 @@ export default function EgeMarathon({
               {questionIndex === queue.length - 1 ? "Завершить" : "Следующий вопрос"}<ChevronRight />
             </button>
           )}
-        </article>
+            </article>
+
+            <aside className="marathon-question-preview is-next" aria-hidden="true">
+              {nextQuestion ? <><span>Вопрос {questionIndex + 2}</span><strong>{nextQuestion.prompt}</strong></> : <strong>Марафон завершён</strong>}
+            </aside>
+          </div>
+        </div>
 
         <div className="marathon-quiz-nav">
           <button onClick={previous} disabled={questionIndex === 0}><ChevronLeft /> Назад</button>
