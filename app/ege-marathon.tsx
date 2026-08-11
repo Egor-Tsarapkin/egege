@@ -233,7 +233,7 @@ function PythonCode({ code, scale, onScale }: { code: string; scale: number; onS
   const tokens = code.split(/(#[^\n]*|"[^"\n]*"|'[^'\n]*'|\b\d+(?:\.\d+)?\b|\b[A-Za-z_]\w*\b)/g);
 
   return (
-    <section className="marathon-code" onPointerDown={(event) => event.stopPropagation()}>
+    <section className="marathon-code">
       <div className="marathon-code-bar">
         <span><i /><i /><i /> Python</span>
         <div>
@@ -434,7 +434,7 @@ export default function EgeMarathon({
   };
 
   const onSwipeStart = (event: React.PointerEvent<HTMLElement>) => {
-    if (swipeSettling || (event.target as HTMLElement).closest(".marathon-code")) return;
+    if (swipeSettling) return;
     swipeGesture.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
