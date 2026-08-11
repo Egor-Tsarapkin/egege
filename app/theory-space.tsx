@@ -17,38 +17,56 @@ const planets: Planet[] = [
   {
     id: 0,
     chapter: "Глава 1",
-    title: "Как думает компьютер",
-    description: "Точные инструкции, порядок команд и переменные.",
+    title: "Переменные, типы данных и арифметика",
+    description: "Как хранить данные и выполнять вычисления в Python.",
   },
   {
     id: 1,
     chapter: "Глава 2",
-    title: "Арифметические операции",
-    description: "Как Python считает, делит и соединяет данные.",
+    title: "Условные конструкции",
+    description: "Как программа принимает решения с помощью if и else.",
   },
   {
     id: 2,
     chapter: "Глава 3",
-    title: "Условные конструкции",
-    description: "Как код сравнивает значения и выбирает маршрут.",
+    title: "Цикл while",
+    description: "Повторение команд и знакомство с elif.",
   },
   {
     id: 3,
     chapter: "Глава 4",
-    title: "Строки: индексы и срезы",
-    description: "Как находить символы и вырезать части текста.",
+    title: "Списки",
+    description: "Как хранить и изменять наборы значений.",
   },
   {
     id: 4,
     chapter: "Глава 5",
-    title: "Цикл while",
-    description: "Как повторять команды, пока условие истинно.",
+    title: "Строки",
+    description: "Как работать с текстом, индексами и срезами.",
   },
   {
     id: 5,
     chapter: "Глава 6",
     title: "Цикл for",
     description: "Как перебирать элементы и заранее известные диапазоны.",
+  },
+  {
+    id: 6,
+    chapter: "Глава 7",
+    title: "Свои функции",
+    description: "Как создавать собственные команды и переиспользовать код.",
+  },
+  {
+    id: 7,
+    chapter: "Глава 8",
+    title: "Генераторы списков",
+    description: "Как создавать списки короткой и выразительной записью.",
+  },
+  {
+    id: 8,
+    chapter: "Глава 9",
+    title: "Работа с файлами и импорты",
+    description: "Как читать файлы и подключать готовые инструменты.",
   },
 ];
 
@@ -2437,7 +2455,239 @@ function ForTheoryChapter({
   );
 }
 
+const firstPlanetQuestions = [
+  {
+    question: "Что делает запись x = 5?",
+    answers: [
+      "Сравнивает x и 5",
+      "Связывает имя x со значением 5",
+      "Печатает число 5",
+    ],
+    correct: 1,
+  },
+  {
+    question: "Какой тип данных у значения \"12\"?",
+    answers: ["int", "float", "str"],
+    correct: 2,
+  },
+  {
+    question: "Чему равно 17 // 5?",
+    answers: ["2", "3", "3.4"],
+    correct: 1,
+  },
+  {
+    question: "Чему равно 17 % 5?",
+    answers: ["2", "3", "5"],
+    correct: 0,
+  },
+] as const;
+
+function FirstPlanetVideoChapter({
+  complete,
+  onComplete,
+  onNext,
+}: {
+  complete: boolean;
+  onComplete: () => void;
+  onNext: () => void;
+}) {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [result, setResult] = useState<number | null>(complete ? firstPlanetQuestions.length : null);
+
+  const checkTest = () => {
+    const score = firstPlanetQuestions.reduce(
+      (total, question, index) => total + (answers[index] === question.correct ? 1 : 0),
+      0,
+    );
+    setResult(score);
+    if (score >= 3) onComplete();
+  };
+
+  const passed = complete || (result !== null && result >= 3);
+
+  return (
+    <div className="theory-document theory-video-chapter">
+      <div className="theory-document-title">
+        <p className="eyebrow">Глава 1 · Основы Python</p>
+        <h2>Переменные, типы данных и арифметика</h2>
+        <p>
+          Узнаем, как Python хранит значения, почему тип данных влияет на результат и какими
+          операциями программа выполняет вычисления.
+        </p>
+        <div className="theory-document-meta">
+          <span>Видео + конспект</span>
+          <span>4 вопроса</span>
+          <span>{passed ? "Пройдено" : "Не пройдено"}</span>
+        </div>
+      </div>
+
+      <section className="theory-video-intro">
+        <p className="eyebrow">Перед просмотром</p>
+        <h3>У любой программы есть данные и действия с ними</h3>
+        <p>
+          На этой планете разберём самый первый строительный материал Python. Переменные дают
+          значениям понятные имена, типы данных объясняют компьютеру, что перед ним, а
+          арифметические операции позволяют получать новые значения.
+        </p>
+      </section>
+
+      <section className="theory-video-section" aria-labelledby="first-planet-video-title">
+        <div className="theory-section-heading">
+          <span>01</span>
+          <div>
+            <p className="eyebrow">Видеоразбор</p>
+            <h3 id="first-planet-video-title">Сначала посмотри занятие</h3>
+          </div>
+        </div>
+        <div className="theory-youtube-frame">
+          <iframe
+            src="https://www.youtube.com/embed/AV4PR1iD-fI?si=E5PHaOEYLSBWHWpg"
+            title="Переменные, типы данных и арифметические операции"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
+        </div>
+      </section>
+
+      <section className="theory-video-notes">
+        <div className="theory-section-heading">
+          <span>02</span>
+          <div>
+            <p className="eyebrow">Короткий конспект</p>
+            <h3>Главное из занятия</h3>
+          </div>
+        </div>
+        <div className="theory-note-grid">
+          <article>
+            <small>Переменная</small>
+            <strong>Имя для значения</strong>
+            <code>score = 10</code>
+            <p>Знак <code>=</code> присваивает значение справа имени слева.</p>
+          </article>
+          <article>
+            <small>Типы данных</small>
+            <strong>int, float, str, bool</strong>
+            <code>age = 16</code>
+            <p>Тип определяет, какие действия Python может выполнить со значением.</p>
+          </article>
+          <article>
+            <small>Арифметика</small>
+            <strong>+ − * / // % **</strong>
+            <code>remainder = 17 % 5</code>
+            <p><code>//</code> даёт целую часть, а <code>%</code> — остаток от деления.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="theory-video-transcript">
+        <div className="theory-section-heading">
+          <span>03</span>
+          <div>
+            <p className="eyebrow">Занятие в текстовом виде</p>
+            <h3>Если удобнее читать</h3>
+          </div>
+        </div>
+        <div className="theory-prose">
+          <p>
+            Переменная — это имя, связанное со значением. В записи <code>x = 5</code> Python
+            сначала вычисляет правую часть, а затем связывает результат с именем <code>x</code>.
+            Позже значение можно получить, просто обратившись к этому имени.
+          </p>
+          <p>
+            Значения бывают разных типов. <code>int</code> хранит целые числа, <code>float</code>
+            — дробные, <code>str</code> — текст в кавычках, а <code>bool</code> — логические
+            значения <code>True</code> и <code>False</code>. Число <code>5</code> и строка
+            <code> "5"</code> для компьютера не одно и то же.
+          </p>
+          <p>
+            Для вычислений используются <code>+</code>, <code>-</code>, <code>*</code> и
+            <code> /</code>. Обычное деление всегда возвращает дробное число. Операция
+            <code> //</code> оставляет целую часть результата, <code>%</code> находит остаток, а
+            <code> **</code> возводит число в степень. Скобки позволяют явно задать порядок
+            действий.
+          </p>
+          <p>
+            Тип влияет и на знак <code>+</code>: числа складываются, а строки соединяются. Поэтому
+            перед операцией важно понимать, какие значения находятся в переменных.
+          </p>
+        </div>
+      </section>
+
+      <section className="theory-planet-test" id="first-planet-test">
+        <div className="theory-section-heading">
+          <span>04</span>
+          <div>
+            <p className="eyebrow">Проверка знаний</p>
+            <h3>Ответь минимум на 3 из 4</h3>
+          </div>
+        </div>
+        <div className="theory-test-list">
+          {firstPlanetQuestions.map((item, questionIndex) => (
+            <fieldset key={item.question}>
+              <legend><span>{questionIndex + 1}</span>{item.question}</legend>
+              {item.answers.map((answer, answerIndex) => {
+                const isSelected = answers[questionIndex] === answerIndex;
+                const isCorrect = result !== null && answerIndex === item.correct;
+                const isWrong = result !== null && isSelected && answerIndex !== item.correct;
+                return (
+                  <label
+                    className={`${isSelected ? "is-selected" : ""} ${isCorrect ? "is-correct" : ""} ${isWrong ? "is-wrong" : ""}`}
+                    key={answer}
+                  >
+                    <input
+                      type="radio"
+                      name={`first-planet-question-${questionIndex}`}
+                      checked={isSelected}
+                      disabled={passed}
+                      onChange={() => {
+                        setAnswers((current) => ({ ...current, [questionIndex]: answerIndex }));
+                        setResult(null);
+                      }}
+                    />
+                    <span>{answer}</span>
+                  </label>
+                );
+              })}
+            </fieldset>
+          ))}
+        </div>
+        <div className={`theory-test-result ${passed ? "is-passed" : ""}`}>
+          {result !== null && (
+            <p>{passed ? `Готово: ${result} из 4. Планета пройдена.` : `Пока ${result} из 4. Исправь ответы и попробуй ещё раз.`}</p>
+          )}
+          {passed ? (
+            <button onClick={onNext}>Перейти к следующей планете <span>→</span></button>
+          ) : (
+            <button disabled={Object.keys(answers).length !== firstPlanetQuestions.length} onClick={checkTest}>
+              Проверить ответы
+            </button>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function UnreleasedPlanetChapter({ planet }: { planet: Planet }) {
+  return (
+    <div className="theory-document theory-unreleased-chapter">
+      <div className="theory-document-title">
+        <p className="eyebrow">{planet.chapter}</p>
+        <h2>{planet.title}</h2>
+        <p>{planet.description}</p>
+      </div>
+      <section>
+        <span aria-hidden="true">{String(planet.id + 1).padStart(2, "0")}</span>
+        <h3>Материалы появятся здесь</h3>
+        <p>После монтажа видео в этой главе будут занятие, конспект, текстовая версия и тест.</p>
+      </section>
+    </div>
+  );
+}
+
 export default function TheorySpace({ userId }: TheorySpaceProps) {
+  const firstPlanetStorageKey = `egege-theory-video-planet-1-v1:${userId}`;
   const storageKey = `egege-theory-progress-v2:${userId}`;
   const arithmeticStorageKey = `egege-theory-arithmetic-v1:${userId}`;
   const conditionStorageKey = `egege-theory-conditions-v1:${userId}`;
@@ -2454,6 +2704,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const [chapterReady, setChapterReady] = useState(false);
   const [splitPercent, setSplitPercent] = useState(41);
   const [isResizing, setIsResizing] = useState(false);
+  const [firstPlanetComplete, setFirstPlanetComplete] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
   const [completedArithmeticLessons, setCompletedArithmeticLessons] = useState<
     Set<ArithmeticLessonId>
@@ -2470,6 +2721,16 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const [completedForTheoryLessons, setCompletedForTheoryLessons] = useState<
     Set<ForTheoryLessonId>
   >(() => new Set());
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        setFirstPlanetComplete(window.localStorage.getItem(firstPlanetStorageKey) === "complete");
+      } catch {
+        setFirstPlanetComplete(false);
+      }
+    });
+  }, [firstPlanetStorageKey]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -2617,12 +2878,23 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  const progress = completedLessons.size * 50;
+  const progress = firstPlanetComplete ? 100 : 0;
   const arithmeticProgress = completedArithmeticLessons.size * 25;
   const conditionProgress = completedConditionLessons.size * 20;
   const stringTheoryProgress = completedStringTheoryLessons.size * 25;
   const whileTheoryProgress = completedWhileTheoryLessons.size * 25;
   const forTheoryProgress = completedForTheoryLessons.size * 25;
+  const getPlanetProgress = (planetId: number) => {
+    if (planetId === 0) return progress;
+    if (planetId === 1) return conditionProgress;
+    if (planetId === 2) return whileTheoryProgress;
+    if (planetId === 4) return stringTheoryProgress;
+    if (planetId === 5) return forTheoryProgress;
+    return 0;
+  };
+  const overallProgress = Math.round(
+    planets.reduce((total, planet) => total + getPlanetProgress(planet.id), 0) / planets.length,
+  );
   const activePlanet = useMemo(
     () => planets.find((planet) => planet.id === selectedPlanet) ?? null,
     [selectedPlanet],
@@ -2926,6 +3198,15 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     if (firstIncomplete) goToLesson(firstIncomplete, 360);
   };
 
+  const completeFirstPlanet = () => {
+    setFirstPlanetComplete(true);
+    try {
+      window.localStorage.setItem(firstPlanetStorageKey, "complete");
+    } catch {
+      // Progress remains available for the current session.
+    }
+  };
+
   const openPlanet = (planetId: number) => {
     if (closeChapterTimerRef.current) {
       window.clearTimeout(closeChapterTimerRef.current);
@@ -3064,19 +3345,8 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
             <h1>Космос знаний</h1>
           </div>
           <div className="theory-overall-progress">
-            <span>
-              {Math.round(
-                (
-                  progress +
-                  arithmeticProgress +
-                  conditionProgress +
-                  stringTheoryProgress +
-                  whileTheoryProgress +
-                  forTheoryProgress
-                ) / 6,
-              )}%
-            </span>
-            <small>шесть глав</small>
+            <span>{overallProgress}%</span>
+            <small>девять глав</small>
           </div>
         </header>
 
@@ -3086,33 +3356,15 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
           <span className="route-line route-line-three" aria-hidden="true" />
           <span className="route-line route-line-four" aria-hidden="true" />
           <span className="route-line route-line-five" aria-hidden="true" />
+          <span className="route-line route-line-six" aria-hidden="true" />
+          <span className="route-line route-line-seven" aria-hidden="true" />
+          <span className="route-line route-line-eight" aria-hidden="true" />
 
           {planets.map((planet) => {
-            const planetProgress =
-              planet.id === 0
-                ? progress
-                : planet.id === 1
-                  ? arithmeticProgress
-                  : planet.id === 2
-                    ? conditionProgress
-                    : planet.id === 3
-                      ? stringTheoryProgress
-                      : planet.id === 4
-                        ? whileTheoryProgress
-                        : forTheoryProgress;
+            const planetProgress = getPlanetProgress(planet.id);
             const routePlanet =
               selectedPlanet ??
-              (progress < 100
-                ? 0
-                : arithmeticProgress < 100
-                  ? 1
-                  : conditionProgress < 100
-                    ? 2
-                    : stringTheoryProgress < 100
-                      ? 3
-                      : whileTheoryProgress < 100
-                        ? 4
-                        : 5);
+              (planets.find((item) => getPlanetProgress(item.id) < 100)?.id ?? 8);
             return (
               <button
                 className={`theory-planet theory-planet-${planet.id} ${
@@ -3191,39 +3443,21 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
               <span>
                 <i
                   style={{
-                    width: `${
-                      activePlanet.id === 0
-                        ? progress
-                        : activePlanet.id === 1
-                          ? arithmeticProgress
-                          : activePlanet.id === 2
-                          ? conditionProgress
-                          : activePlanet.id === 3
-                            ? stringTheoryProgress
-                            : activePlanet.id === 4
-                              ? whileTheoryProgress
-                              : forTheoryProgress
-                    }%`,
+                    width: `${getPlanetProgress(activePlanet.id)}%`,
                   }}
                 />
               </span>
-              <small>
-                {activePlanet.id === 0
-                  ? `${progress}%`
-                  : activePlanet.id === 1
-                    ? `${arithmeticProgress}%`
-                    : activePlanet.id === 2
-                      ? `${conditionProgress}%`
-                      : activePlanet.id === 3
-                        ? `${stringTheoryProgress}%`
-                        : activePlanet.id === 4
-                          ? `${whileTheoryProgress}%`
-                          : `${forTheoryProgress}%`}
-              </small>
+              <small>{getPlanetProgress(activePlanet.id)}%</small>
             </div>
           </header>
 
-          {activePlanet.id === 5 ? (
+          {activePlanet.id === 0 ? (
+            <FirstPlanetVideoChapter
+              complete={firstPlanetComplete}
+              onComplete={completeFirstPlanet}
+              onNext={() => openPlanet(1)}
+            />
+          ) : activePlanet.id === 5 ? (
             <ForTheoryChapter
               completed={completedForTheoryLessons}
               progress={forTheoryProgress}
@@ -3231,7 +3465,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
               onGoTo={goToForTheoryLesson}
               onReplay={replayForTheoryChapter}
             />
-          ) : activePlanet.id === 4 ? (
+          ) : activePlanet.id === 2 ? (
             <div className="theory-document theory-chapter-one theory-chapter-while">
               <div className="theory-document-title">
                 <p className="eyebrow">Глава 5 · Управление повторениями</p>
@@ -3471,7 +3705,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 </div>
               </section>
             </div>
-          ) : activePlanet.id === 3 ? (
+          ) : activePlanet.id === 4 ? (
             <div className="theory-document theory-chapter-one theory-chapter-strings">
               <div className="theory-document-title">
                 <p className="eyebrow">Глава 4 · Работа с последовательностями</p>
@@ -3749,7 +3983,7 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 </div>
               </section>
             </div>
-          ) : activePlanet.id === 2 ? (
+          ) : activePlanet.id === 1 ? (
             <div className="theory-document theory-chapter-one theory-chapter-conditions">
               <div className="theory-document-title">
                 <p className="eyebrow">Глава 3 · Выбор программы</p>
@@ -4049,7 +4283,9 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
                 </div>
               </section>
             </div>
-          ) : activePlanet.id === 1 ? (
+          ) : activePlanet.id === 3 || activePlanet.id >= 6 ? (
+            <UnreleasedPlanetChapter planet={activePlanet} />
+          ) : activePlanet.id === -1 ? (
             <div className="theory-document theory-chapter-one theory-chapter-arithmetic">
               <div className="theory-document-title">
                 <p className="eyebrow">Глава 2 · Работа с данными</p>
