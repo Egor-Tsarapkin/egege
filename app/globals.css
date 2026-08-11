@@ -7468,6 +7468,27 @@ footer {
   border-radius: 47% 53% 55% 45%;
 }
 
+.theory-planet-6 .theory-planet-sphere {
+  animation-delay: -1.8s;
+  animation-duration: 7.2s;
+  background: color-mix(in srgb, var(--surface-raised) 84%, var(--accent) 16%);
+  border-radius: 55% 45% 47% 53%;
+}
+
+.theory-planet-7 .theory-planet-sphere {
+  animation-delay: -4.7s;
+  animation-duration: 8.1s;
+  background: color-mix(in srgb, var(--surface-raised) 91%, var(--text-soft) 9%);
+  border-radius: 44% 56% 52% 48%;
+}
+
+.theory-planet-8 .theory-planet-sphere {
+  animation-delay: -2.8s;
+  animation-duration: 7.6s;
+  background: color-mix(in srgb, var(--surface-raised) 86%, var(--accent) 14%);
+  border-radius: 51% 49% 43% 57%;
+}
+
 .theory-planet-0 .theory-planet-sphere {
   height: 142px;
   width: 142px;
@@ -7554,11 +7575,140 @@ footer {
 .planet-logic-pattern,
 .planet-string-pattern,
 .planet-loop-pattern,
-.planet-for-pattern {
+.planet-for-pattern,
+.planet-basics-pattern,
+.planet-list-pattern,
+.planet-function-pattern,
+.planet-generator-pattern,
+.planet-file-pattern {
   inset: 0;
   position: absolute;
   z-index: 2;
 }
+
+.planet-basics-pattern,
+.planet-list-pattern,
+.planet-function-pattern,
+.planet-generator-pattern,
+.planet-file-pattern {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.planet-basics-pattern i,
+.planet-list-pattern i,
+.planet-function-pattern i,
+.planet-generator-pattern i,
+.planet-file-pattern i {
+  color: color-mix(in srgb, var(--accent) 78%, var(--text-soft));
+  font-family: var(--font-geist-mono);
+  font-style: normal;
+  font-weight: 720;
+  position: relative;
+  z-index: 1;
+}
+
+.planet-basics-pattern {
+  gap: 6px;
+  transform: rotate(8deg);
+}
+
+.planet-basics-pattern::before,
+.planet-basics-pattern::after {
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--line));
+  border-radius: 50%;
+  content: "";
+  position: absolute;
+}
+
+.planet-basics-pattern::before { height: 70%; width: 70%; }
+.planet-basics-pattern::after { height: 40%; transform: rotate(55deg); width: 88%; }
+.planet-basics-pattern i { font-size: 13px; }
+.planet-basics-pattern i:nth-child(2) { color: var(--text-soft); font-size: 10px; }
+.planet-basics-pattern i:last-child { font-size: 10px; margin-left: -3px; margin-top: -31px; }
+
+.planet-list-pattern {
+  gap: 4px;
+  transform: rotate(-7deg);
+}
+
+.planet-list-pattern::before {
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+  border-radius: 12px;
+  content: "";
+  height: 44%;
+  position: absolute;
+  width: 76%;
+}
+
+.planet-list-pattern i { font-size: 11px; }
+.planet-list-pattern i:nth-child(2),
+.planet-list-pattern i:nth-child(3),
+.planet-list-pattern i:nth-child(4) {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  border-radius: 4px;
+  padding: 3px;
+}
+
+.planet-function-pattern {
+  flex-direction: column;
+  gap: 2px;
+  transform: rotate(6deg);
+}
+
+.planet-function-pattern::before {
+  border: 1px dashed color-mix(in srgb, var(--accent) 48%, var(--line));
+  border-radius: 16px;
+  content: "";
+  height: 62%;
+  position: absolute;
+  width: 68%;
+}
+
+.planet-function-pattern i { font-size: 11px; }
+.planet-function-pattern i:nth-child(2) { font-size: 14px; }
+.planet-function-pattern i:last-child { margin-left: 34px; }
+
+.planet-generator-pattern {
+  gap: 5px;
+  transform: rotate(-10deg);
+}
+
+.planet-generator-pattern::before,
+.planet-generator-pattern::after {
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
+  border-radius: 50%;
+  content: "";
+  height: 58%;
+  position: absolute;
+  width: 74%;
+}
+
+.planet-generator-pattern::after { height: 76%; transform: rotate(60deg); width: 42%; }
+.planet-generator-pattern i { font-size: 10px; }
+.planet-generator-pattern i:nth-child(2) { font-size: 14px; }
+
+.planet-file-pattern {
+  gap: 8px;
+  transform: rotate(7deg);
+}
+
+.planet-file-pattern::before,
+.planet-file-pattern::after {
+  background: color-mix(in srgb, var(--surface) 76%, var(--accent) 24%);
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+  border-radius: 7px 7px 9px 9px;
+  content: "";
+  height: 42%;
+  position: absolute;
+  width: 30%;
+}
+
+.planet-file-pattern::before { left: 17%; top: 28%; }
+.planet-file-pattern::after { bottom: 22%; right: 16%; }
+.planet-file-pattern i { font-size: 8px; }
+.planet-file-pattern i:nth-child(2) { color: var(--text-soft); font-size: 15px; }
 
 .planet-for-pattern {
   display: grid;

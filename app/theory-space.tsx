@@ -17,7 +17,7 @@ const planets: Planet[] = [
   {
     id: 0,
     chapter: "Глава 1",
-    title: "Переменные, типы данных и арифметика",
+    title: "Переменные, типы данных, арифметические операции",
     description: "Как хранить данные и выполнять вычисления в Python.",
   },
   {
@@ -147,29 +147,27 @@ function PlanetSphere({
       aria-hidden="true"
     >
       <span className="theory-planet-liquid" />
-      {variant === 0 && (
-        <>
-          <i className="planet-crater crater-one" />
-          <i className="planet-crater crater-two" />
-          <i className="planet-crater crater-three" />
-        </>
-      )}
+      {variant === 0 && <span className="planet-basics-pattern"><i>x</i><i>=</i><i>5</i><i>+</i></span>}
       {variant === 1 && (
-        <span className="planet-data-pattern">
-          <i />
-          <i />
-          <i />
-          <i />
-        </span>
-      )}
-      {variant === 2 && (
         <span className="planet-logic-pattern">
           <i />
           <i />
           <i />
         </span>
       )}
+      {variant === 2 && (
+        <span className="planet-loop-pattern">
+          <i>while</i>
+          <i>↻</i>
+          <i>?</i>
+        </span>
+      )}
       {variant === 3 && (
+        <span className="planet-list-pattern">
+          <i>[</i><i>1</i><i>2</i><i>3</i><i>]</i>
+        </span>
+      )}
+      {variant === 4 && (
         <span className="planet-string-pattern">
           <i>&quot;</i>
           <i>0</i>
@@ -177,18 +175,26 @@ function PlanetSphere({
           <i>−1</i>
         </span>
       )}
-      {variant === 4 && (
-        <span className="planet-loop-pattern">
-          <i>while</i>
-          <i>↻</i>
-          <i>?</i>
-        </span>
-      )}
       {variant === 5 && (
         <span className="planet-for-pattern">
           <i>for</i>
           <i>→</i>
           <i>range</i>
+        </span>
+      )}
+      {variant === 6 && (
+        <span className="planet-function-pattern">
+          <i>def</i><i>f()</i><i>↳</i>
+        </span>
+      )}
+      {variant === 7 && (
+        <span className="planet-generator-pattern">
+          <i>[</i><i>x</i><i>for</i><i>]</i>
+        </span>
+      )}
+      {variant === 8 && (
+        <span className="planet-file-pattern">
+          <i>PY</i><i>↗</i><i>TXT</i>
         </span>
       )}
     </span>
@@ -2509,7 +2515,7 @@ function FirstPlanetVideoChapter({
     <div className="theory-document theory-video-chapter">
       <div className="theory-document-title">
         <p className="eyebrow">Глава 1 · Основы Python</p>
-        <h2>Переменные, типы данных и арифметика</h2>
+        <h2>Переменные, типы данных, арифметические операции</h2>
         <p>
           Узнаем, как Python хранит значения, почему тип данных влияет на результат и какими
           операциями программа выполняет вычисления.
