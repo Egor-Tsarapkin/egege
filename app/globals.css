@@ -7141,7 +7141,7 @@ footer {
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior: none;
   position: relative;
   scrollbar-color: var(--surface-soft) transparent;
   scrollbar-width: thin;
@@ -7402,13 +7402,14 @@ footer {
   align-items: center;
   display: flex;
   flex-direction: column;
-  height: 700px;
-  justify-content: center;
+  height: 800px;
+  justify-content: flex-start;
   left: 0;
   overflow: hidden;
   pointer-events: none;
   position: absolute;
-  top: 45px;
+  padding-top: 220px;
+  top: -120px;
   width: 100%;
   z-index: 1;
 }
@@ -7604,10 +7605,14 @@ footer {
 .future-preview-modal > button.is-waiting { opacity: .82; }
 
 @media (max-width: 700px) {
-  .theory-future-universe { top: 75px; }
-  .future-locked-level-one { left: 5%; }
-  .future-locked-level-two { right: 3%; }
-  .future-locked-level-three { left: 12%; }
+  .theory-future-universe {
+    height: 800px;
+    padding-top: 250px;
+    top: -150px;
+  }
+  .future-locked-level-one { left: 5%; top: 240px; }
+  .future-locked-level-two { right: 3%; top: 320px; }
+  .future-locked-level-three { left: 12%; top: 470px; }
   .future-preview-backdrop { padding: 14px; }
   .future-preview-modal { border-radius: 20px; padding: 34px 20px; }
   .future-preview-levels { gap: 9px; }
