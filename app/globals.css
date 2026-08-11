@@ -7143,6 +7143,56 @@ footer {
   z-index: 2;
 }
 
+.theory-planet-image-shell {
+  animation: theory-generated-planet-float 6.8s ease-in-out infinite;
+  display: block;
+  height: 156px;
+  position: relative;
+  scale: 1;
+  transition:
+    filter 180ms ease-out,
+    scale 180ms ease-out;
+  width: 156px;
+  will-change: transform;
+  z-index: 2;
+}
+
+.theory-planet-image-shell img {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  width: 100%;
+}
+
+.planet-image-variant-0 {
+  animation-delay: -1.8s;
+  animation-duration: 7.2s;
+}
+
+.planet-image-variant-1 {
+  animation-delay: -4.1s;
+  animation-duration: 7.8s;
+}
+
+.planet-image-variant-2 {
+  animation-delay: -2.9s;
+  animation-duration: 7.5s;
+}
+
+.theory-planet:hover .theory-planet-image-shell,
+.theory-planet.is-selected .theory-planet-image-shell {
+  filter: drop-shadow(0 16px 24px color-mix(in srgb, #000 24%, transparent));
+  scale: 1.045;
+}
+
+.theory-planet-image-shell.is-complete {
+  filter:
+    drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 42%, transparent))
+    drop-shadow(0 16px 24px color-mix(in srgb, #000 22%, transparent));
+}
+
 .theory-planet-1 .theory-planet-sphere {
   animation-delay: -2.3s;
   animation-duration: 7.1s;
@@ -7491,6 +7541,15 @@ footer {
   }
 }
 
+@keyframes theory-generated-planet-float {
+  0%, 100% {
+    transform: translateY(3px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
 @keyframes theory-water-front {
   0%, 100% {
     transform: translate(-8px, 0);
@@ -7695,6 +7754,11 @@ footer {
   --rocket-orbit-pad: 18px;
   height: 86px;
   width: 86px;
+}
+
+.theory-space.is-chapter-open .theory-planet-image-shell {
+  height: 118px;
+  width: 118px;
 }
 
 .theory-chapter {
@@ -19571,6 +19635,11 @@ footer {
     width: 80px;
   }
 
+  .theory-planet-image-shell {
+    height: 108px;
+    width: 108px;
+  }
+
   .theory-planet-label strong {
     font-size: 11px;
   }
@@ -20048,6 +20117,7 @@ footer {
   }
 
   .theory-planet-sphere,
+  .theory-planet-image-shell,
   .theory-planet-liquid::before,
   .theory-planet-liquid::after,
   .theory-auto-badge i,
