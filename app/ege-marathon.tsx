@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Code2,
   Heart,
+  House,
   Minus,
   Moon,
   Plus,
@@ -298,6 +299,7 @@ export default function EgeMarathon({
   } | null>(null);
   const suppressAnswerUntil = useRef(0);
   const autoTimer = useRef<number | null>(null);
+  const navigationTimer = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -340,6 +342,7 @@ export default function EgeMarathon({
 
   useEffect(() => () => {
     if (autoTimer.current) window.clearTimeout(autoTimer.current);
+    if (navigationTimer.current) window.clearTimeout(navigationTimer.current);
   }, []);
 
   const byId = useMemo(() => new Map(QUESTIONS.map((question) => [question.id, question])), []);
@@ -347,6 +350,7 @@ export default function EgeMarathon({
   const favorites = useMemo(() => new Set(local.favorites), [local.favorites]);
   const answeredCount = Object.keys(local.answered).length;
   const correctCount = Object.values(local.answered).filter((value) => value === "correct").length;
+  const queueCorrectCount = queue.filter((id) => local.answered[id] === "correct").length;
   const errorIds = Object.entries(local.answered).filter(([, value]) => value === "wrong").map(([id]) => id);
   const isWarmAccent = ["red", "pink", "orange"].includes(accent);
   const allQuestionIds = QUESTIONS.map((question) => question.id);
@@ -363,6 +367,8 @@ export default function EgeMarathon({
   };
 
   const completeNavigation = (index: number) => {
+    if (navigationTimer.current) window.clearTimeout(navigationTimer.current);
+    navigationTimer.current = null;
     setQuestionIndex(index);
     resetAnswer();
   };
@@ -371,11 +377,12 @@ export default function EgeMarathon({
     const targetIndex = Math.max(0, Math.min(queue.length - 1, index));
     if (targetIndex === questionIndex || swipeSettling) return;
     if (autoTimer.current) window.clearTimeout(autoTimer.current);
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     const width = questionStage.current?.clientWidth ?? window.innerWidth;
     setPendingQuestionIndex(targetIndex);
     setSwipeSettling(true);
     setSwipeOffset((targetIndex > questionIndex ? -1 : 1) * (width + 16));
-    window.setTimeout(() => completeNavigation(targetIndex), 230);
+    navigationTimer.current = window.setTimeout(() => completeNavigation(targetIndex), 380);
   };
 
   const next = () => {
@@ -479,7 +486,7 @@ export default function EgeMarathon({
       setSwipeOffset((wantsNext ? -1 : 1) * (width + 16));
       const targetIndex = questionIndex + (wantsNext ? 1 : -1);
       setPendingQuestionIndex(targetIndex);
-      window.setTimeout(() => completeNavigation(targetIndex), 230);
+      navigationTimer.current = window.setTimeout(() => completeNavigation(targetIndex), 380);
       return;
     }
 
@@ -508,13 +515,13 @@ export default function EgeMarathon({
       }
 
       return (
-        <article className="marathon-question-card marathon-question-preview is-full" aria-hidden="true">
-          <div className="marathon-question-meta"><span>{question.topic}</span><small>Следующий вопрос</small></div>
+        <article className="marathon-question-card marathon-question-preview is-full" aria-hidden="true" key={question.id}>
+          <div className="marathon-question-meta"><span>{question.topic}</span></div>
           <h2>{question.prompt}</h2>
           {question.code && <PythonCode code={question.code} scale={0.9} onScale={() => undefined} />}
           <div className="marathon-options">
             {question.options.map((option, index) => (
-              <button disabled key={option}><span>{index + 1}</span><code>{option}</code></button>
+              <button tabIndex={-1} key={`${question.id}-${option}`}><span>{index + 1}</span><code>{option}</code></button>
             ))}
           </div>
         </article>
@@ -531,8 +538,14 @@ export default function EgeMarathon({
       >
         {flash > 0 && <span className="marathon-success-flash" key={flash} />}
         <header className="marathon-quiz-header">
-          <button onClick={() => setScreen("home")} aria-label="Вернуться в марафон"><ArrowLeft /></button>
-          <div><strong>{activeQuestion.title}</strong><span>{activeQuestion.bank} · вопрос {questionIndex + 1} из {queue.length}</span></div>
+          <button className="marathon-home-button" onClick={() => setScreen("home")} aria-label="На главную"><House /><span>Главная</span></button>
+          <div
+            className="marathon-quiz-progress"
+            aria-label={`Вопрос ${questionIndex + 1} из ${queue.length}, правильных ответов ${queueCorrectCount}`}
+          >
+            <i><b style={{ width: `${((questionIndex + 1) / queue.length) * 100}%` }} /></i>
+            <i><b className="is-correct" style={{ width: `${(queueCorrectCount / queue.length) * 100}%` }} /></i>
+          </div>
           <button className={favorites.has(activeQuestion.id) ? "is-favorite" : ""} onClick={() => toggleFavorite(activeQuestion.id)} aria-label="Добавить в избранное"><Star /></button>
         </header>
 
@@ -561,10 +574,15 @@ export default function EgeMarathon({
           <div
             className={`marathon-question-track ${swipeSettling ? "is-settling" : ""}`}
             style={{ "--swipe-x": `${swipeOffset}px` } as React.CSSProperties}
+            onTransitionEnd={(event) => {
+              if (event.target === event.currentTarget && event.propertyName === "transform" && pendingQuestionIndex !== null) {
+                completeNavigation(pendingQuestionIndex);
+              }
+            }}
           >
             {renderQuestionPreview(previousQuestion, "Начало марафона")}
 
-            <article className="marathon-question-card">
+            <article className="marathon-question-card" key={activeQuestion.id}>
           <div className="marathon-question-meta"><span>{activeQuestion.topic}</span></div>
           <h2>{activeQuestion.prompt}</h2>
           {activeQuestion.code && <PythonCode code={activeQuestion.code} scale={codeScale} onScale={setCodeScale} />}
@@ -576,7 +594,7 @@ export default function EgeMarathon({
               else if (graded && !isCorrect && selected !== activeQuestion.correct) state = "is-wrong";
               else if (selected === index) state = "is-selected";
               return (
-                <button className={state} onClick={() => answer(index)} disabled={graded} key={option}>
+                <button className={state} onClick={() => answer(index)} onPointerUp={(event) => event.currentTarget.blur()} disabled={graded} key={`${activeQuestion.id}-${option}`}>
                   <span>{index + 1}</span><code>{option}</code>
                   {graded && isCorrect && <Check />}
                   {graded && !isCorrect && selected !== activeQuestion.correct && <X />}

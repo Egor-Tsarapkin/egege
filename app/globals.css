@@ -345,6 +345,52 @@
 .marathon-quiz-header > button.is-favorite { color: var(--accent); }
 .marathon-quiz-header > button.is-favorite svg { fill: currentColor; }
 
+.marathon-quiz-header {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(80px, 1fr) auto;
+}
+
+.marathon-quiz-header > button.marathon-home-button {
+  gap: 7px;
+  padding: 0 13px;
+  width: auto;
+}
+
+.marathon-home-button span {
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 680;
+  margin: 0;
+}
+
+.marathon-quiz-header > .marathon-quiz-progress {
+  display: grid;
+  gap: 5px;
+  padding: 0 4px;
+}
+
+.marathon-quiz-progress i {
+  background: #101110;
+  border-radius: 999px;
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.marathon-quiz-progress b {
+  background: #747772;
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  transition: width 360ms cubic-bezier(.22, .72, .16, 1);
+}
+
+.marathon-quiz-progress b.is-correct {
+  background: var(--accent);
+}
+
 .marathon-question-strip {
   display: flex;
   gap: 7px;
@@ -11779,7 +11825,7 @@ footer {
 }
 
 .marathon-question-track.is-settling {
-  transition: transform 230ms cubic-bezier(.22, .78, .22, 1);
+  transition: transform 300ms cubic-bezier(.22, .72, .16, 1);
 }
 
 .marathon-question-card {
@@ -11821,6 +11867,14 @@ footer {
   text-align: left;
 }
 
+.marathon-options > button:focus {
+  outline: none;
+}
+
+.marathon-options > button:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
 
 @media (max-width: 700px) {
   body:has(.ege-marathon.is-quiz) .topbar,
@@ -11838,6 +11892,7 @@ footer {
   }
 
   .marathon-quiz-header {
+    gap: 8px;
     margin-bottom: 5px;
     min-height: 42px;
   }
@@ -11848,8 +11903,17 @@ footer {
     width: 38px;
   }
 
-  .marathon-quiz-header > div {
-    padding: 0 9px;
+  .marathon-quiz-header > button.marathon-home-button {
+    min-height: 38px;
+    padding: 0 10px;
+  }
+
+  .marathon-home-button span {
+    font-size: 11px;
+  }
+
+  .marathon-quiz-header > .marathon-quiz-progress {
+    padding: 0 2px;
   }
 
   .marathon-quiz-header strong {
