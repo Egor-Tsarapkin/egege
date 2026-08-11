@@ -7226,9 +7226,9 @@ footer {
 
 .theory-route {
   --route-offset: min(28cqw, 180px);
-  height: 2940px;
+  height: 3540px;
   margin-top: -18px;
-  min-height: 2940px;
+  min-height: 3540px;
   position: relative;
   width: 100%;
   z-index: 1;
@@ -7251,7 +7251,7 @@ footer {
   );
   height: 300px;
   left: calc(50% - var(--route-offset));
-  top: 2400px;
+  top: 3000px;
   width: calc(var(--route-offset) + var(--route-offset));
 }
 
@@ -7264,7 +7264,7 @@ footer {
   );
   height: 300px;
   left: calc(50% - var(--route-offset));
-  top: 2100px;
+  top: 2700px;
   width: calc(var(--route-offset) + var(--route-offset));
 }
 
@@ -7277,7 +7277,7 @@ footer {
   );
   height: 300px;
   left: calc(50% - var(--route-offset));
-  top: 1800px;
+  top: 2400px;
   width: calc(var(--route-offset) + var(--route-offset));
 }
 
@@ -7290,7 +7290,7 @@ footer {
   );
   height: 300px;
   left: calc(50% - var(--route-offset));
-  top: 1500px;
+  top: 2100px;
   width: calc(var(--route-offset) + var(--route-offset));
 }
 
@@ -7303,7 +7303,7 @@ footer {
   );
   height: 300px;
   left: calc(50% - var(--route-offset));
-  top: 1200px;
+  top: 1800px;
   width: calc(var(--route-offset) + var(--route-offset));
 }
 
@@ -7320,8 +7320,8 @@ footer {
   width: calc(var(--route-offset) + var(--route-offset));
 }
 
-.route-line-six { top: 900px; }
-.route-line-eight { top: 300px; }
+.route-line-six { top: 1500px; }
+.route-line-eight { top: 900px; }
 
 .route-line-seven {
   background-image: linear-gradient(
@@ -7332,7 +7332,7 @@ footer {
   );
   height: 300px;
   left: calc(50% - var(--route-offset));
-  top: 600px;
+  top: 1200px;
   width: calc(var(--route-offset) + var(--route-offset));
 }
 
@@ -7355,47 +7355,263 @@ footer {
 
 .theory-planet-0 {
   left: calc(50% - var(--route-offset));
-  top: 2700px;
+  top: 3300px;
 }
 
 .theory-planet-1 {
   left: calc(50% + var(--route-offset));
-  top: 2400px;
+  top: 3000px;
 }
 
 .theory-planet-2 {
   left: calc(50% - var(--route-offset));
-  top: 2100px;
+  top: 2700px;
 }
 
 .theory-planet-3 {
   left: calc(50% + var(--route-offset));
-  top: 1800px;
+  top: 2400px;
 }
 
 .theory-planet-4 {
   left: calc(50% - var(--route-offset));
-  top: 1500px;
+  top: 2100px;
 }
 
 .theory-planet-5 {
   left: calc(50% + var(--route-offset));
-  top: 1200px;
+  top: 1800px;
 }
 
 .theory-planet-6 {
   left: calc(50% - var(--route-offset));
-  top: 900px;
+  top: 1500px;
 }
 
 .theory-planet-7 {
   left: calc(50% + var(--route-offset));
-  top: 600px;
+  top: 1200px;
 }
 
 .theory-planet-8 {
   left: calc(50% - var(--route-offset));
-  top: 300px;
+  top: 900px;
+}
+
+.theory-future-universe {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  height: 700px;
+  justify-content: center;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  top: 45px;
+  width: 100%;
+  z-index: 1;
+}
+
+.future-universe-clouds {
+  inset: 0;
+  position: absolute;
+}
+
+.future-universe-clouds::before,
+.future-universe-clouds::after,
+.future-universe-clouds i {
+  background: color-mix(in srgb, var(--surface-soft) 82%, var(--accent) 18%);
+  border-radius: 50%;
+  content: "";
+  filter: blur(34px);
+  opacity: .74;
+  position: absolute;
+}
+
+.future-universe-clouds::before { height: 220px; left: -40px; top: 170px; width: 72%; }
+.future-universe-clouds::after { height: 250px; right: -80px; top: 90px; width: 76%; }
+.future-universe-clouds i:first-child { height: 180px; left: 12%; top: 70px; width: 45%; }
+.future-universe-clouds i:nth-child(2) { height: 160px; right: 5%; top: 250px; width: 46%; }
+.future-universe-clouds i:nth-child(3) { height: 130px; left: 27%; top: 330px; width: 48%; }
+.future-universe-clouds i:last-child { background: var(--accent-wash-strong); height: 280px; left: 28%; top: 70px; width: 44%; }
+
+.future-universe-path {
+  background: linear-gradient(to top, color-mix(in srgb, var(--accent) 30%, var(--line)), transparent);
+  bottom: -115px;
+  height: 260px;
+  left: calc(50% - var(--route-offset));
+  position: absolute;
+  transform: rotate(-25deg);
+  transform-origin: bottom;
+  width: 1px;
+}
+
+.theory-future-universe > p {
+  color: var(--text-soft);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  margin: 0 0 18px;
+  position: relative;
+  text-transform: uppercase;
+}
+
+.theory-future-universe > button {
+  align-items: center;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  pointer-events: auto;
+  position: relative;
+  z-index: 3;
+}
+
+.theory-future-universe > button > span {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 46%, var(--line));
+  border-radius: 50%;
+  box-shadow: 0 0 34px var(--accent-wash-strong), inset 0 0 22px color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  display: flex;
+  font-family: var(--font-geist-mono);
+  font-size: 38px;
+  height: 108px;
+  justify-content: center;
+  transition: scale 180ms ease-out, box-shadow 180ms ease-out;
+  width: 108px;
+}
+
+.theory-future-universe > button:hover > span {
+  box-shadow: 0 0 54px color-mix(in srgb, var(--accent) 28%, transparent), inset 0 0 28px color-mix(in srgb, var(--accent) 14%, transparent);
+  scale: 1.06;
+}
+
+.theory-future-universe > button small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.future-locked-level {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  display: flex;
+  height: 62px;
+  justify-content: center;
+  opacity: .5;
+  position: absolute;
+  width: 62px;
+}
+
+.future-locked-level i { color: var(--dim); font-style: normal; }
+.future-locked-level-one { left: 13%; top: 145px; }
+.future-locked-level-two { right: 11%; top: 225px; }
+.future-locked-level-three { left: 23%; top: 420px; }
+
+.future-preview-backdrop {
+  align-items: center;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 120;
+}
+
+.future-preview-modal {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 26px;
+  box-shadow: 0 36px 120px color-mix(in srgb, #000 54%, transparent);
+  max-width: 650px;
+  overflow: hidden;
+  padding: clamp(30px, 6vw, 58px);
+  position: relative;
+  text-align: center;
+  width: 100%;
+}
+
+.future-preview-nebula {
+  inset: 0;
+  opacity: .7;
+  pointer-events: none;
+  position: absolute;
+}
+
+.future-preview-nebula::before,
+.future-preview-nebula::after,
+.future-preview-nebula i {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-soft));
+  border-radius: 50%;
+  content: "";
+  filter: blur(38px);
+  position: absolute;
+}
+
+.future-preview-nebula::before { height: 170px; left: -80px; top: -40px; width: 65%; }
+.future-preview-nebula::after { bottom: -90px; height: 210px; right: -80px; width: 70%; }
+.future-preview-nebula i:first-child { height: 110px; right: 12%; top: 20%; width: 38%; }
+.future-preview-nebula i:nth-child(2) { bottom: 24%; height: 90px; left: 8%; width: 44%; }
+.future-preview-nebula i:last-child { height: 150px; left: 32%; top: 35%; width: 38%; }
+
+.future-preview-modal > *:not(.future-preview-nebula) { position: relative; z-index: 1; }
+.future-preview-modal .eyebrow { color: var(--accent); margin: 0 0 16px; }
+.future-preview-modal h2 { font-size: clamp(2.2rem, 7vw, 4.2rem); letter-spacing: -.065em; line-height: .95; margin: 0; }
+.future-preview-modal > p:not(.eyebrow) { color: var(--muted); line-height: 1.7; margin: 22px auto 0; max-width: 520px; }
+
+.future-preview-levels {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin: 34px 0 26px;
+}
+
+.future-preview-levels span { align-items: center; display: flex; flex-direction: column; gap: 8px; }
+.future-preview-levels i {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--dim);
+  display: flex;
+  font-style: normal;
+  height: 54px;
+  justify-content: center;
+  width: 54px;
+}
+.future-preview-levels small { color: var(--dim); font-size: 9px; text-transform: uppercase; }
+
+.future-interest-count { color: var(--text-soft); display: block; font-size: 12px; font-weight: 560; margin: 0 0 16px; }
+.future-interest-count span { color: var(--accent); font-size: 17px; }
+.future-interest-error { color: #e5484d; display: block; margin: 0 0 12px; }
+
+.future-preview-modal > button {
+  background: var(--accent);
+  border-radius: 13px;
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 780;
+  letter-spacing: .08em;
+  min-height: 52px;
+  padding: 0 40px;
+}
+
+.future-preview-modal > button.is-waiting { opacity: .82; }
+
+@media (max-width: 700px) {
+  .theory-future-universe { top: 75px; }
+  .future-locked-level-one { left: 5%; }
+  .future-locked-level-two { right: 3%; }
+  .future-locked-level-three { left: 12%; }
+  .future-preview-backdrop { padding: 14px; }
+  .future-preview-modal { border-radius: 20px; padding: 34px 20px; }
+  .future-preview-levels { gap: 9px; }
+  .future-preview-levels i { height: 48px; width: 48px; }
 }
 
 .theory-planet-visual {
@@ -19970,47 +20186,47 @@ footer {
 
   .theory-planet-0 {
     left: calc(50% - var(--route-offset));
-    top: 2700px;
+    top: 3300px;
   }
 
   .theory-planet-1 {
     left: calc(50% + var(--route-offset));
-    top: 2400px;
+    top: 3000px;
   }
 
   .theory-planet-2 {
     left: calc(50% - var(--route-offset));
-    top: 2100px;
+    top: 2700px;
   }
 
   .theory-planet-3 {
     left: calc(50% + var(--route-offset));
-    top: 1800px;
+    top: 2400px;
   }
 
   .theory-planet-4 {
     left: calc(50% - var(--route-offset));
-    top: 1500px;
+    top: 2100px;
   }
 
   .theory-planet-5 {
     left: calc(50% + var(--route-offset));
-    top: 1200px;
+    top: 1800px;
   }
 
   .theory-planet-6 {
     left: calc(50% - var(--route-offset));
-    top: 900px;
+    top: 1500px;
   }
 
   .theory-planet-7 {
     left: calc(50% + var(--route-offset));
-    top: 600px;
+    top: 1200px;
   }
 
   .theory-planet-8 {
     left: calc(50% - var(--route-offset));
-    top: 300px;
+    top: 900px;
   }
 
   .theory-planet-0 .theory-planet-sphere,

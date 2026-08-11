@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type TheorySpaceProps = {
+  accessToken: string;
   userId: string;
 };
 
@@ -2692,7 +2693,7 @@ function UnreleasedPlanetChapter({ planet }: { planet: Planet }) {
   );
 }
 
-export default function TheorySpace({ userId }: TheorySpaceProps) {
+export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const firstPlanetStorageKey = `egege-theory-video-planet-1-v1:${userId}`;
   const storageKey = `egege-theory-progress-v2:${userId}`;
   const arithmeticStorageKey = `egege-theory-arithmetic-v1:${userId}`;
@@ -2710,6 +2711,11 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
   const [chapterReady, setChapterReady] = useState(false);
   const [splitPercent, setSplitPercent] = useState(41);
   const [isResizing, setIsResizing] = useState(false);
+  const [futurePreviewOpen, setFuturePreviewOpen] = useState(false);
+  const [futureInterestCount, setFutureInterestCount] = useState<number | null>(null);
+  const [futureInterestWaiting, setFutureInterestWaiting] = useState(false);
+  const [futureInterestLoading, setFutureInterestLoading] = useState(false);
+  const [futureInterestError, setFutureInterestError] = useState("");
   const [firstPlanetComplete, setFirstPlanetComplete] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
   const [completedArithmeticLessons, setCompletedArithmeticLessons] = useState<
@@ -2865,6 +2871,15 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     const frame = window.requestAnimationFrame(() => setChapterReady(true));
     return () => window.cancelAnimationFrame(frame);
   }, [selectedPlanet]);
+
+  useEffect(() => {
+    if (!futurePreviewOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFuturePreviewOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [futurePreviewOpen]);
 
   useEffect(() => {
     return () => {
@@ -3213,6 +3228,50 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
     }
   };
 
+  const loadFutureInterest = async () => {
+    setFutureInterestError("");
+    try {
+      const response = await fetch("/api/theory-interest", {
+        headers: accessToken ? { authorization: `Bearer ${accessToken}` } : {},
+        cache: "no-store",
+      });
+      const payload = (await response.json()) as { count?: number; waiting?: boolean; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Счётчик временно недоступен.");
+      setFutureInterestCount(Number(payload.count ?? 0));
+      setFutureInterestWaiting(Boolean(payload.waiting));
+    } catch (error) {
+      setFutureInterestError(error instanceof Error ? error.message : "Счётчик временно недоступен.");
+    }
+  };
+
+  const openFuturePreview = () => {
+    setFuturePreviewOpen(true);
+    void loadFutureInterest();
+  };
+
+  const joinFutureInterest = async () => {
+    if (futureInterestWaiting || futureInterestLoading) return;
+    setFutureInterestLoading(true);
+    setFutureInterestError("");
+    try {
+      const response = await fetch("/api/theory-interest", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
+        },
+      });
+      const payload = (await response.json()) as { count?: number; waiting?: boolean; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Не удалось сохранить голос.");
+      setFutureInterestCount(Number(payload.count ?? 0));
+      setFutureInterestWaiting(Boolean(payload.waiting));
+    } catch (error) {
+      setFutureInterestError(error instanceof Error ? error.message : "Не удалось сохранить голос.");
+    } finally {
+      setFutureInterestLoading(false);
+    }
+  };
+
   const openPlanet = (planetId: number) => {
     if (closeChapterTimerRef.current) {
       window.clearTimeout(closeChapterTimerRef.current);
@@ -3396,12 +3455,70 @@ export default function TheorySpace({ userId }: TheorySpaceProps) {
               </button>
             );
           })}
+
+          <section className="theory-future-universe" aria-label="Следующая вселенная теории">
+            <div className="future-universe-clouds" aria-hidden="true">
+              <i /><i /><i /><i />
+            </div>
+            <span className="future-universe-path" aria-hidden="true" />
+            <div className="future-locked-level future-locked-level-one" aria-hidden="true"><i>?</i></div>
+            <div className="future-locked-level future-locked-level-two" aria-hidden="true"><i>?</i></div>
+            <div className="future-locked-level future-locked-level-three" aria-hidden="true"><i>?</i></div>
+            <p>Следующая вселенная</p>
+            <button onClick={openFuturePreview} aria-label="Открыть превью следующей вселенной">
+              <span>?</span>
+              <small>Заглянуть за туманность</small>
+            </button>
+          </section>
         </div>
 
         <p className="theory-map-hint">
           Выберите планету, чтобы открыть главу. Темы можно проходить в своём порядке.
         </p>
       </div>
+
+      {futurePreviewOpen && (
+        <div
+          className="future-preview-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setFuturePreviewOpen(false);
+          }}
+        >
+          <section
+            className="future-preview-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="future-preview-title"
+          >
+            <div className="future-preview-nebula" aria-hidden="true"><i /><i /><i /></div>
+            <p className="eyebrow">Следующая вселенная · Скоро</p>
+            <h2 id="future-preview-title">Теория к заданиям ЕГЭ</h2>
+            <p>
+              Сейчас ведётся активная разработка полноценной теории по заданиям ЕГЭ. Здесь
+              появятся новые уровни, маршруты и закрытые пока планеты.
+            </p>
+            <div className="future-preview-levels" aria-hidden="true">
+              <span><i>?</i><small>Уровень 10</small></span>
+              <span><i>?</i><small>Уровень 11</small></span>
+              <span><i>?</i><small>Дальше</small></span>
+            </div>
+            {futureInterestCount !== null && (
+              <strong className="future-interest-count">
+                Уже ждут: <span>{futureInterestCount}</span>
+              </strong>
+            )}
+            {futureInterestError && <small className="future-interest-error">{futureInterestError}</small>}
+            <button
+              className={futureInterestWaiting ? "is-waiting" : ""}
+              disabled={futureInterestWaiting || futureInterestLoading}
+              onClick={joinFutureInterest}
+            >
+              {futureInterestLoading ? "СОХРАНЯЕМ…" : futureInterestWaiting ? "ЖДУ ✓" : "ЖДУ"}
+            </button>
+          </section>
+        </div>
+      )}
 
       {activePlanet && (
         <>

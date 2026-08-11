@@ -55,3 +55,8 @@ export const friendships = sqliteTable(
     index("friendships_addressee_idx").on(table.addresseeId, table.status),
   ],
 );
+
+export const theoryInterest = sqliteTable("theory_interest", {
+  userId: text("user_id").primaryKey(),
+  createdAt: integer("created_at").notNull(),
+});

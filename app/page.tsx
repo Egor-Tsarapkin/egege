@@ -2898,7 +2898,7 @@ export default function Home() {
               </div>
             }
           >
-            <TheorySpace userId={user.id} />
+            <TheorySpace accessToken={data.session?.access_token ?? ""} userId={user.id} />
           </Suspense>
         )}
 
