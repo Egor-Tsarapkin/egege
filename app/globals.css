@@ -11267,6 +11267,238 @@ footer {
   }
 }
 
+/* Minimal marathon home */
+.tasks-page:has(.is-marathon-shell) {
+  background: var(--bg);
+}
+
+.marathon-home-header {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0;
+  min-height: 54px;
+}
+
+.marathon-home-header > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.marathon-home-header > button {
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: var(--text-soft);
+  font-size: 12px;
+  height: 34px;
+  padding: 0 8px;
+  width: auto;
+}
+
+.marathon-home-header > button:hover {
+  background: var(--surface-raised);
+}
+
+.marathon-hero {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 0;
+  overflow: visible;
+  padding: clamp(74px, 11vw, 116px) 0 38px;
+}
+
+.marathon-hero::after {
+  display: none;
+}
+
+.marathon-title-block {
+  margin: 0 auto clamp(62px, 9vw, 92px);
+  max-width: 620px;
+  text-align: center;
+}
+
+.marathon-title-block > span {
+  color: var(--accent);
+  display: block;
+  font-size: 11px;
+  font-weight: 760;
+  letter-spacing: .12em;
+  margin-bottom: 17px;
+  text-transform: uppercase;
+}
+
+.marathon-title-block h1 {
+  font-family: "SF Pro Display", "Helvetica Neue", var(--font-geist-sans);
+  font-size: clamp(46px, 8vw, 82px);
+  font-weight: 620;
+  letter-spacing: -.055em;
+  line-height: .98;
+  margin: 0;
+}
+
+.marathon-title-block p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 22px auto 0;
+  max-width: 380px;
+}
+
+.marathon-progress-grid {
+  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  gap: 0;
+  margin: 0;
+}
+
+.marathon-progress-grid button {
+  gap: 9px;
+  padding: 20px 24px;
+}
+
+.marathon-progress-grid button + button {
+  border-left: 1px solid var(--line);
+}
+
+.marathon-progress-grid strong {
+  font-size: 20px;
+  font-weight: 620;
+}
+
+.marathon-progress-grid span {
+  font-size: 12px;
+}
+
+.marathon-primary {
+  background: var(--text);
+  border: 0;
+  border-radius: 6px;
+  color: var(--bg) !important;
+  display: block;
+  margin: 18px 0 12px;
+  min-height: 62px;
+  padding: 13px 18px;
+  text-align: center;
+}
+
+.marathon-primary:hover {
+  filter: none;
+  opacity: .9;
+}
+
+.marathon-primary strong {
+  font-size: 15px;
+  font-weight: 740;
+}
+
+.marathon-primary small {
+  font-size: 10px;
+  margin-top: 4px;
+}
+
+.marathon-menu-grid {
+  gap: 8px;
+}
+
+.marathon-menu-grid > button {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  gap: 15px;
+  grid-template-columns: auto 1fr;
+  min-height: 82px;
+  padding: 17px 18px;
+}
+
+.marathon-menu-grid > button:hover {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .035);
+}
+
+.marathon-menu-grid > button > span {
+  align-items: flex-start;
+  background: transparent;
+  border-radius: 0;
+  color: var(--dim);
+  font-family: var(--font-geist-mono);
+  font-size: 10px;
+  height: auto;
+  justify-content: flex-start;
+  letter-spacing: .05em;
+  padding-top: 2px;
+  width: 22px;
+}
+
+.marathon-menu-grid strong {
+  font-size: 14px;
+  font-weight: 660;
+}
+
+.marathon-local-note {
+  margin-top: 22px;
+}
+
+@media (max-width: 700px) {
+  .marathon-home-header {
+    margin-bottom: 0;
+  }
+
+  .marathon-home-header > button {
+    height: 34px;
+    width: auto;
+  }
+
+  .marathon-hero {
+    min-height: 0;
+    padding: 68px 0 30px;
+  }
+
+  .marathon-title-block {
+    margin-bottom: 58px;
+  }
+
+  .marathon-title-block h1 {
+    font-size: clamp(42px, 15vw, 62px);
+  }
+
+  .marathon-title-block p {
+    font-size: 13px;
+    padding: 0 18px;
+  }
+
+  .marathon-progress-grid button {
+    padding: 17px 14px;
+  }
+
+  .marathon-primary {
+    border-radius: 6px;
+    margin: 12px 0 8px;
+    min-height: 60px;
+  }
+
+  .marathon-menu-grid {
+    gap: 7px;
+  }
+
+  .marathon-menu-grid > button {
+    border-radius: 8px;
+    gap: 10px;
+    grid-template-columns: auto 1fr;
+    min-height: 76px;
+    padding: 14px;
+  }
+
+  .marathon-menu-grid > button > span {
+    height: auto;
+    width: 20px;
+  }
+}
+
 @media (max-width: 1279px) {
   .home-style-asset {
     width: 126px;

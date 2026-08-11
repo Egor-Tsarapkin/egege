@@ -12,11 +12,8 @@ import {
   Minus,
   Moon,
   Plus,
-  Settings,
-  Sparkles,
   Star,
   Sun,
-  Timer,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -545,18 +542,15 @@ export default function EgeMarathon({
   return (
     <section className="ege-marathon">
       <header className="marathon-home-header">
-        <div><span className="marathon-mark">Е</span><div><strong>EGE-марафон</strong><small>15 вопросов · MVP</small></div></div>
-        <button onClick={() => setScreen("settings")} aria-label="Настройки марафона"><Settings /></button>
+        <span>ЕГЭ по информатике</span>
+        <button onClick={() => setScreen("settings")}>Настройки</button>
       </header>
 
       <section className="marathon-hero">
-        <div className="mascot-speech speech-one">Удачи!</div>
-        <div className="mascot-speech speech-two">Ты сможешь</div>
-        <div className="mascot-speech speech-three">print("Погнали!")</div>
-        <div className="marathon-mascots" aria-label="Маскоты EGEGE">
-          {["first", "second", "third"].map((piece) => (
-            <span className={`marathon-mascot-piece is-${piece}`} key={piece}><img src="/ege-marathon-mascots.jpg" alt="" /></span>
-          ))}
+        <div className="marathon-title-block">
+          <span>Тренировка</span>
+          <h1>ЕГЭ-марафон</h1>
+          <p>Вопросы ЕГЭ и Python в одном спокойном режиме.</p>
         </div>
         <div className="marathon-progress-grid">
           <button onClick={() => start(allQuestionIds, resumeIndex)}>
@@ -569,14 +563,14 @@ export default function EgeMarathon({
       </section>
 
       <button className="marathon-primary" onClick={() => start(allQuestionIds, resumeIndex)}>
-        <Timer /><span><strong>{answeredCount ? "Продолжить марафон" : "Начать марафон"}</strong><small>{correctCount} правильных ответов</small></span><ChevronRight />
+        <span><strong>{answeredCount ? "Продолжить марафон" : "Начать марафон"}</strong><small>{correctCount} правильных ответов</small></span>
       </button>
 
       <div className="marathon-menu-grid">
-        <button onClick={() => setScreen("themes")}><span><BookOpen /></span><div><strong>Темы</strong><small>{topics.length} подборки</small></div><ChevronRight /></button>
-        <button onClick={() => start(allQuestionIds)}><span><Sparkles /></span><div><strong>Все вопросы</strong><small>ЕГЭ + Python</small></div><ChevronRight /></button>
-        <button onClick={() => setScreen("errors")}><span><AlertTriangle /></span><div><strong>Ошибки</strong><small>{errorIds.length} для повтора</small></div><ChevronRight /></button>
-        <button onClick={() => setScreen("favorites")}><span><Star /></span><div><strong>Избранное</strong><small>{favorites.size} сохранено</small></div><ChevronRight /></button>
+        <button onClick={() => setScreen("themes")}><span>01</span><div><strong>Темы</strong><small>{topics.length} подборки</small></div></button>
+        <button onClick={() => start(allQuestionIds)}><span>02</span><div><strong>Все вопросы</strong><small>ЕГЭ + Python</small></div></button>
+        <button onClick={() => setScreen("errors")}><span>03</span><div><strong>Ошибки</strong><small>{errorIds.length} для повтора</small></div></button>
+        <button onClick={() => setScreen("favorites")}><span>04</span><div><strong>Избранное</strong><small>{favorites.size} сохранено</small></div></button>
       </div>
 
       <p className="marathon-local-note">Прогресс этого MVP сохраняется на устройстве</p>
