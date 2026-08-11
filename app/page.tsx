@@ -8,12 +8,14 @@ import {
 } from "@/lib/supabase-browser";
 import { taskDownloadHref, taskDownloadName } from "@/lib/task-download";
 import type { ExamAttempt } from "./exam-station";
+import RichHtml from "./rich-html";
 
 const TypingTrainer = lazy(() => import("./typing-trainer"));
 const TheorySpace = lazy(() => import("./theory-space"));
 const ExamStation = lazy(() => import("./exam-station"));
 const AdminDashboard = lazy(() => import("./admin-dashboard"));
 const EgeMarathon = lazy(() => import("./ege-marathon"));
+const TeacherStudio = lazy(() => import("./teacher-studio"));
 
 type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "dashboard" | "profile" | "admin";
 type GateSection = Extract<Section, "theory" | "game" | "trainer" | "dashboard">;
@@ -52,6 +54,8 @@ type Task = {
   note?: string;
   html: string;
   answer: string;
+  table?: { cols: number; rows: number };
+  solution?: { html: string; videoUrl: string; timecode: number };
   files: Array<{ name: string; href: string; meta: string }>;
 };
 
@@ -71,30 +75,43 @@ type VariantYearGroup = {
 };
 
 function groupVariants(variants: Variant[]): VariantYearGroup[] {
+  const imported = variants.filter((variant) => !variant.kim.startsWith("0"));
+  const teachers = variants.filter((variant) => variant.kim.startsWith("0"));
   const boundaries = [
     { year: "2025/26", start: 0, end: 77, officialEnd: 12 },
     { year: "2024/25", start: 77, end: 135, officialEnd: 91 },
     { year: "2023/24", start: 135, end: 196, officialEnd: 145 },
   ];
 
-  return boundaries.map(({ year, start, officialEnd }) => ({
+  const archive = boundaries.map(({ year, start, officialEnd }) => ({
     year,
-    official: variants.slice(start, Math.min(officialEnd, variants.length)),
+    official: imported.slice(start, Math.min(officialEnd, imported.length)),
     teachers: [],
   })).filter((group) => group.official.length);
+  return teachers.length
+    ? [{ year: "Авторские", official: [], teachers }, ...archive]
+    : archive;
 }
 
 type ExamVariantData = {
   kim: string;
   title: string;
   sourceUrl: string;
+  sourceLabel?: string;
+  descriptionHtml?: string;
+  noTime?: boolean;
+  hideAnswers?: boolean;
+  oneAttempt?: boolean;
+  custom?: boolean;
   tasks: Array<{
     id: string;
+    slot?: number;
     number: number;
     html: string;
     table: { cols: number; rows: number };
     files: Array<{ name: string; href: string }>;
     answer?: string;
+    solution?: { html: string; videoUrl: string; timecode: number };
   }>;
 };
 
@@ -354,6 +371,15 @@ function dateKey(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatTimecode(seconds: number) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = seconds % 60;
+  return hours
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`
+    : `${minutes}:${String(rest).padStart(2, "0")}`;
 }
 
 async function communityRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -934,6 +960,7 @@ function TaskItem({
   decorationMotion?: boolean;
 }) {
   const [answerOpen, setAnswerOpen] = useState(false);
+  const [solutionOpen, setSolutionOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const sourceKind = getTaskSourceKind(task);
   const sourceLabel =
@@ -966,10 +993,7 @@ function TaskItem({
           </div>
         </div>
       </div>
-      <div
-        className="task-body task-html"
-        dangerouslySetInnerHTML={{ __html: task.html }}
-      />
+      <RichHtml className="task-body task-html" html={task.html} />
       {task.files.length > 0 && (
         <div className="task-files">
           {task.files.map((file) => (
@@ -1015,6 +1039,29 @@ function TaskItem({
           </div>
         </div>
       </div>
+      {(task.solution?.html || task.solution?.videoUrl) && (
+        <>
+          <button
+            className={`answer-toggle solution-toggle ${solutionOpen ? "is-open" : ""}`}
+            onClick={() => setSolutionOpen((current) => !current)}
+            aria-expanded={solutionOpen}
+          >
+            {solutionOpen ? "Скрыть разбор" : "Посмотреть разбор"}
+          </button>
+          <div className={`task-solution ${solutionOpen ? "is-open" : ""}`}>
+            {task.solution.videoUrl && (
+              <a
+                href={`${task.solution.videoUrl}${task.solution.videoUrl.includes("?") ? "&" : "?"}t=${task.solution.timecode || 0}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Открыть видеоразбор{task.solution.timecode ? ` с ${formatTimecode(task.solution.timecode)}` : ""}
+              </a>
+            )}
+            {task.solution.html && <RichHtml className="task-html" html={task.solution.html} />}
+          </div>
+        </>
+      )}
       {decoration && <TaskStyleDecoration asset={decoration} motion={decorationMotion !== false} />}
     </article>
   );
@@ -1025,6 +1072,7 @@ const OFFICIAL_SOURCE_PATTERN =
 
 function getTaskSourceKind(task: Task): TaskSourceKind {
   if (OFFICIAL_SOURCE_PATTERN.test(task.note ?? "")) return "official";
+  if (task.source === "EGEGE" || /^0\d{5,}$/.test(task.id)) return "author";
   if (/<a\b[^>]*href=/i.test(task.html)) return "author";
   return "kege";
 }
@@ -1746,6 +1794,7 @@ function StudentCabinet({
   onOpenAdmin: () => void;
   onLogout: () => Promise<void>;
 }) {
+  const [cabinetView, setCabinetView] = useState<"overview" | "variants" | "tasks">("overview");
   const scores = attempts.map((attempt) => attempt.testScore);
   const average = scores.length
     ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length)
@@ -1766,8 +1815,32 @@ function StudentCabinet({
     { value: "random", label: "Случайно", icon: "?" },
   ];
 
+  const cabinetNavigation = (
+    <nav className="cabinet-workspace-nav" aria-label="Разделы личного кабинета">
+      <button className={cabinetView === "overview" ? "is-active" : ""} onClick={() => setCabinetView("overview")}>Обзор</button>
+      <button className={cabinetView === "variants" ? "is-active" : ""} onClick={() => setCabinetView("variants")}>Мои варианты</button>
+      <button className={cabinetView === "tasks" ? "is-active" : ""} onClick={() => setCabinetView("tasks")}>Мои задания</button>
+    </nav>
+  );
+
+  if (cabinetView !== "overview") {
+    return (
+      <div className="student-cabinet has-teacher-studio">
+        {cabinetNavigation}
+        <Suspense fallback={<div className="teacher-studio-fallback">Открываем рабочее пространство...</div>}>
+          <TeacherStudio
+            key={cabinetView}
+            section={cabinetView}
+            onSectionChange={setCabinetView}
+          />
+        </Suspense>
+      </div>
+    );
+  }
+
   return (
     <div className="student-cabinet">
+      {cabinetNavigation}
       <section className="cabinet-hero">
         <div>
           <p>Личный кабинет</p>
@@ -1971,8 +2044,8 @@ export default function Home() {
       return [];
     }
   });
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const gateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimer = useRef<number | null>(null);
+  const gateTimer = useRef<number | null>(null);
   const burstId = useRef(0);
   const claimingTasks = useRef(new Set<string>());
   const taskIndex = useRef<Record<string, number>>({});
@@ -2052,7 +2125,7 @@ export default function Home() {
     setToast("");
     if (toastTimer.current) clearTimeout(toastTimer.current);
     requestAnimationFrame(() => setToast(message));
-    toastTimer.current = setTimeout(() => setToast(""), 2500);
+    toastTimer.current = window.setTimeout(() => setToast(""), 2500);
   };
 
   const applyCommunity = (payload: CommunityPayload) => {
@@ -2105,15 +2178,35 @@ export default function Home() {
     if (section !== "variants" || variants.length > 0 || variantsLoading) return;
 
     queueMicrotask(() => setVariantsLoading(true));
-    void fetch("/data/variant-manifest.json")
-      .then((response) => {
+    void Promise.all([
+      fetch("/data/variant-manifest.json").then((response) => {
         if (!response.ok) throw new Error("Не удалось загрузить каталог вариантов");
         return response.json() as Promise<{ variants: Variant[] }>;
-      })
-      .then((payload) => setVariants(payload.variants ?? []))
+      }),
+      fetch("/api/teacher-variants").then(async (response) =>
+        response.ok ? response.json() as Promise<{ variants: Variant[] }> : { variants: [] as Variant[] },
+      ),
+    ])
+      .then(([imported, authored]) => setVariants([...(imported.variants ?? []), ...(authored.variants ?? [])]))
       .catch(() => notify("Не удалось загрузить каталог вариантов"))
       .finally(() => setVariantsLoading(false));
   }, [section, variants.length, variantsLoading]);
+
+  useEffect(() => {
+    if (section !== "variants") return;
+    let active = true;
+    void fetch("/api/teacher-variants")
+      .then((response) => response.ok ? response.json() as Promise<{ variants: Variant[] }> : { variants: [] as Variant[] })
+      .then((payload) => {
+        if (!active) return;
+        setVariants((current) => [
+          ...current.filter((variant) => !variant.kim.startsWith("0")),
+          ...(payload.variants ?? []),
+        ]);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [section]);
 
   useEffect(() => {
     if (!type) {
@@ -2130,7 +2223,7 @@ export default function Home() {
       setTasksLoading(true);
     });
 
-    const taskRequest =
+    const importedTaskRequest =
       type === "19"
         ? Promise.all(
             [19, 20, 21].map(async (number) => {
@@ -2147,6 +2240,17 @@ export default function Home() {
               return response.json() as Promise<Task[]>;
             },
           );
+
+    const authoredTaskRequest = fetch(`/api/teacher-tasks?number=${type}`, {
+      signal: controller.signal,
+    }).then(async (response) => {
+      if (!response.ok) return [] as Task[];
+      const payload = await response.json() as { tasks?: Task[] };
+      return payload.tasks ?? [];
+    });
+
+    const taskRequest = Promise.all([importedTaskRequest, authoredTaskRequest])
+      .then(([imported, authored]) => [...authored, ...imported]);
 
     void taskRequest
       .then((data) => {
@@ -2516,7 +2620,7 @@ export default function Home() {
     })).filter((group) => group.official.length || group.teachers.length);
   }, [variantSearch, variants]);
   const visibleVariantTotal = variantYears.reduce(
-    (total, group) => total + group.official.length,
+    (total, group) => total + group.official.length + group.teachers.length,
     0,
   );
 
@@ -2524,24 +2628,46 @@ export default function Home() {
     if (openingVariantKim) return;
     setOpeningVariantKim(kim);
     try {
-      const response = await fetch(`/data/variants/${kim}.json`);
-      if (!response.ok) throw new Error("Вариант не загрузился");
-      setExamVariant(await response.json() as ExamVariantData);
+      const isTeacherVariant = kim.startsWith("0");
+      const client = isTeacherVariant ? await getSupabaseBrowserClient() : null;
+      const { data } = client ? await client.auth.getSession() : { data: { session: null } };
+      const response = await fetch(
+        isTeacherVariant ? `/api/teacher-variants/${kim}` : `/data/variants/${kim}.json`,
+        { headers: data.session?.access_token ? { authorization: `Bearer ${data.session.access_token}` } : undefined },
+      );
+      const payload = await response.json().catch(() => null) as (ExamVariantData & { error?: string; code?: string }) | null;
+      if (!response.ok || !payload) {
+        if (response.status === 401) setProfileOpen(true);
+        throw new Error(payload?.error ?? "Вариант не загрузился");
+      }
+      setExamVariant(payload);
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.searchParams.get("kim") === kim) {
+        currentUrl.searchParams.delete("kim");
+        window.history.replaceState({}, "", `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+      }
       if (analyticsSession.current) {
-        const client = await getSupabaseBrowserClient();
-        const { data } = client ? await client.auth.getSession() : { data: { session: null } };
         void fetch("/api/analytics", {
           method: "POST",
           headers: { "content-type": "application/json", ...(data.session?.access_token ? { authorization: `Bearer ${data.session.access_token}` } : {}) },
           body: JSON.stringify({ sessionId: analyticsSession.current, eventType: "exam_start", path: "/variants" }),
         }).catch(() => undefined);
       }
-    } catch {
-      notify("Не удалось открыть экзаменационную станцию");
+    } catch (openError) {
+      notify(openError instanceof Error ? openError.message : "Не удалось открыть вариант");
     } finally {
       setOpeningVariantKim("");
     }
   };
+
+  useEffect(() => {
+    if (section !== "variants" || variantsLoading || examVariant) return;
+    const kim = new URL(window.location.href).searchParams.get("kim")?.trim();
+    if (!kim || !variants.some((variant) => variant.kim === kim)) return;
+    window.setTimeout(() => void openExamVariant(kim), 0);
+    // Глубокая ссылка открывается один раз после загрузки каталога.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, variantsLoading, variants.length, user]);
 
   const saveExamAttempt = (attempt: ExamAttempt) => {
     setExamAttempts((current) => {
@@ -2553,7 +2679,19 @@ export default function Home() {
       }
       return next;
     });
-    if (user) {
+    if (attempt.kim.startsWith("0")) {
+      void getSupabaseBrowserClient().then(async (client) => {
+        const { data } = client ? await client.auth.getSession() : { data: { session: null } };
+        await fetch(`/api/teacher-variants/${attempt.kim}`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(data.session?.access_token ? { authorization: `Bearer ${data.session.access_token}` } : {}),
+          },
+          body: JSON.stringify({ ...attempt, anonymousId: analyticsSession.current }),
+        });
+      }).catch(() => notify("Результат остался на этом устройстве, но не попал в статистику"));
+    } else if (user) {
       void communityRequest("/api/exam-attempts", {
         method: "POST",
         body: JSON.stringify(attempt),
@@ -2862,7 +3000,25 @@ export default function Home() {
               )}
               {variantYears.map((group) => (
                 <section className="variant-year" key={group.year}>
-                  <h2>Варианты за {group.year} учебный год</h2>
+                  <h2>{group.year === "Авторские" ? "Авторские варианты" : `Варианты за ${group.year} учебный год`}</h2>
+                  {group.teachers.length > 0 && (
+                    <div className="variant-group">
+                      <h3>Варианты учителей EGEGE</h3>
+                      <div className="variant-tiles">
+                        {group.teachers.map((variant) => (
+                          <button
+                            className="variant-tile is-teacher"
+                            onClick={() => void openExamVariant(variant.kim)}
+                            disabled={Boolean(openingVariantKim)}
+                            key={variant.kim}
+                          >
+                            <span>{variant.title}</span>
+                            <small>КИМ {variant.kim} · {variant.taskCount} заданий</small>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {group.official.length > 0 && (
                     <div className="variant-group">
                       <h3>Открытые пробники и реальные варианты</h3>

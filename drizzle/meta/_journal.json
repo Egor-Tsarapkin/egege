@@ -15,6 +15,13 @@
       "when": 1786457729804,
       "tag": "0001_same_wither",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786466663004,
+      "tag": "0002_needy_sandman",
+      "breakpoints": true
     }
   ]
 }
