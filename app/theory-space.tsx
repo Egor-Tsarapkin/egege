@@ -111,12 +111,6 @@ const forTheoryLessonTitles: Record<ForTheoryLessonId, string> = {
   comparison: "for или while",
 };
 
-const generatedPlanetImages = [
-  "/theory-planets/planet-1.webp",
-  "/theory-planets/planet-2.webp",
-  "/theory-planets/planet-3.webp",
-] as const;
-
 function PlanetSphere({
   progress,
   variant = 0,
@@ -126,21 +120,6 @@ function PlanetSphere({
   variant?: number;
   complete?: boolean;
 }) {
-  const generatedPlanetImage = generatedPlanetImages[variant];
-
-  if (generatedPlanetImage) {
-    return (
-      <span
-        className={`theory-planet-image-shell planet-image-variant-${variant} ${
-          complete ? "is-complete" : ""
-        }`}
-        aria-hidden="true"
-      >
-        <img src={generatedPlanetImage} alt="" draggable={false} />
-      </span>
-    );
-  }
-
   return (
     <span
       className={`theory-planet-sphere planet-variant-${variant} ${
