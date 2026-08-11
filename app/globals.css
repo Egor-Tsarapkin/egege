@@ -11744,7 +11744,7 @@ footer {
 /* Direct, visible question paging */
 .marathon-question-strip {
   display: grid;
-  grid-template-columns: repeat(5, 42px);
+  grid-template-columns: repeat(var(--question-count, 5), 42px);
   justify-content: center;
   margin: 0 0 16px;
   overflow: visible;
@@ -11763,8 +11763,11 @@ footer {
 
 .marathon-question-stage {
   overflow: hidden;
-  touch-action: pan-y;
   width: 100%;
+}
+
+.ege-marathon.is-quiz {
+  touch-action: pan-y;
 }
 
 .marathon-question-track {
@@ -12000,6 +12003,92 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   .marathon-question-track.is-settling {
     transition-duration: 90ms;
+  }
+}
+
+/* Resume choice and quieter success feedback */
+.marathon-resume-scrim {
+  align-items: center;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(12px);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 20px;
+  position: fixed;
+  z-index: 900;
+}
+
+.marathon-resume-dialog {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
+  max-width: 420px;
+  padding: 28px;
+  width: 100%;
+}
+
+.marathon-resume-dialog > span {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.marathon-resume-dialog h2 {
+  font-size: 26px;
+  letter-spacing: -.035em;
+  margin: 11px 0 8px;
+}
+
+.marathon-resume-dialog p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 22px;
+}
+
+.marathon-resume-dialog button {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  display: block;
+  font-weight: 720;
+  min-height: 51px;
+  padding: 0 16px;
+  width: 100%;
+}
+
+.marathon-resume-dialog button + button {
+  margin-top: 8px;
+}
+
+.marathon-resume-dialog button.is-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.marathon-success-flash {
+  animation-name: marathon-edge-flash-soft;
+  box-shadow: none;
+}
+
+@keyframes marathon-edge-flash-soft {
+  0% { box-shadow: inset 0 0 0 0 transparent; opacity: 0; }
+  34% { box-shadow: inset 0 0 20px 1px color-mix(in srgb, var(--accent) 32%, transparent); opacity: .42; }
+  100% { box-shadow: inset 0 0 42px 0 transparent; opacity: 0; }
+}
+
+@media (max-width: 700px) {
+  .marathon-resume-dialog {
+    border-radius: 18px;
+    padding: 22px 18px 18px;
+  }
+
+  .marathon-resume-dialog h2 {
+    font-size: 23px;
   }
 }
 

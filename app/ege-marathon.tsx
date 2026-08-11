@@ -285,7 +285,10 @@ export default function EgeMarathon({
   const [codeScale, setCodeScale] = useState(0.9);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [swipeSettling, setSwipeSettling] = useState(false);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [visibleQuestionRadius, setVisibleQuestionRadius] = useState(2);
   const questionStage = useRef<HTMLDivElement | null>(null);
+  const resumePromptInitialized = useRef(false);
   const swipeGesture = useRef<{
     pointerId: number;
     startX: number;
@@ -321,6 +324,23 @@ export default function EgeMarathon({
       // The marathon remains usable when browser storage is unavailable.
     }
   }, [local, ready]);
+
+  useEffect(() => {
+    if (!ready || resumePromptInitialized.current) return;
+    resumePromptInitialized.current = true;
+    setShowResumePrompt(Object.keys(local.answered).length > 0);
+  }, [local.answered, ready]);
+
+  useEffect(() => {
+    const syncVisibleQuestions = () => {
+      const availableWidth = Math.min(window.innerWidth - 40, 850);
+      const radius = Math.floor(((availableWidth / 48) - 1) / 2);
+      setVisibleQuestionRadius(Math.max(2, Math.min(7, radius)));
+    };
+    syncVisibleQuestions();
+    window.addEventListener("resize", syncVisibleQuestions);
+    return () => window.removeEventListener("resize", syncVisibleQuestions);
+  }, []);
 
   useEffect(() => () => {
     if (autoTimer.current) window.clearTimeout(autoTimer.current);
@@ -400,9 +420,8 @@ export default function EgeMarathon({
     }));
   };
 
-  const onSwipeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+  const onSwipeStart = (event: React.PointerEvent<HTMLElement>) => {
     if (swipeSettling || (event.target as HTMLElement).closest(".marathon-code")) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
     swipeGesture.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -414,13 +433,14 @@ export default function EgeMarathon({
     };
   };
 
-  const onSwipeMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const onSwipeMove = (event: React.PointerEvent<HTMLElement>) => {
     const gesture = swipeGesture.current;
     if (!gesture || gesture.pointerId !== event.pointerId) return;
     const deltaX = event.clientX - gesture.startX;
     const deltaY = event.clientY - gesture.startY;
     if (!gesture.axis && Math.max(Math.abs(deltaX), Math.abs(deltaY)) > 9) {
       gesture.axis = Math.abs(deltaX) > Math.abs(deltaY) * 1.15 ? "x" : "y";
+      if (gesture.axis === "x") event.currentTarget.setPointerCapture(event.pointerId);
     }
     if (gesture.axis !== "x") return;
 
@@ -435,7 +455,7 @@ export default function EgeMarathon({
     setSwipeOffset(atStart || atEnd ? deltaX * 0.24 : deltaX);
   };
 
-  const finishSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
+  const finishSwipe = (event: React.PointerEvent<HTMLElement>) => {
     const gesture = swipeGesture.current;
     if (!gesture || gesture.pointerId !== event.pointerId) return;
     swipeGesture.current = null;
@@ -461,12 +481,21 @@ export default function EgeMarathon({
   const topics = useMemo(() => [...new Set(QUESTIONS.map((question) => question.topic))], []);
 
   if (screen === "quiz") {
-    const questionSlots = [-2, -1, 0, 1, 2].map((offset) => questionIndex + offset);
+    const questionSlots = Array.from(
+      { length: visibleQuestionRadius * 2 + 1 },
+      (_, slot) => questionIndex + slot - visibleQuestionRadius,
+    );
     const previousQuestion = byId.get(queue[questionIndex - 1]);
     const nextQuestion = byId.get(queue[questionIndex + 1]);
 
     return (
-      <section className={`ege-marathon is-quiz ${isWarmAccent ? "has-warm-accent" : ""}`}>
+      <section
+        className={`ege-marathon is-quiz ${isWarmAccent ? "has-warm-accent" : ""}`}
+        onPointerDown={onSwipeStart}
+        onPointerMove={onSwipeMove}
+        onPointerUp={finishSwipe}
+        onPointerCancel={finishSwipe}
+      >
         {flash > 0 && <span className="marathon-success-flash" key={flash} />}
         <header className="marathon-quiz-header">
           <button onClick={() => setScreen("home")} aria-label="Вернуться в марафон"><ArrowLeft /></button>
@@ -474,7 +503,11 @@ export default function EgeMarathon({
           <button className={favorites.has(activeQuestion.id) ? "is-favorite" : ""} onClick={() => toggleFavorite(activeQuestion.id)} aria-label="Добавить в избранное"><Star /></button>
         </header>
 
-        <nav className="marathon-question-strip" aria-label="Вопросы марафона">
+        <nav
+          className="marathon-question-strip"
+          aria-label="Вопросы марафона"
+          style={{ "--question-count": questionSlots.length } as React.CSSProperties}
+        >
           {questionSlots.map((index, slot) => {
             const id = queue[index];
             if (!id) return <span className="is-empty-slot" aria-hidden="true" key={`empty-${slot}`} />;
@@ -491,10 +524,6 @@ export default function EgeMarathon({
         <div
           className="marathon-question-stage"
           ref={questionStage}
-          onPointerDown={onSwipeStart}
-          onPointerMove={onSwipeMove}
-          onPointerUp={finishSwipe}
-          onPointerCancel={finishSwipe}
         >
           <div
             className={`marathon-question-track ${swipeSettling ? "is-settling" : ""}`}
@@ -629,6 +658,33 @@ export default function EgeMarathon({
 
   return (
     <section className="ege-marathon">
+      {showResumePrompt && (
+        <div className="marathon-resume-scrim" role="presentation">
+          <section className="marathon-resume-dialog" role="dialog" aria-modal="true" aria-labelledby="resume-marathon-title">
+            <span>Сохранённый прогресс</span>
+            <h2 id="resume-marathon-title">Как начать марафон?</h2>
+            <p>Вы остановились на вопросе {resumeIndex + 1} из {QUESTIONS.length}.</p>
+            <button
+              className="is-primary"
+              onClick={() => {
+                setShowResumePrompt(false);
+                start(allQuestionIds, resumeIndex);
+              }}
+            >
+              Продолжить с вопроса {resumeIndex + 1}
+            </button>
+            <button
+              onClick={() => {
+                setLocal((current) => ({ ...current, answered: {} }));
+                setShowResumePrompt(false);
+                start(allQuestionIds);
+              }}
+            >
+              Начать заново
+            </button>
+          </section>
+        </div>
+      )}
       <header className="marathon-home-header">
         <div><span className="marathon-mark">Е</span><div><strong>EGE-марафон</strong><small>15 вопросов · MVP</small></div></div>
         <button onClick={() => setScreen("settings")} aria-label="Настройки марафона"><Settings /></button>
@@ -642,10 +698,10 @@ export default function EgeMarathon({
         </div>
         <div className="marathon-progress-grid">
           <button onClick={() => start(allQuestionIds, resumeIndex)}>
-            <strong>{answeredCount}<small> / {QUESTIONS.length}</small></strong><i><b style={{ width: `${(answeredCount / QUESTIONS.length) * 100}%` }} /></i><span>Вопросы</span>
+            <strong>{correctCount}<small> / {QUESTIONS.length}</small></strong><i><b style={{ width: `${(correctCount / QUESTIONS.length) * 100}%` }} /></i><span>Вопросы</span>
           </button>
           <button onClick={() => setScreen("themes")}>
-            <strong>{topics.filter((topic) => QUESTIONS.filter((question) => question.topic === topic).every((question) => local.answered[question.id])).length}<small> / {topics.length}</small></strong><i><b style={{ width: `${(topics.filter((topic) => QUESTIONS.filter((question) => question.topic === topic).every((question) => local.answered[question.id])).length / topics.length) * 100}%` }} /></i><span>Темы</span>
+            <strong>{topics.filter((topic) => QUESTIONS.filter((question) => question.topic === topic).every((question) => local.answered[question.id] === "correct")).length}<small> / {topics.length}</small></strong><i><b style={{ width: `${(topics.filter((topic) => QUESTIONS.filter((question) => question.topic === topic).every((question) => local.answered[question.id] === "correct")).length / topics.length) * 100}%` }} /></i><span>Темы</span>
           </button>
         </div>
       </section>
