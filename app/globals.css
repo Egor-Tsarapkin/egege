@@ -579,7 +579,7 @@
   width: 32px;
 }
 
-.marathon-options code { color: var(--text); font-family: inherit; font-size: 14px; line-height: 1.35; white-space: normal; }
+.marathon-options code { color: var(--text); font-family: inherit; font-size: 14px; line-height: 1.35; white-space: pre-wrap; }
 .marathon-options svg { height: 19px; width: 19px; }
 .marathon-options > button.is-correct { background: color-mix(in srgb, #35b96a 18%, var(--surface)); border-color: #45c879; color: #67d994; }
 .marathon-options > button.is-wrong { background: color-mix(in srgb, #df5252 16%, var(--surface)); border-color: #d95b5b; color: #f07a7a; }

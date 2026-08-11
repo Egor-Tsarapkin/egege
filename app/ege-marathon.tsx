@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { QUESTIONS, type MarathonQuestion } from "./ege-marathon-data";
 
 type MarathonTheme = "dark" | "light";
 type MarathonAccent =
@@ -36,18 +37,6 @@ type MarathonAccent =
 type MarathonScreen = "home" | "quiz" | "themes" | "favorites" | "errors" | "settings";
 type AnswerState = "correct" | "wrong";
 
-type MarathonQuestion = {
-  id: string;
-  bank: "ЕГЭ" | "Python";
-  topic: string;
-  title: string;
-  prompt: string;
-  code?: string;
-  options: string[];
-  correct: number;
-  explanation: string;
-};
-
 type LocalState = {
   answered: Record<string, AnswerState>;
   favorites: string[];
@@ -62,165 +51,6 @@ const DEFAULT_LOCAL_STATE: LocalState = {
   autoAdvance: true,
   successEffect: true,
 };
-
-const QUESTIONS: MarathonQuestion[] = [
-  {
-    id: "ege-2-1",
-    bank: "ЕГЭ",
-    topic: "Задание №2 · Логика",
-    title: "Задание №2",
-    prompt: "Какой логической операции соответствует символ ∧?",
-    options: ["OR", "AND", "NOT", "XOR"],
-    correct: 1,
-    explanation: "Символ ∧ обозначает конъюнкцию — логическое И. В Python этой операции соответствует оператор and.",
-  },
-  {
-    id: "ege-2-2",
-    bank: "ЕГЭ",
-    topic: "Задание №2 · Логика",
-    title: "Задание №2",
-    prompt: "Какой логической операции соответствует символ ∨?",
-    options: ["AND", "OR", "NOT", "Импликация"],
-    correct: 1,
-    explanation: "Символ ∨ обозначает дизъюнкцию — логическое ИЛИ. В Python это оператор or.",
-  },
-  {
-    id: "ege-2-3",
-    bank: "ЕГЭ",
-    topic: "Задание №2 · Логика",
-    title: "Задание №2",
-    prompt: "Какой оператор Python соответствует импликации (→)?",
-    options: ["and", "or", "<=", "=="],
-    correct: 2,
-    explanation: "Импликация A → B ложна только при A = 1 и B = 0. Сравнение A <= B даёт ту же таблицу истинности.",
-  },
-  {
-    id: "ege-2-4",
-    bank: "ЕГЭ",
-    topic: "Задание №2 · Логика",
-    title: "Задание №2",
-    prompt: "Какой оператор Python соответствует эквивалентности (≡)?",
-    options: ["!=", "==", "<=", "or"],
-    correct: 1,
-    explanation: "Эквивалентность истинна, когда значения одинаковы, поэтому в Python используется сравнение ==.",
-  },
-  {
-    id: "ege-2-5",
-    bank: "ЕГЭ",
-    topic: "Задание №2 · Логика",
-    title: "Задание №2",
-    prompt: "Какой символ обозначает отрицание?",
-    options: ["∨", "∧", "¬", "→"],
-    correct: 2,
-    explanation: "Знак ¬ меняет логическое значение на противоположное: истину на ложь и наоборот.",
-  },
-  {
-    id: "python-var-1",
-    bank: "Python",
-    topic: "Python · Переменные",
-    title: "Переменные",
-    prompt: "Что будет выведено на экран?",
-    code: "a = 7\nprint(a)",
-    options: ["7", "a", "\"7\"", "Ошибка"],
-    correct: 0,
-    explanation: "В переменной a хранится целое число 7. print(a) выводит значение переменной, а не её имя.",
-  },
-  {
-    id: "python-var-2",
-    bank: "Python",
-    topic: "Python · Переменные",
-    title: "Переменные",
-    prompt: "Что будет выведено на экран?",
-    code: "a = 5\nb = a\nprint(b)",
-    options: ["5", "a", "b", "Ошибка"],
-    correct: 0,
-    explanation: "При выполнении b = a в переменную b копируется текущее значение a — число 5.",
-  },
-  {
-    id: "python-var-3",
-    bank: "Python",
-    topic: "Python · Переменные",
-    title: "Переменные",
-    prompt: "Что будет выведено на экран?",
-    code: "a = 5\nb = a\na = 10\nprint(b)",
-    options: ["5", "10", "15", "Ошибка"],
-    correct: 0,
-    explanation: "b уже получила значение 5. Последующее изменение a не меняет ранее сохранённое значение b.",
-  },
-  {
-    id: "python-var-4",
-    bank: "Python",
-    topic: "Python · Переменные",
-    title: "Переменные",
-    prompt: "Что будет выведено на экран?",
-    code: "a = 4\na += 6\nprint(a)",
-    options: ["4", "6", "10", "Ошибка"],
-    correct: 2,
-    explanation: "Запись a += 6 равносильна a = a + 6. К исходным 4 прибавляется 6, получается 10.",
-  },
-  {
-    id: "python-var-5",
-    bank: "Python",
-    topic: "Python · Переменные",
-    title: "Переменные",
-    prompt: "Какое имя переменной допустимо?",
-    options: ["student_score", "student-score", "2score", "for"],
-    correct: 0,
-    explanation: "Имя student_score состоит из букв и знака подчёркивания. Дефис недопустим, имя не может начинаться с цифры, а for — ключевое слово.",
-  },
-  {
-    id: "python-type-1",
-    bank: "Python",
-    topic: "Python · Типы данных",
-    title: "Типы данных",
-    prompt: "Какой тип данных имеет значение 15?",
-    options: ["int", "float", "str", "bool"],
-    correct: 0,
-    explanation: "Число 15 записано без точки и кавычек, поэтому Python воспринимает его как целое число типа int.",
-  },
-  {
-    id: "python-type-2",
-    bank: "Python",
-    topic: "Python · Типы данных",
-    title: "Типы данных",
-    prompt: "Какой тип данных имеет значение 15.0?",
-    options: ["int", "float", "str", "bool"],
-    correct: 1,
-    explanation: "Наличие десятичной точки делает 15.0 числом с плавающей точкой — типом float.",
-  },
-  {
-    id: "python-type-3",
-    bank: "Python",
-    topic: "Python · Типы данных",
-    title: "Типы данных",
-    prompt: "Какой тип данных имеет значение \"15\"?",
-    options: ["int", "float", "str", "bool"],
-    correct: 2,
-    explanation: "Кавычки превращают запись в текст. Значение \"15\" имеет строковый тип str, а не числовой тип.",
-  },
-  {
-    id: "python-type-4",
-    bank: "Python",
-    topic: "Python · Типы данных",
-    title: "Типы данных",
-    prompt: "Что произойдёт?",
-    code: "print(5 + \"3\")",
-    options: ["Будет выведено 53", "Будет выведено 8", "Возникнет ошибка", "Будет выведено 5 3"],
-    correct: 2,
-    explanation: "Python не складывает int и str напрямую. Число 5 и строку \"3\" сначала нужно привести к одному типу.",
-  },
-  {
-    id: "python-type-5",
-    bank: "Python",
-    topic: "Python · Типы данных",
-    title: "Типы данных",
-    prompt: "Что будет выведено?",
-    code: "print(\"5\" + \"3\")",
-    options: ["8", "53", "5 3", "Ошибка"],
-    correct: 1,
-    explanation: "Обе части — строки. Оператор + соединяет их последовательно, поэтому получается строка 53.",
-  },
-];
 
 const PYTHON_KEYWORDS = new Set([
   "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del",
@@ -348,12 +178,12 @@ export default function EgeMarathon({
   const byId = useMemo(() => new Map(QUESTIONS.map((question) => [question.id, question])), []);
   const activeQuestion = byId.get(queue[questionIndex]) ?? QUESTIONS[0];
   const favorites = useMemo(() => new Set(local.favorites), [local.favorites]);
-  const answeredCount = Object.keys(local.answered).length;
-  const correctCount = Object.values(local.answered).filter((value) => value === "correct").length;
-  const queueCorrectCount = queue.filter((id) => local.answered[id] === "correct").length;
-  const errorIds = Object.entries(local.answered).filter(([, value]) => value === "wrong").map(([id]) => id);
-  const isWarmAccent = ["red", "pink", "orange"].includes(accent);
   const allQuestionIds = QUESTIONS.map((question) => question.id);
+  const answeredCount = allQuestionIds.filter((id) => local.answered[id]).length;
+  const correctCount = allQuestionIds.filter((id) => local.answered[id] === "correct").length;
+  const queueCorrectCount = queue.filter((id) => local.answered[id] === "correct").length;
+  const errorIds = allQuestionIds.filter((id) => local.answered[id] === "wrong");
+  const isWarmAccent = ["red", "pink", "orange"].includes(accent);
   const resumeIndex = Math.max(0, allQuestionIds.findIndex((id) => !local.answered[id]));
 
   const resetAnswer = () => {
@@ -664,7 +494,7 @@ export default function EgeMarathon({
   if (screen === "themes") {
     return (
       <section className="ege-marathon marathon-subpage">
-        <header><button onClick={() => setScreen("home")}><ArrowLeft /></button><div><strong>Темы</strong><span>{QUESTIONS.length} вопросов в MVP</span></div></header>
+        <header><button onClick={() => setScreen("home")}><ArrowLeft /></button><div><strong>Темы</strong><span>{QUESTIONS.length} вопросов</span></div></header>
         <div className="marathon-topic-list">
           {topics.map((topic) => {
             const ids = QUESTIONS.filter((question) => question.topic === topic).map((question) => question.id);
@@ -734,7 +564,7 @@ export default function EgeMarathon({
         </div>
       )}
       <header className="marathon-home-header">
-        <div><span className="marathon-mark">Е</span><div><strong>EGE-марафон</strong><small>15 вопросов · MVP</small></div></div>
+        <div><span className="marathon-mark">Е</span><div><strong>EGE-марафон</strong><small>{QUESTIONS.length} вопросов</small></div></div>
         <button onClick={() => setScreen("settings")} aria-label="Настройки марафона"><Settings /></button>
       </header>
 
@@ -761,7 +591,7 @@ export default function EgeMarathon({
         <button onClick={() => setScreen("favorites")}><span><Star /></span><div><strong>Избранное</strong><small>{favorites.size} сохранено</small></div><ChevronRight /></button>
       </div>
 
-      <p className="marathon-local-note">Прогресс этого MVP сохраняется на устройстве</p>
+      <p className="marathon-local-note">Прогресс сохраняется на устройстве</p>
     </section>
   );
 }
