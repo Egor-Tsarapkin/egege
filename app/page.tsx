@@ -1958,6 +1958,7 @@ export default function Home() {
   const [gateSection, setGateSection] = useState<GateSection | null>(null);
   const [rattlingSection, setRattlingSection] = useState<GateSection | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [authAccessToken, setAuthAccessToken] = useState("");
   const [isPremium, setIsPremium] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authConfigured, setAuthConfigured] = useState<boolean | null>(null);
@@ -2203,11 +2204,15 @@ export default function Home() {
 
       setAuthConfigured(true);
       const { data } = await client.auth.getSession();
-      if (active) setUser(data.session?.user ?? null);
+      if (active) {
+        setUser(data.session?.user ?? null);
+        setAuthAccessToken(data.session?.access_token ?? "");
+      }
 
       const listener = client.auth.onAuthStateChange((_event, session) => {
         if (!active) return;
         setUser(session?.user ?? null);
+        setAuthAccessToken(session?.access_token ?? "");
         if (!session?.user) {
           setCommunity(null);
           setActivity({});
@@ -2898,7 +2903,7 @@ export default function Home() {
               </div>
             }
           >
-            <TheorySpace accessToken={data.session?.access_token ?? ""} userId={user.id} />
+            <TheorySpace accessToken={authAccessToken} userId={user.id} />
           </Suspense>
         )}
 
