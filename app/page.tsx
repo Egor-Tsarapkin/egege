@@ -798,7 +798,7 @@ function ProfileMenu({
           </div>
         </fieldset>
 
-        <fieldset className="settings-block">
+        <fieldset className="settings-block site-style-settings">
           <legend>Стиль главной</legend>
           <div className="site-style-options">
             {siteStyleOptions.map((style) => (
@@ -1840,7 +1840,7 @@ function StudentCabinet({
               ))}
             </div>
           </fieldset>
-          <fieldset className="settings-block">
+          <fieldset className="settings-block site-style-settings">
             <legend>Стиль главной</legend>
             <div className="site-style-options cabinet-style-options">
               {siteStyleOptions.map((style) => (
