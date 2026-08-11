@@ -2663,7 +2663,7 @@ export default function Home() {
   useEffect(() => {
     if (section !== "variants" || variantsLoading || examVariant) return;
     const kim = new URL(window.location.href).searchParams.get("kim")?.trim();
-    if (!kim || !variants.some((variant) => variant.kim === kim)) return;
+    if (!kim || (!kim.startsWith("0") && !variants.some((variant) => variant.kim === kim))) return;
     window.setTimeout(() => void openExamVariant(kim), 0);
     // Глубокая ссылка открывается один раз после загрузки каталога.
     // eslint-disable-next-line react-hooks/exhaustive-deps

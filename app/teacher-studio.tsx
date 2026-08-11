@@ -29,6 +29,7 @@ import {
   X,
 } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import RichHtml from "@/app/rich-html";
 
 type StudioSection = "variants" | "tasks";
 type FolderRow = { id: number; owner_id: string; parent_id: number | null; kind: StudioSection; name: string };
@@ -76,6 +77,60 @@ type AttemptRow = {
   results: AttemptResult[];
 };
 type StatsPayload = { kim: string; title: string; attempts: AttemptRow[] };
+type PreviewTask = { id: string; number: number; html: string; answer?: string; table?: { cols: number; rows: number } };
+
+let taskIndexRequest: Promise<Record<string, number>> | null = null;
+
+function getTaskIndex() {
+  taskIndexRequest ??= fetch("/data/task-index.json").then((response) => {
+    if (!response.ok) throw new Error("Не удалось проверить базу заданий");
+    return response.json() as Promise<Record<string, number>>;
+  });
+  return taskIndexRequest;
+}
+
+async function loadTaskPreviews(ids: string[]) {
+  const unique = [...new Set(ids)];
+  const result = new Map<string, PreviewTask>();
+  const authored = unique.filter((id) => /^0\d{5,}$/.test(id));
+  const imported = unique.filter((id) => !/^0\d{5,}$/.test(id));
+  await Promise.all(authored.map(async (id) => {
+    const response = await fetch(`/api/teacher-tasks?id=${encodeURIComponent(id)}`);
+    const payload = response.ok ? await response.json() as { tasks?: PreviewTask[] } : {};
+    const task = payload.tasks?.find((item) => String(item.id) === id);
+    if (task) result.set(id, task);
+  }));
+  if (imported.length) {
+    const index = await getTaskIndex();
+    const numbers = [...new Set(imported.map((id) => index[id]).filter(Boolean))];
+    const groups = await Promise.all(numbers.map(async (number) => {
+      const response = await fetch(`/data/tasks/${number}.json`);
+      return response.ok ? response.json() as Promise<PreviewTask[]> : [];
+    }));
+    const wanted = new Set(imported);
+    groups.flat().forEach((task) => {
+      const id = String(task.id);
+      if (wanted.has(id)) result.set(id, task);
+    });
+  }
+  return result;
+}
+
+async function uploadEmbeddedImages(html: string) {
+  if (!html.includes("src=\"data:image/")) return html;
+  const documentHtml = new DOMParser().parseFromString(`<div id="teacher-html-root">${html}</div>`, "text/html");
+  const root = documentHtml.querySelector("#teacher-html-root");
+  if (!root) return html;
+  const images = Array.from(root.querySelectorAll<HTMLImageElement>('img[src^="data:image/"]'));
+  await Promise.all(images.map(async (image, index) => {
+    const blob = await fetch(image.src).then((response) => response.blob());
+    const form = new FormData();
+    form.set("image", new File([blob], `image-${index + 1}.${blob.type.includes("jpeg") ? "jpg" : "png"}`, { type: blob.type || "image/png" }));
+    const uploaded = await studioRequest<{ url: string }>("/api/teacher-images", { method: "POST", body: form });
+    image.src = uploaded.url;
+  }));
+  return root.innerHTML;
+}
 
 async function studioRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const client = await getSupabaseBrowserClient();
@@ -142,6 +197,7 @@ function RichEditor({ value, onChange, label, minHeight = 190 }: {
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
+  const [imageBusy, setImageBusy] = useState(false);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -174,17 +230,30 @@ function RichEditor({ value, onChange, label, minHeight = 190 }: {
   };
   const addImage = async (file?: File) => {
     if (!file) return;
-    if (file.size > 2.5 * 1024 * 1024) {
-      window.alert("Изображение для вставки должно быть меньше 2,5 МБ. Большой файл можно добавить ниже как вложение.");
+    setImageBusy(true);
+    try {
+      const form = new FormData();
+      form.set("image", file, file.name || "image.png");
+      const uploaded = await studioRequest<{ url: string }>("/api/teacher-images", { method: "POST", body: form });
+      editorRef.current?.focus();
+      insertHtml(`<img src="${uploaded.url}" alt="Изображение к заданию"><p><br></p>`);
+      onChange(editorRef.current?.innerHTML ?? "");
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Не удалось загрузить изображение");
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
+  const pasteContent = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const image = Array.from(event.clipboardData.items)
+      .find((item) => item.kind === "file" && item.type.startsWith("image/"))?.getAsFile();
+    if (!image) {
+      window.setTimeout(() => onChange(editorRef.current?.innerHTML ?? ""));
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      editorRef.current?.focus();
-      insertHtml(`<img src="${String(reader.result)}" alt="Изображение к заданию"><p><br></p>`);
-      onChange(editorRef.current?.innerHTML ?? "");
-    };
-    reader.readAsDataURL(file);
+    event.preventDefault();
+    void addImage(image);
   };
 
   return (
@@ -209,7 +278,7 @@ function RichEditor({ value, onChange, label, minHeight = 190 }: {
         <button type="button" onClick={addLink} aria-label="Ссылка"><LinkIcon /></button>
         <button type="button" onClick={addTable} aria-label="Таблица"><Table2 /></button>
         <button type="button" onClick={addFormula} aria-label="Формула"><Sigma /></button>
-        <button type="button" onClick={() => imageInput.current?.click()} aria-label="Изображение"><ImageIcon /></button>
+        <button type="button" onClick={() => imageInput.current?.click()} aria-label="Изображение" disabled={imageBusy}><ImageIcon /></button>
         <button type="button" onClick={() => command("removeFormat")} aria-label="Очистить форматирование"><AlignLeft /></button>
         <input ref={imageInput} type="file" accept="image/*" hidden onChange={(event) => void addImage(event.target.files?.[0])} />
       </div>
@@ -221,8 +290,9 @@ function RichEditor({ value, onChange, label, minHeight = 190 }: {
         data-placeholder="Начните писать или вставьте готовый текст..."
         style={{ minHeight }}
         onInput={(event) => onChange(event.currentTarget.innerHTML)}
-        onPaste={() => window.setTimeout(() => onChange(editorRef.current?.innerHTML ?? ""))}
+        onPaste={pasteContent}
       />
+      {imageBusy && <span className="teacher-image-progress">Загружаем изображение…</span>}
     </div>
   );
 }
@@ -283,6 +353,12 @@ function TaskEditor({ task, folders, initialFolder, onClose, onSaved }: {
     setBusy(true);
     setError("");
     try {
+      const [storedStatementHtml, storedSolutionHtml] = await Promise.all([
+        uploadEmbeddedImages(statementHtml),
+        uploadEmbeddedImages(solutionHtml),
+      ]);
+      setStatementHtml(storedStatementHtml);
+      setSolutionHtml(storedSolutionHtml);
       let payload = await studioRequest<StudioPayload>("/api/teacher-studio", {
         method: "POST",
         body: JSON.stringify({
@@ -291,11 +367,11 @@ function TaskEditor({ task, folders, initialFolder, onClose, onSaved }: {
           folderId,
           examNumber,
           note,
-          statementHtml,
+          statementHtml: storedStatementHtml,
           answer,
           solutionVideoUrl: videoUrl,
           solutionTimecode: timecode,
-          solutionHtml,
+          solutionHtml: storedSolutionHtml,
         }),
       });
       const savedId = payload.savedId ?? task?.public_id;
@@ -348,6 +424,10 @@ function TaskEditor({ task, folders, initialFolder, onClose, onSaved }: {
             <label className="teacher-field teacher-field-wide"><span>Примечание</span><input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Например: домашняя работа по графам" maxLength={160} /></label>
           </div>
           <RichEditor value={statementHtml} onChange={setStatementHtml} label="Условие задания" minHeight={260} />
+          <section className="teacher-live-preview">
+            <div><p>Предпросмотр</p><h3>Так задание увидит ученик</h3></div>
+            <article><span>Задание №{examNumber}</span>{statementHtml ? <RichHtml html={statementHtml} /> : <p>Условие пока не добавлено</p>}</article>
+          </section>
           <section className="teacher-answer-builder">
             <div><p>Правильный ответ</p><h3>Как ученик будет отвечать</h3></div>
             <div className="teacher-answer-type">
@@ -416,15 +496,40 @@ function VariantEditor({ variant, folders, initialFolder, onClose, onSaved }: {
   const [oneAttempt, setOneAttempt] = useState(Boolean(variant?.one_attempt));
   const [taskIds, setTaskIds] = useState(variant?.task_ids ?? []);
   const [taskInput, setTaskInput] = useState("");
+  const [taskPreviews, setTaskPreviews] = useState<Map<string, PreviewTask>>(new Map());
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [checkingTasks, setCheckingTasks] = useState(false);
   const [error, setError] = useState("");
 
-  const addTasks = () => {
+  useEffect(() => {
+    if (!taskIds.length) return;
+    let active = true;
+    void loadTaskPreviews(taskIds).then((previews) => {
+      if (active) setTaskPreviews(previews);
+    }).catch(() => undefined);
+    return () => { active = false; };
+    // Existing tasks are loaded once when the editor opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const addTasks = async () => {
     const ids = taskInput.split(/[\s,;]+/).map((item) => item.trim()).filter(Boolean);
     if (!ids.length) return;
-    setTaskIds((current) => [...current, ...ids].slice(0, 60));
-    setTaskInput("");
+    setCheckingTasks(true);
+    setError("");
+    try {
+      const previews = await loadTaskPreviews(ids);
+      const missing = ids.find((id) => !previews.has(id));
+      if (missing) throw new Error(`Задание ${missing} не найдено`);
+      setTaskPreviews((current) => new Map([...current, ...previews]));
+      setTaskIds((current) => [...current, ...ids].slice(0, 60));
+      setTaskInput("");
+    } catch (lookupError) {
+      setError(lookupError instanceof Error ? lookupError.message : "Не удалось проверить ID");
+    } finally {
+      setCheckingTasks(false);
+    }
   };
   const save = async () => {
     setBusy(true);
@@ -476,7 +581,7 @@ function VariantEditor({ variant, folders, initialFolder, onClose, onSaved }: {
         </section>
         <section className="teacher-task-sequence">
           <div className="teacher-sequence-heading"><div><p>Задания варианта</p><h3>{taskIds.length ? `${taskIds.length} заданий` : "Добавьте задания по ID"}</h3></div><span>Порядок можно менять перетаскиванием</span></div>
-          <div className="teacher-add-id"><label><span>ID одного или нескольких заданий</span><input value={taskInput} onChange={(event) => setTaskInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addTasks(); } }} placeholder="31529, 031529" /></label><button type="button" onClick={addTasks}><Plus /> Добавить</button></div>
+          <div className="teacher-add-id"><label><span>ID одного или нескольких заданий</span><input value={taskInput} onChange={(event) => setTaskInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void addTasks(); } }} placeholder="31529, 031529" /></label><button type="button" onClick={() => void addTasks()} disabled={checkingTasks}><Plus /> {checkingTasks ? "Проверяем…" : "Добавить"}</button></div>
           {taskIds.length ? <div className="teacher-sequence-list">{taskIds.map((id, index) => (
             <article
               draggable
@@ -493,7 +598,7 @@ function VariantEditor({ variant, folders, initialFolder, onClose, onSaved }: {
                 setDragIndex(null);
               }}
               key={`${id}-${index}`}
-            ><GripVertical /><b>{index + 1}</b><span>ID {id}</span><button type="button" onClick={() => setTaskIds((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Удалить задание ${id}`}><X /></button></article>
+            ><div className="teacher-sequence-summary"><GripVertical /><b>{index + 1}</b><span>ID {id}</span><button type="button" onClick={() => setTaskIds((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Удалить задание ${id}`}><X /></button></div>{taskPreviews.get(id) ? <div className="teacher-sequence-preview"><RichHtml html={taskPreviews.get(id)?.html ?? ""} /></div> : <div className="teacher-sequence-preview is-loading">Загружаем предпросмотр…</div>}</article>
           ))}</div> : <div className="teacher-inline-empty">Можно смешивать любые номера и повторять типы заданий.</div>}
         </section>
       </div>

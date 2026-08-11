@@ -493,6 +493,7 @@
 .teacher-editor-toolbar button:hover { background: var(--surface-raised); color: var(--accent); }
 .teacher-editor-toolbar button svg { height: 17px; width: 17px; }
 .teacher-editor-toolbar > span { background: var(--line-strong); height: 22px; margin: 0 4px; width: 1px; }
+.teacher-image-progress { color: var(--muted); display: block; font-size: 11px; padding: 0 16px 12px; }
 .teacher-editor-canvas {
   color: var(--text);
   font-size: 15px;
@@ -603,14 +604,24 @@
 .teacher-add-id button { align-items: center; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; color: var(--text); display: flex; font: inherit; font-size: 12px; font-weight: 700; gap: 7px; height: 44px; padding: 0 14px; }
 .teacher-add-id button svg { height: 16px; width: 16px; }
 .teacher-sequence-list { display: grid; gap: 6px; }
-.teacher-sequence-list article { align-items: center; background: var(--surface-raised); border: 1px solid transparent; border-radius: 8px; cursor: grab; display: grid; gap: 11px; grid-template-columns: auto 28px minmax(0, 1fr) auto; min-height: 48px; padding: 5px 8px; }
+.teacher-sequence-list article { background: var(--surface-raised); border: 1px solid transparent; border-radius: 8px; cursor: grab; min-height: 48px; overflow: hidden; }
 .teacher-sequence-list article:hover { border-color: var(--line-strong); }
-.teacher-sequence-list article > svg { color: var(--dim); height: 17px; width: 17px; }
+.teacher-sequence-summary { align-items: center; display: grid; gap: 11px; grid-template-columns: auto 28px minmax(0, 1fr) auto; padding: 5px 8px; }
+.teacher-sequence-summary > svg { color: var(--dim); height: 17px; width: 17px; }
 .teacher-sequence-list article b { color: var(--muted); font: 600 11px var(--font-geist-mono); }
-.teacher-sequence-list article span { font: 650 12px var(--font-geist-mono); }
+.teacher-sequence-summary > span { font: 650 12px var(--font-geist-mono); }
 .teacher-sequence-list article button { background: transparent; border: 0; color: var(--muted); height: 34px; width: 34px; }
 .teacher-sequence-list article button svg { height: 15px; width: 15px; }
+.teacher-sequence-preview { background: var(--surface); border-top: 1px solid var(--line); color: var(--text-soft); cursor: default; font-size: 13px; line-height: 1.6; max-height: 280px; overflow: auto; padding: 16px 18px; }
+.teacher-sequence-preview img { display: block; height: auto; margin: 14px auto; max-width: 100%; }
+.teacher-sequence-preview.is-loading { color: var(--muted); }
 .teacher-inline-empty { background: var(--surface-raised); border-radius: 8px; color: var(--muted); font-size: 12px; padding: 18px; text-align: center; }
+
+.teacher-live-preview { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 16px; padding: 22px; }
+.teacher-live-preview h3 { font-size: 18px; margin: 0; }
+.teacher-live-preview > article { background: var(--surface-raised); border-radius: 10px; color: var(--text-soft); line-height: 1.65; padding: 22px; }
+.teacher-live-preview > article > span { color: var(--accent); display: block; font-size: 11px; font-weight: 750; margin-bottom: 16px; text-transform: uppercase; }
+.teacher-live-preview img { display: block; height: auto; margin: 18px auto; max-width: 100%; }
 
 .teacher-toast {
   align-items: center;
@@ -6307,6 +6318,10 @@ footer {
 
 [data-theme="dark"] .exam-task-html img {
   filter: invert(0.88) hue-rotate(180deg);
+}
+
+[data-theme="dark"] .exam-task-html.is-teacher-task img {
+  filter: none;
 }
 
 .exam-table-scroll {

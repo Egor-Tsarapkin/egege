@@ -648,7 +648,7 @@ export default function ExamStation({
                   ? <a href={variant.sourceUrl} target="_blank" rel="noreferrer">Источник: КЕГЭ</a>
                   : <span className="exam-custom-source">ID {currentTask.id}</span>}
               </div>
-              <RichHtml className="exam-task-html" html={getExamTaskHtml(currentTask)} />
+              <RichHtml className={`exam-task-html ${currentTask.id.startsWith("0") ? "is-teacher-task" : ""}`} html={getExamTaskHtml(currentTask)} />
             </>
           ) : (
             <ExamIntro descriptionHtml={variant.descriptionHtml} />

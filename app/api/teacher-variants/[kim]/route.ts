@@ -1,3 +1,4 @@
+import { env } from "cloudflare:workers";
 import taskIndex from "@/public/data/task-index.json";
 import { authenticatedUser, communityDb } from "@/lib/community-server";
 import { cleanText, ensureTeacherSchema, formatBytes, isTeacherTaskId } from "@/lib/teacher-studio-server";
@@ -67,7 +68,10 @@ async function loadImportedTasks(request: Request, ids: string[]) {
   const index = taskIndex as Record<string, number>;
   const numbers = [...new Set(ids.map((id) => index[id]).filter(Boolean))];
   const groups = await Promise.all(numbers.map(async (number) => {
-    const response = await fetch(new URL(`/data/tasks/${number}.json`, request.url));
+    const assetUrl = new URL(`/data/tasks/${number}.json`, request.url);
+    const response = env.ASSETS
+      ? await env.ASSETS.fetch(new Request(assetUrl, { method: "GET" }))
+      : await fetch(assetUrl);
     if (!response.ok) return [] as PublicTask[];
     return response.json() as Promise<PublicTask[]>;
   }));
@@ -101,6 +105,11 @@ export async function GET(request: Request, context: RouteContext) {
     const task = teacherTasks.get(item.task_public_id) ?? importedTasks.get(item.task_public_id);
     return task ? [{ ...task, slot: item.position }] : [];
   });
+  if (tasks.length !== items.results.length) {
+    const loaded = new Set(tasks.map((task) => String(task.id)));
+    const missing = ids.find((id) => !loaded.has(id));
+    return Response.json({ error: `Задание ${missing ?? ""} не найдено. Удалите его из варианта.`.trim() }, { status: 409 });
+  }
   return Response.json({
     kim: variant.kim,
     title: variant.title,
