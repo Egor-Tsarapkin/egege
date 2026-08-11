@@ -11873,6 +11873,7 @@ footer {
   .marathon-question-strip > span,
   .marathon-question-strip > button {
     border-radius: 11px;
+    box-sizing: border-box;
     height: 42px;
     width: 42px;
   }
