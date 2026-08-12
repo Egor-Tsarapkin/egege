@@ -24,6 +24,17 @@ type PublicTask = {
   solution?: { html: string; videoUrl: string; timecode: number };
 };
 
+function expandTeacherTask(task: PublicTask, answerValues: string[]) {
+  if (task.number !== 19) return [task];
+  return [19, 20, 21].map((number, index) => ({
+    ...task,
+    id: `${task.id}-${number}`,
+    number,
+    answer: answerValues[index] ?? "",
+    table: { cols: 1, rows: 1 },
+  }));
+}
+
 async function variantRow(kim: string) {
   await ensureTeacherSchema();
   return communityDb().prepare("SELECT * FROM teacher_variants WHERE kim = ?")
@@ -45,7 +56,7 @@ async function loadTeacherTasks(ids: string[]) {
   for (const file of files.results) fileMap.set(file.task_id, [...(fileMap.get(file.task_id) ?? []), file]);
   return new Map(rows.results.map((row) => {
     const answer = JSON.parse(String(row.answer_json || "{}")) as { cols?: number; rows?: number; values?: string[] };
-    return [String(row.public_id), {
+    const task = {
       id: String(row.public_id),
       number: Number(row.exam_number),
       html: String(row.statement_html),
@@ -60,7 +71,8 @@ async function loadTeacherTasks(ids: string[]) {
         videoUrl: String(row.solution_video_url || ""),
         timecode: Number(row.solution_timecode || 0),
       },
-    } satisfies PublicTask];
+    } satisfies PublicTask;
+    return [String(row.public_id), expandTeacherTask(task, answer.values ?? [])];
   }));
 }
 
@@ -101,15 +113,17 @@ export async function GET(request: Request, context: RouteContext) {
     loadTeacherTasks([...new Set(ids.filter(isTeacherTaskId))]),
     loadImportedTasks(request, [...new Set(ids.filter((id) => !isTeacherTaskId(id)))]),
   ]);
-  const tasks = items.results.flatMap((item) => {
-    const task = teacherTasks.get(item.task_public_id) ?? importedTasks.get(item.task_public_id);
-    return task ? [{ ...task, slot: item.position }] : [];
-  });
-  if (tasks.length !== items.results.length) {
-    const loaded = new Set(tasks.map((task) => String(task.id)));
-    const missing = ids.find((id) => !loaded.has(id));
-    return Response.json({ error: `Задание ${missing ?? ""} не найдено. Удалите его из варианта.`.trim() }, { status: 409 });
+  const missing = ids.find((id) => isTeacherTaskId(id) ? !teacherTasks.has(id) : !importedTasks.has(id));
+  if (missing) {
+    return Response.json({ error: `Задание ${missing} не найдено. Удалите его из варианта.` }, { status: 409 });
   }
+  const tasks = items.results.flatMap((item) => {
+    const teacherTask = teacherTasks.get(item.task_public_id);
+    const importedTask = importedTasks.get(item.task_public_id);
+    const loaded = teacherTask ?? (importedTask ? [importedTask] : undefined);
+    return loaded ?? [];
+  });
+  const numberedTasks = tasks.map((task, index) => ({ ...task, slot: index + 1 }));
   return Response.json({
     kim: variant.kim,
     title: variant.title,
@@ -120,7 +134,7 @@ export async function GET(request: Request, context: RouteContext) {
     hideAnswers: Boolean(variant.hide_answers),
     oneAttempt: Boolean(variant.one_attempt),
     custom: true,
-    tasks,
+    tasks: numberedTasks,
   });
 }
 

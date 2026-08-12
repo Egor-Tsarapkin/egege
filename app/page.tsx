@@ -960,7 +960,6 @@ function TaskItem({
   decorationMotion?: boolean;
 }) {
   const [answerOpen, setAnswerOpen] = useState(false);
-  const [solutionOpen, setSolutionOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const sourceKind = getTaskSourceKind(task);
   const sourceLabel =
@@ -993,7 +992,7 @@ function TaskItem({
           </div>
         </div>
       </div>
-      <RichHtml className="task-body task-html" html={task.html} />
+      <RichHtml className={`task-body task-html ${task.id.startsWith("0") ? "is-teacher-task" : ""}`} html={task.html} />
       {task.files.length > 0 && (
         <div className="task-files">
           {task.files.map((file) => (
@@ -1040,15 +1039,7 @@ function TaskItem({
         </div>
       </div>
       {(task.solution?.html || task.solution?.videoUrl) && (
-        <>
-          <button
-            className={`answer-toggle solution-toggle ${solutionOpen ? "is-open" : ""}`}
-            onClick={() => setSolutionOpen((current) => !current)}
-            aria-expanded={solutionOpen}
-          >
-            {solutionOpen ? "Скрыть разбор" : "Посмотреть разбор"}
-          </button>
-          <div className={`task-solution ${solutionOpen ? "is-open" : ""}`}>
+          <div className={`task-solution ${answerOpen ? "is-open" : ""}`}>
             {task.solution.videoUrl && (
               <a
                 href={`${task.solution.videoUrl}${task.solution.videoUrl.includes("?") ? "&" : "?"}t=${task.solution.timecode || 0}`}
@@ -1060,7 +1051,6 @@ function TaskItem({
             )}
             {task.solution.html && <RichHtml className="task-html" html={task.solution.html} />}
           </div>
-        </>
       )}
       {decoration && <TaskStyleDecoration asset={decoration} motion={decorationMotion !== false} />}
     </article>

@@ -39,6 +39,8 @@ type AdminPayload = {
   funnel: { opened: number; logged: number; started: number; completed: number };
   content: Array<{ label: string; value: number }>;
   actions: Array<{ action: string; created_at: number; display_name: string; username: string }>;
+  teacherTasks: Array<{ id: number; public_id: string; exam_number: number; note: string; statement_html: string; difficulty: string; approved: number; author: string }>;
+  teacherVariants: Array<{ id: number; kim: string; title: string; description_html: string; task_count: number; approved: number; complete: boolean; author: string }>;
 };
 
 type AdminTab = "overview" | "users" | "premium" | "content" | "events";
@@ -130,6 +132,7 @@ export default function AdminDashboard({ user, onExit }: { user: User; onExit: (
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "premium" | "regular">("all");
   const [savingUser, setSavingUser] = useState("");
+  const [savingContent, setSavingContent] = useState("");
 
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
@@ -182,6 +185,16 @@ export default function AdminDashboard({ user, onExit }: { user: User; onExit: (
     } finally {
       setSavingUser("");
     }
+  };
+  const moderate = async (kind: "task" | "variant", id: number, approved: boolean, difficulty?: string) => {
+    const key = `${kind}-${id}`;
+    setSavingContent(key);
+    try {
+      await adminRequest({ method: "POST", body: JSON.stringify({ action: `moderate_${kind}`, id, approved, difficulty }) });
+      await load(true);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "Не удалось изменить публикацию");
+    } finally { setSavingContent(""); }
   };
 
   const nav: Array<{ id: AdminTab; label: string; icon: typeof LayoutDashboard }> = [
@@ -263,6 +276,19 @@ export default function AdminDashboard({ user, onExit }: { user: User; onExit: (
         )}
 
         <section className="admin-bottom-grid">
+          {tab === "content" && (
+            <article className="admin-panel admin-moderation">
+              <header><div><h2>Модерация</h2><p>Только одобренный контент виден всем посетителям.</p></div></header>
+              <h3>Задания</h3>
+              <div className="admin-moderation-list">{data.teacherTasks.map((task) => (
+                <article key={task.id}><div className="admin-moderation-copy"><strong>ID {task.public_id} · {task.exam_number === 19 ? "№19–21" : `№${task.exam_number}`}</strong><small>{task.author} · {task.note || "Без примечания"}</small><div dangerouslySetInnerHTML={{ __html: task.statement_html }} /></div><select value={task.difficulty} onChange={(event) => void moderate("task", task.id, Boolean(task.approved), event.target.value)}><option>Базовый</option><option>Средний</option><option>Сложный</option></select><button className={`admin-premium-toggle ${task.approved ? "is-active" : ""}`} role="switch" aria-checked={Boolean(task.approved)} disabled={savingContent === `task-${task.id}`} onClick={() => void moderate("task", task.id, !task.approved, task.difficulty)}><span /></button></article>
+              ))}</div>
+              <h3>Варианты</h3>
+              <div className="admin-moderation-list">{data.teacherVariants.map((variant) => (
+                <article key={variant.id}><div className="admin-moderation-copy"><strong>КИМ {variant.kim} · {variant.title}</strong><small>{variant.author} · {variant.task_count} записей · {variant.complete ? "Полный 1–27" : "Неполный"}</small></div><button className={`admin-premium-toggle ${variant.approved ? "is-active" : ""}`} role="switch" aria-checked={Boolean(variant.approved)} disabled={!variant.complete || savingContent === `variant-${variant.id}`} title={variant.complete ? "" : "Нужен полный порядок 1–27"} onClick={() => void moderate("variant", variant.id, !variant.approved)}><span /></button></article>
+              ))}</div>
+            </article>
+          )}
           {(tab === "overview" || tab === "users" || tab === "premium") && (
             <article className="admin-panel admin-users">
               <header>
@@ -296,9 +322,9 @@ export default function AdminDashboard({ user, onExit }: { user: User; onExit: (
             </article>
           )}
 
-          {(tab === "overview" || tab === "content" || tab === "events") && (
+          {(tab === "overview" || tab === "events") && (
             <aside className="admin-side-panels">
-              {(tab === "overview" || tab === "content") && <article className="admin-panel admin-content"><h2>Что смотрят</h2>{data.content.slice(0, 4).map((item, index) => <div key={item.label}><span>{index + 1}</span><strong>{item.label}</strong><b>{compactNumber(Number(item.value))}</b><em>{Math.round((Number(item.value) / totalViews) * 100)}%</em></div>)}</article>}
+              {tab === "overview" && <article className="admin-panel admin-content"><h2>Что смотрят</h2>{data.content.slice(0, 4).map((item, index) => <div key={item.label}><span>{index + 1}</span><strong>{item.label}</strong><b>{compactNumber(Number(item.value))}</b><em>{Math.round((Number(item.value) / totalViews) * 100)}%</em></div>)}</article>}
               {(tab === "overview" || tab === "events") && <article className="admin-panel admin-actions"><h2>Последние действия</h2>{data.actions.length ? data.actions.map((action) => <div key={`${action.created_at}-${action.username}`}><span><Crown /></span><p><strong>{action.action === "premium_granted" ? "Премиум выдан" : "Премиум отключён"}</strong><small>{action.display_name || `@${action.username}`} · {timeAgo(Number(action.created_at))}</small></p></div>) : <p className="admin-empty">Действий пока нет.</p>}</article>}
             </aside>
           )}

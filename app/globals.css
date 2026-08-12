@@ -961,6 +961,8 @@
 }
 
 @media (max-width: 760px) {
+  .admin-moderation-list > article { align-items: stretch; grid-template-columns: minmax(0, 1fr) auto; }
+  .admin-moderation-list select { grid-column: 1 / -1; grid-row: 2; }
   .theory-note-grid {
     grid-template-columns: 1fr;
   }
@@ -2019,6 +2021,17 @@
 .admin-premium-toggle svg { height: 10px; width: 10px; }
 .admin-premium-toggle:disabled { cursor: wait; opacity: .6; }
 .admin-empty { color: var(--admin-muted); font-size: 12px; margin: 0; padding: 22px; }
+.admin-moderation { grid-column: 1 / -1; padding: 20px; }
+.admin-moderation > header p { color: var(--admin-muted); font-size: 12px; margin: 7px 0 0; }
+.admin-moderation > h3 { font-size: 14px; margin: 24px 0 10px; }
+.admin-moderation-list { display: grid; gap: 8px; }
+.admin-moderation-list > article { align-items: center; background: var(--admin-panel-2); border: 1px solid var(--admin-line); border-radius: 10px; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr) 140px auto; padding: 14px; }
+.admin-moderation-copy { min-width: 0; }
+.admin-moderation-copy strong, .admin-moderation-copy small { display: block; }
+.admin-moderation-copy small { color: var(--admin-muted); font-size: 10px; margin-top: 4px; }
+.admin-moderation-copy > div { color: #b6b8af; font-size: 12px; line-height: 1.55; margin-top: 10px; max-height: 120px; overflow: auto; }
+.admin-moderation-copy img { height: auto; max-width: 100%; }
+.admin-moderation-list select { background: #171816; border: 1px solid var(--admin-line); border-radius: 8px; color: #f4f1e8; min-height: 38px; padding: 0 10px; }
 
 .admin-side-panels { display: grid; gap: 20px; align-content: start; }
 .admin-content,
@@ -5156,9 +5169,13 @@ p,
 }
 
 [data-theme="dark"] .task-html img {
-  background: #f7f7f7;
-  filter: invert(0.88) hue-rotate(180deg);
+  background: transparent;
+  filter: none;
   outline-color: oklch(1 0 0 / 0.1);
+}
+
+.task-html.is-teacher-task img {
+  background: transparent;
 }
 
 .task-html table {
@@ -6317,7 +6334,7 @@ footer {
 }
 
 [data-theme="dark"] .exam-task-html img {
-  filter: invert(0.88) hue-rotate(180deg);
+  filter: none;
 }
 
 [data-theme="dark"] .exam-task-html.is-teacher-task img {

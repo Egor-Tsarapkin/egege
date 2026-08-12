@@ -11,6 +11,7 @@ type TaskRow = {
   solution_video_url: string;
   solution_timecode: number;
   solution_html: string;
+  difficulty: string;
   display_name: string | null;
 };
 
@@ -24,9 +25,9 @@ export async function GET(request: Request) {
   }
   const rows = id
     ? await communityDb().prepare(`SELECT t.*, p.display_name FROM teacher_tasks t
-        LEFT JOIN profiles p ON p.user_id = t.owner_id WHERE t.public_id = ? LIMIT 1`).bind(id).all<TaskRow>()
+        LEFT JOIN profiles p ON p.user_id = t.owner_id WHERE t.public_id = ? AND t.approved = 1 LIMIT 1`).bind(id).all<TaskRow>()
     : await communityDb().prepare(`SELECT t.*, p.display_name FROM teacher_tasks t
-        LEFT JOIN profiles p ON p.user_id = t.owner_id WHERE t.exam_number = ?
+        LEFT JOIN profiles p ON p.user_id = t.owner_id WHERE t.exam_number = ? AND t.approved = 1
         ORDER BY t.created_at DESC LIMIT 300`).bind(number).all<TaskRow>();
   const taskIds = rows.results.map((row) => row.id);
   const files = taskIds.length
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
       return {
         id: row.public_id,
         number: row.exam_number,
-        difficulty: "Средний",
+        difficulty: row.difficulty || "Средний",
         source: "EGEGE",
         title: `Задание №${row.exam_number}`,
         note: row.note || `Автор: ${row.display_name || "пользователь EGEGE"}`,

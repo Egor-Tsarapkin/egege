@@ -49,6 +49,8 @@ type TaskRow = {
   solution_html: string;
   updated_at: number;
   files: TaskFile[];
+  approved?: number;
+  difficulty?: string;
 };
 type VariantRow = {
   id: number;
@@ -63,6 +65,7 @@ type VariantRow = {
   attempts_count: number;
   task_ids: string[];
   updated_at: number;
+  approved?: number;
 };
 type StudioPayload = { folders: FolderRow[]; tasks: TaskRow[]; variants: VariantRow[]; savedId?: string; savedKim?: string };
 type AttemptResult = { slot: number; taskId: string; taskNumber: number; answered: boolean; correct: boolean; points: number };
@@ -94,12 +97,13 @@ async function loadTaskPreviews(ids: string[]) {
   const result = new Map<string, PreviewTask>();
   const authored = unique.filter((id) => /^0\d{5,}$/.test(id));
   const imported = unique.filter((id) => !/^0\d{5,}$/.test(id));
-  await Promise.all(authored.map(async (id) => {
-    const response = await fetch(`/api/teacher-tasks?id=${encodeURIComponent(id)}`);
-    const payload = response.ok ? await response.json() as { tasks?: PreviewTask[] } : {};
-    const task = payload.tasks?.find((item) => String(item.id) === id);
-    if (task) result.set(id, task);
-  }));
+  if (authored.length) {
+    const studio = await studioRequest<StudioPayload>("/api/teacher-studio");
+    authored.forEach((id) => {
+      const task = studio.tasks.find((item) => item.public_id === id);
+      if (task) result.set(id, { id, number: task.exam_number, html: task.statement_html });
+    });
+  }
   if (imported.length) {
     const index = await getTaskIndex();
     const numbers = [...new Set(imported.map((id) => index[id]).filter(Boolean))];
@@ -345,6 +349,10 @@ function TaskEditor({ task, folders, initialFolder, onClose, onSaved }: {
     const next = Array.from({ length: cols * rows }, (_, index) => answer.values[index] ?? "");
     setAnswer({ type: "table", cols, rows, values: next });
   };
+  const selectExamNumber = (number: number) => {
+    setExamNumber(number);
+    if (number === 19) setAnswer({ type: "table", cols: 1, rows: 3, values: [answer.values[0] ?? "", answer.values[1] ?? "", answer.values[2] ?? ""] });
+  };
   const collectFiles = (list: FileList | File[]) => {
     const incoming = Array.from(list);
     setPendingFiles((current) => [...current, ...incoming].slice(0, 10));
@@ -419,7 +427,7 @@ function TaskEditor({ task, folders, initialFolder, onClose, onSaved }: {
       {activeTab === "task" ? (
         <div className="teacher-form-stack">
           <div className="teacher-form-grid">
-            <label className="teacher-field"><span>Номер ЕГЭ</span><select value={examNumber} onChange={(event) => setExamNumber(Number(event.target.value))}>{Array.from({ length: 27 }, (_, index) => <option value={index + 1} key={index + 1}>Задание №{index + 1}</option>)}</select></label>
+            <label className="teacher-field"><span>Номер ЕГЭ</span><select value={examNumber} onChange={(event) => selectExamNumber(Number(event.target.value))}>{Array.from({ length: 25 }, (_, index) => index < 19 ? index + 1 : index + 3).map((number) => <option value={number} key={number}>{number === 19 ? "Задания №19–21 (комплект)" : `Задание №${number}`}</option>)}</select></label>
             <FolderSelect value={folderId} onChange={setFolderId} folders={folders} kind="tasks" />
             <label className="teacher-field teacher-field-wide"><span>Примечание</span><input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Например: домашняя работа по графам" maxLength={160} /></label>
           </div>
@@ -431,14 +439,14 @@ function TaskEditor({ task, folders, initialFolder, onClose, onSaved }: {
           <section className="teacher-answer-builder">
             <div><p>Правильный ответ</p><h3>Как ученик будет отвечать</h3></div>
             <div className="teacher-answer-type">
-              <button type="button" className={answer.type === "field" ? "is-active" : ""} onClick={() => setAnswer({ ...emptyAnswer })}>Одно поле</button>
-              <button type="button" className={answer.type === "table" ? "is-active" : ""} onClick={() => resizeTable(2, 2)}>Таблица</button>
+              <button type="button" className={answer.type === "field" ? "is-active" : ""} disabled={examNumber === 19} onClick={() => setAnswer({ ...emptyAnswer })}>Одно поле</button>
+              <button type="button" className={answer.type === "table" ? "is-active" : ""} onClick={() => examNumber === 19 ? setAnswer({ type: "table", cols: 1, rows: 3, values: answer.values.slice(0, 3) }) : resizeTable(2, 2)}>{examNumber === 19 ? "3 ответа" : "Таблица"}</button>
             </div>
             {answer.type === "field" ? (
               <label className="teacher-field"><span>Ответ без пояснений</span><input value={answer.values[0] ?? ""} onChange={(event) => setAnswer({ ...answer, values: [event.target.value] })} /></label>
             ) : (
               <div className="teacher-table-answer-builder">
-                <div className="teacher-table-size"><label>Столбцов <input type="number" min={1} max={10} value={answer.cols} onChange={(event) => resizeTable(Math.max(1, Math.min(10, Number(event.target.value))), answer.rows)} /></label><label>Строк <input type="number" min={1} max={10} value={answer.rows} onChange={(event) => resizeTable(answer.cols, Math.max(1, Math.min(10, Number(event.target.value))))} /></label></div>
+                {examNumber !== 19 && <div className="teacher-table-size"><label>Столбцов <input type="number" min={1} max={10} value={answer.cols} onChange={(event) => resizeTable(Math.max(1, Math.min(10, Number(event.target.value))), answer.rows)} /></label><label>Строк <input type="number" min={1} max={10} value={answer.rows} onChange={(event) => resizeTable(answer.cols, Math.max(1, Math.min(10, Number(event.target.value))))} /></label></div>}
                 <div className="teacher-answer-cells" style={{ gridTemplateColumns: `repeat(${answer.cols}, minmax(72px, 1fr))` }}>{answer.values.map((value, index) => <input aria-label={`Ячейка ответа ${index + 1}`} value={value} onChange={(event) => setAnswer((current) => ({ ...current, values: current.values.map((item, itemIndex) => itemIndex === index ? event.target.value : item) }))} key={index} />)}</div>
               </div>
             )}

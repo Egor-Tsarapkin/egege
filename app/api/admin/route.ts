@@ -1,5 +1,22 @@
 import { authenticatedUser, communityDb } from "@/lib/community-server";
 import { ensureAdminSchema, ensureUserAccess, isAdminUser } from "@/lib/admin-server";
+import taskIndex from "@/public/data/task-index.json";
+import { ensureTeacherSchema, isTeacherTaskId, taskExamNumbers } from "@/lib/teacher-studio-server";
+
+async function variantIsComplete(variantId: number) {
+  const db = communityDb();
+  const items = await db.prepare("SELECT task_public_id FROM teacher_variant_tasks WHERE variant_id = ? ORDER BY position")
+    .bind(variantId).all<{ task_public_id: string }>();
+  const authoredIds = [...new Set(items.results.map((item) => item.task_public_id).filter(isTeacherTaskId))];
+  const authored = authoredIds.length ? await db.prepare(
+    `SELECT public_id, exam_number FROM teacher_tasks WHERE public_id IN (${authoredIds.map(() => "?").join(",")})`,
+  ).bind(...authoredIds).all<{ public_id: string; exam_number: number }>() : { results: [] as Array<{ public_id: string; exam_number: number }> };
+  const authoredNumbers = new Map(authored.results.map((item) => [item.public_id, taskExamNumbers(item.exam_number)]));
+  const numbers = items.results.flatMap((item) => isTeacherTaskId(item.task_public_id)
+    ? authoredNumbers.get(item.task_public_id) ?? []
+    : [(taskIndex as Record<string, number>)[item.task_public_id] ?? 0]);
+  return numbers.length === 27 && numbers.every((number, index) => number === index + 1);
+}
 
 async function requireAdmin(request: Request) {
   const user = await authenticatedUser(request);
@@ -15,12 +32,13 @@ export async function GET(request: Request) {
   const auth = await requireAdmin(request);
   if ("error" in auth) return auth.error;
   await ensureAdminSchema();
+  await ensureTeacherSchema();
   const db = communityDb();
   const now = Math.floor(Date.now() / 1000);
   const since7 = now - 7 * 86400;
   const since30 = now - 30 * 86400;
 
-  const [online, registered, newUsers, averageTime, users, activity, funnel, content, actions] = await Promise.all([
+  const [online, registered, newUsers, averageTime, users, activity, funnel, content, actions, teacherTasks, teacherVariants] = await Promise.all([
     db.prepare("SELECT COUNT(*) AS value FROM analytics_sessions WHERE last_seen_at >= ?").bind(now - 120).first<{ value: number }>(),
     db.prepare("SELECT COUNT(*) AS value FROM profiles").first<{ value: number }>(),
     db.prepare("SELECT COUNT(*) AS value FROM profiles WHERE created_at >= ?").bind(since7).first<{ value: number }>(),
@@ -53,6 +71,15 @@ export async function GET(request: Request) {
     db.prepare(`SELECT aa.action, aa.created_at, p.display_name, p.username
       FROM admin_actions aa LEFT JOIN profiles p ON p.user_id = aa.target_user_id
       ORDER BY aa.created_at DESC LIMIT 8`).all(),
+    db.prepare(`SELECT t.id, t.public_id, t.exam_number, t.note, t.statement_html, t.difficulty,
+      t.approved, t.updated_at, COALESCE(p.display_name, 'Автор EGEGE') AS author
+      FROM teacher_tasks t LEFT JOIN profiles p ON p.user_id = t.owner_id
+      ORDER BY t.approved ASC, t.updated_at DESC LIMIT 200`).all(),
+    db.prepare(`SELECT v.id, v.kim, v.title, v.description_html, v.approved, v.updated_at,
+      COALESCE(p.display_name, 'Автор EGEGE') AS author, COUNT(vt.position) AS task_count
+      FROM teacher_variants v LEFT JOIN profiles p ON p.user_id = v.owner_id
+      LEFT JOIN teacher_variant_tasks vt ON vt.variant_id = v.id
+      GROUP BY v.id ORDER BY v.approved ASC, v.updated_at DESC LIMIT 200`).all(),
   ]);
 
   return Response.json({
@@ -67,6 +94,11 @@ export async function GET(request: Request) {
     funnel: funnel ?? { opened: 0, logged: 0, started: 0, completed: 0 },
     content: content.results,
     actions: actions.results,
+    teacherTasks: teacherTasks.results,
+    teacherVariants: await Promise.all(teacherVariants.results.map(async (variant) => ({
+      ...variant,
+      complete: await variantIsComplete(Number((variant as Record<string, unknown>).id)),
+    }))),
   });
 }
 
@@ -77,13 +109,30 @@ export async function POST(request: Request) {
     action?: string;
     userId?: string;
     premium?: boolean;
+    id?: number;
+    approved?: boolean;
+    difficulty?: string;
   };
-  if (body?.action !== "set_premium" || !body.userId || typeof body.premium !== "boolean") {
-    return Response.json({ error: "Некорректное действие" }, { status: 400 });
-  }
   const now = Math.floor(Date.now() / 1000);
   const db = communityDb();
   await ensureAdminSchema();
+  await ensureTeacherSchema();
+  if (body?.action === "moderate_task" && Number.isInteger(body.id) && typeof body.approved === "boolean") {
+    const difficulty = ["Базовый", "Средний", "Сложный"].includes(body.difficulty ?? "") ? body.difficulty : "Средний";
+    await db.prepare("UPDATE teacher_tasks SET approved = ?, difficulty = ? WHERE id = ?")
+      .bind(body.approved ? 1 : 0, difficulty, body.id).run();
+    return Response.json({ ok: true });
+  }
+  if (body?.action === "moderate_variant" && Number.isInteger(body.id) && typeof body.approved === "boolean") {
+    if (body.approved && !(await variantIsComplete(body.id!))) {
+      return Response.json({ error: "В общий список можно добавить только полный вариант 1–27" }, { status: 400 });
+    }
+    await db.prepare("UPDATE teacher_variants SET approved = ? WHERE id = ?").bind(body.approved ? 1 : 0, body.id).run();
+    return Response.json({ ok: true });
+  }
+  if (body?.action !== "set_premium" || !body.userId || typeof body.premium !== "boolean") {
+    return Response.json({ error: "Некорректное действие" }, { status: 400 });
+  }
   await db.prepare(`INSERT INTO user_access
     (user_id, email, premium, first_seen_at, last_seen_at, last_login_at)
     VALUES (?, '', ?, ?, ?, ?)

@@ -203,10 +203,12 @@ export async function POST(request: Request) {
     const publicId = cleanText(body.publicId, 32);
     const result = await db.prepare(`UPDATE teacher_tasks SET folder_id = ?, exam_number = ?, note = ?,
       statement_html = ?, answer_type = ?, answer_json = ?, solution_video_url = ?,
-      solution_timecode = ?, solution_html = ?, updated_at = ?
+      solution_timecode = ?, solution_html = ?, approved = 0, updated_at = ?
       WHERE public_id = ? AND owner_id = ?`)
       .bind(folderId, examNumber, note, statementHtml, answer.type, JSON.stringify(answer), videoUrl, timecode, solutionHtml, now, publicId, auth.user.id).run();
     if (!result.meta.changes) return Response.json({ error: "Задание не найдено" }, { status: 404 });
+    await db.prepare(`UPDATE teacher_variants SET approved = 0
+      WHERE id IN (SELECT variant_id FROM teacher_variant_tasks WHERE task_public_id = ?)`).bind(publicId).run();
     return Response.json({ ...(await studioPayload(auth.user.id)), savedId: publicId });
   }
 
@@ -270,7 +272,7 @@ export async function POST(request: Request) {
       if (!variant) return Response.json({ error: "Вариант не найден" }, { status: 404 });
       variantId = Number(variant.id);
       await db.prepare(`UPDATE teacher_variants SET folder_id = ?, title = ?, description_html = ?,
-        no_time = ?, hide_answers = ?, require_auth = ?, one_attempt = ?, updated_at = ?
+        no_time = ?, hide_answers = ?, require_auth = ?, one_attempt = ?, approved = 0, updated_at = ?
         WHERE id = ? AND owner_id = ?`)
         .bind(folderId, title, descriptionHtml, values.noTime, values.hideAnswers, values.requireAuth, values.oneAttempt, now, variantId, auth.user.id).run();
     }

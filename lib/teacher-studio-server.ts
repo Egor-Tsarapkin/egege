@@ -3,6 +3,13 @@ import { communityDb } from "@/lib/community-server";
 
 let teacherSchemaReady: Promise<void> | null = null;
 
+async function ensureColumn(table: string, column: string, definition: string) {
+  const columns = await communityDb().prepare(`PRAGMA table_info(${table})`).all<{ name: string }>();
+  if (!columns.results.some((item) => item.name === column)) {
+    await communityDb().prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`).run();
+  }
+}
+
 export function ensureTeacherSchema() {
   if (teacherSchemaReady) return teacherSchemaReady;
   const db = communityDb();
@@ -29,6 +36,8 @@ export function ensureTeacherSchema() {
       solution_video_url TEXT NOT NULL DEFAULT '',
       solution_timecode INTEGER NOT NULL DEFAULT 0,
       solution_html TEXT NOT NULL DEFAULT '',
+      difficulty TEXT NOT NULL DEFAULT 'Средний',
+      approved INTEGER NOT NULL DEFAULT 0,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )`),
@@ -53,6 +62,7 @@ export function ensureTeacherSchema() {
       hide_answers INTEGER NOT NULL DEFAULT 0,
       require_auth INTEGER NOT NULL DEFAULT 0,
       one_attempt INTEGER NOT NULL DEFAULT 0,
+      approved INTEGER NOT NULL DEFAULT 0,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )`),
@@ -83,7 +93,11 @@ export function ensureTeacherSchema() {
     db.prepare("CREATE INDEX IF NOT EXISTS teacher_variant_tasks_task_idx ON teacher_variant_tasks(task_public_id)"),
     db.prepare("CREATE INDEX IF NOT EXISTS teacher_variant_attempts_variant_created_idx ON teacher_variant_attempts(variant_id, created_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS teacher_variant_attempts_variant_user_idx ON teacher_variant_attempts(variant_id, user_id)"),
-  ]).then(() => undefined).catch((error: unknown) => {
+  ]).then(async () => {
+    await ensureColumn("teacher_tasks", "difficulty", "TEXT NOT NULL DEFAULT 'Средний'");
+    await ensureColumn("teacher_tasks", "approved", "INTEGER NOT NULL DEFAULT 0");
+    await ensureColumn("teacher_variants", "approved", "INTEGER NOT NULL DEFAULT 0");
+  }).catch((error: unknown) => {
     teacherSchemaReady = null;
     throw error;
   });
@@ -168,6 +182,10 @@ export function isTeacherTaskId(value: string) {
 
 export function isTeacherKim(value: string) {
   return /^0\d{7}$/.test(value);
+}
+
+export function taskExamNumbers(examNumber: number) {
+  return examNumber === 19 ? [19, 20, 21] : [examNumber];
 }
 
 export function safeFolderId(value: unknown) {
