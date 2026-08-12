@@ -124,6 +124,251 @@ print(longest)`,
 while b != 0:
     a, b = b, a % b
 print(a)`,
+    `a = '0123456789abcdefghijklmnopqrs'
+
+for x in a:
+    v1 = f'923{x}874'
+    v2 = f'524{x}6152'
+    v = int(v1, 29) + int(v2, 29)`,
+    `for x in a:
+    v1 = f'923{x}874'
+    v2 = f'524{x}6152'
+    v = int(v1, 29) + int(v2, 29)
+
+    if v % 28 == 0:
+        print(v // 28)`,
+    `def f(s, e):
+    if s < e:
+        return 0
+    if s == e:
+        return 1
+    if s > e:
+        s1 = str(s)`,
+    `s1 = str(s)
+if s1[-2] > s1[-1]:
+    return f(s-3, e) + f(int(s1[0] + s1[-1] + s1[-2]), e)
+else:
+    return f(s-3, e)`,
+    `def f(s, e):
+    if s > e or s == 21:
+        return 0
+    if s == e:
+        return 1
+    if s < e:
+        return f(s+2, e) + f(s+3, e) + f(s*2, e)`,
+    `print(f(7, 14) * f(14, 32))`,
+    `from math import ceil, log2
+
+d = 289
+N = 10 + 1015
+i = ceil(log2(N))
+v_id_bate = ceil(d * i / 8)`,
+    `i = ceil(log2(N))
+v_id_bate = ceil(d * i / 8)
+
+print(v_id_bate * 524288 / 1024 / 1024)`,
+    `from ipaddress import *
+
+net = ip_network('172.95.116.174/255.255.192.0', 0)
+print(net[1])`,
+    `from ipaddress import *
+
+n = ip_network('98.71.254.171/255.248.0.0', 0)
+
+for i in n:
+    b = f'{int(i):032b}'`,
+    `for i in n:
+    b = f'{int(i):032b}'
+    if b.count('1') % 7 == 0:
+        print(i)
+        break`,
+    `from math import ceil
+
+def f(a, b, m):
+    if a + b <= 60:
+        return m % 2 == 0
+    if m == 0:
+        return 0`,
+    `h = [f(a-5, b, m-1), f(a, b-3, m-1),
+     f(a//2, b, m-1), f(a, ceil(b/2), m-1)]
+return any(h) if m % 2 else all(h)`,
+    `print([s for s in range(5, 151) if f(130, s, 2)])
+print([s for s in range(5, 151) if f(130, s, 3) and not f(130, s, 1)])`,
+    `print([s for s in range(5, 151)
+       if f(130, s, 5)
+       and not f(130, s, 3)
+       and not f(130, s, 1)])`,
+    `def f(a, b, m):
+    if a + b >= 207:
+        return m % 2 == 0
+    if m == 0:
+        return 0
+    h = [f(a+1, b, m-1), f(a, b+1, m-1),
+         f(a*2, b, m-1), f(a, b*2, m-1)]`,
+    `return any(h) if m % 2 else all(h)
+
+print([s for s in range(1, 190) if f(17, s, 2)])
+print([s for s in range(1, 190) if f(17, s, 3) and not f(17, s, 1)])`,
+    `a = [int(i) for i in open('17.txt')]
+
+t = []
+mx_11 = max([x for x in a if str(x)[-2:] == '11'])`,
+    `for i in range(len(a)-2):
+    if (a[i] < 0) + (a[i+1] < 0) + (a[i+2] < 0) == 0:
+        if a[i] + a[i+1] + a[i+2] >= mx_11:
+            t.append(a[i] + a[i+1] + a[i+2])
+
+print(len(t), min(t))`,
+    `a = [int(i) for i in open('17.txt')]
+mx_28 = max([x for x in a if x > 0 and str(x)[-2:] == '28'])
+t = []
+
+for i in range(len(a)-2):
+    troika = [a[i], a[i+1], a[i+2]]`,
+    `troika = [a[i], a[i+1], a[i+2]]
+c_3 = [x for x in troika if len(str(abs(x))) == 3]
+if len(c_3) > 0:
+    sr_a = sum(troika) / len(troika)
+    if 0 < sr_a < mx_28:
+        t.append(sum(troika))`,
+    `def f(x):
+    a = []
+
+    while x % 2 == 0:
+        a.append(2)
+        x = x // 2`,
+    `d = 3
+while d <= x**0.5:
+    while x % d == 0:
+        a.append(d)
+        x = x // d
+    d += 2`,
+    `if x > 1:
+    a.append(x)
+
+return a`,
+    `for n in range(15_000_000 + 1, 15_000_000 + 1000000):
+    list_p_d = f(n)
+    if len(list_p_d) == 3:
+        if list_p_d[1] - list_p_d[0] == list_p_d[2] - list_p_d[1]:
+            print(n, sum(list_p_d) // len(list_p_d))`,
+    `def d(x):
+    a = []
+    for i in range(2, int(x**0.5) + 1):
+        if x % i == 0:
+            a.append(i)
+            a.append(x // i)
+    return sorted(set(a))`,
+    `def d(x):
+    divisors = []
+    for i in range(2, int(x**0.5) + 1):
+        if x % i == 0:
+            divisors += [i, x // i]
+    return sorted(set(divisors))`,
+    `for i in range(2, int(x**0.5) + 1):
+    if x % i == 0:
+        a.append(i)
+        a.append(x // i)
+
+return sorted(set(a))`,
+    `from fnmatch import *
+
+for n in range(0, 10**11 + 1, 154682):
+    s = str(n)
+    if fnmatch(s, '*192?3*68'):
+        print(n, n // 154682)`,
+    `from functools import *
+
+@lru_cache(None)
+def f(n):
+    if n <= 3:
+        return n - 1`,
+    `if n > 3 and n % 2 == 0:
+    return f(n-2) + n/2 - f(n-4)
+if n > 3 and n % 2 != 0:
+    return f(n-1) * n + f(n-2)`,
+    `for i in range(5000):
+    f(i)
+
+print(f(4952) + 2 * f(4958) + f(4964))`,
+    `from itertools import *
+
+c = 0
+for i in product('0123456789abcdefghij', repeat=5):
+    s = ''.join(i)
+    if s[0] != '0':
+        if int(s[0], 20) + int(s[-1], 20) == 26:`,
+    `if all([int(s[i], 20) % 2 != int(s[i+1], 20) % 2
+        for i in range(len(s)-1)]):
+    c += 1
+
+print(c)`,
+    `a = []
+
+for n in range(1, 1000):
+    r = bin(n)[2:]
+    sm = sum([int(i) for i in r])
+    r = r + str(sm % 2)`,
+    `sm = sum([int(i) for i in r])
+r = r + str(sm % 2)
+r = int(r, 2)
+
+if r > 253:
+    a.append(n)`,
+    `for n in range(1, 1000):
+    r = bin(n)[2:]
+    sm = sum([int(i) for i in r])
+
+    if sm % 2 == 0:
+        r = '10' + r[2:] + '0'
+    else:
+        r = '11' + r[2:] + '1'`,
+    `a = []
+
+for n in range(1, 100):
+    r = bin(n)[2:]
+    if n % 2 == 0:
+        r = '10' + r
+    else:
+        r = '1' + r + '01'`,
+    `r = int(r, 2)
+
+if r < 30:
+    a.append(n)
+
+print(max(a))`,
+    `def t(x, s):
+    r = ''
+    while x > 0:
+        r = str(x % s) + r
+        x = x // s
+    return r`,
+    `def t(x, system):
+    result = ''
+    while x > 0:
+        result = str(x % system) + result
+        x //= system
+    return result`,
+    `r = ''
+while x > 0:
+    r = str(x % s) + r
+    x = x // s
+
+return r`,
+    `a = []
+for n in range(1, 1000):
+    r = t(n, 3)
+
+    if n % 3 == 0:
+        r = r + r[-2:]
+    else:
+        r = r + t((n % 3) * 3, 3)`,
+    `r = int(r, 3)
+
+if r <= 150:
+    a.append(n)
+
+print(max(a))`,
   ],
   russian: [
     "Точный код начинается со спокойного ритма и правильной постановки рук.",
