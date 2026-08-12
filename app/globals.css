@@ -4720,6 +4720,11 @@ p,
   color: #4285f4;
 }
 
+.yandex-auth b {
+  background: #fc3f1d;
+  color: #fff;
+}
+
 .auth-status {
   color: var(--accent) !important;
   margin: 10px 2px 0 !important;

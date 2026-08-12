@@ -704,6 +704,7 @@ function ProfileMenu({
   onToggle,
   onPreference,
   onGoogleLogin,
+  onYandexLogin,
   onLogout,
   home = false,
 }: {
@@ -715,6 +716,7 @@ function ProfileMenu({
   onToggle: () => void;
   onPreference: (next: Partial<Preferences>) => void;
   onGoogleLogin: () => Promise<string>;
+  onYandexLogin: () => Promise<string>;
   onLogout: () => Promise<void>;
   home?: boolean;
 }) {
@@ -918,8 +920,16 @@ function ProfileMenu({
             </>
           ) : (
             <>
-              <p>Войдите через Google — пароль создавать не нужно.</p>
+              <p>Войдите через Яндекс или Google — пароль создавать не нужно.</p>
               <div className="social-auth-list">
+                <button
+                  className="social-auth yandex-auth"
+                  onClick={() => void runAuth(onYandexLogin)}
+                  disabled={!authConfigured || authBusy}
+                >
+                  <b aria-hidden="true">Я</b>
+                  Продолжить с Яндексом
+                </button>
                 <button
                   className="social-auth google-auth"
                   onClick={() => void runAuth(onGoogleLogin)}
@@ -2543,6 +2553,8 @@ export default function Home() {
   };
 
   const loginWithGoogle = () => loginWithProvider("google", "Google");
+  const loginWithYandex = () =>
+    loginWithProvider("custom:yandex" as Provider, "Яндекс");
 
   const logout = async () => {
     const client = await getSupabaseBrowserClient();
@@ -2571,6 +2583,7 @@ export default function Home() {
       onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
       onPreference={updatePreferences}
       onGoogleLogin={loginWithGoogle}
+      onYandexLogin={loginWithYandex}
       onLogout={logout}
     />
   );
@@ -2787,6 +2800,7 @@ export default function Home() {
           onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
           onPreference={updatePreferences}
           onGoogleLogin={loginWithGoogle}
+          onYandexLogin={loginWithYandex}
           onLogout={logout}
           home
         />
