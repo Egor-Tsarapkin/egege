@@ -5173,12 +5173,13 @@ p,
 
 [data-theme="dark"] .task-html img {
   background: transparent;
-  filter: none;
+  filter: invert(0.88) hue-rotate(180deg);
   outline-color: oklch(1 0 0 / 0.1);
 }
 
-.task-html.is-teacher-task img {
+[data-theme="dark"] .task-html.is-teacher-task img {
   background: transparent;
+  filter: none;
 }
 
 .task-html table {
@@ -6337,7 +6338,7 @@ footer {
 }
 
 [data-theme="dark"] .exam-task-html img {
-  filter: none;
+  filter: invert(0.88) hue-rotate(180deg);
 }
 
 [data-theme="dark"] .exam-task-html.is-teacher-task img {
