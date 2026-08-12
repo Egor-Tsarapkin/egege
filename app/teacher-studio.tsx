@@ -120,6 +120,16 @@ async function loadTaskPreviews(ids: string[]) {
   return result;
 }
 
+async function resolveTaskBundles(ids: string[]) {
+  const initial = await loadTaskPreviews(ids);
+  const expandedIds = [...new Set(ids.flatMap((id) => {
+    const task = initial.get(id);
+    return task?.number === 19 && !id.startsWith("0") ? [id, `${id}20`, `${id}21`] : [id];
+  }))];
+  const previews = expandedIds.length === ids.length ? initial : await loadTaskPreviews(expandedIds);
+  return { ids: expandedIds, previews };
+}
+
 async function uploadEmbeddedImages(html: string) {
   if (!html.includes("src=\"data:image/")) return html;
   const documentHtml = new DOMParser().parseFromString(`<div id="teacher-html-root">${html}</div>`, "text/html");
@@ -513,8 +523,10 @@ function VariantEditor({ variant, folders, initialFolder, onClose, onSaved }: {
   useEffect(() => {
     if (!taskIds.length) return;
     let active = true;
-    void loadTaskPreviews(taskIds).then((previews) => {
-      if (active) setTaskPreviews(previews);
+    void resolveTaskBundles(taskIds).then((bundle) => {
+      if (!active) return;
+      setTaskPreviews(bundle.previews);
+      setTaskIds(bundle.ids);
     }).catch(() => undefined);
     return () => { active = false; };
     // Existing tasks are loaded once when the editor opens.
@@ -527,11 +539,11 @@ function VariantEditor({ variant, folders, initialFolder, onClose, onSaved }: {
     setCheckingTasks(true);
     setError("");
     try {
-      const previews = await loadTaskPreviews(ids);
-      const missing = ids.find((id) => !previews.has(id));
+      const bundle = await resolveTaskBundles(ids);
+      const missing = bundle.ids.find((id) => !bundle.previews.has(id));
       if (missing) throw new Error(`Задание ${missing} не найдено`);
-      setTaskPreviews((current) => new Map([...current, ...previews]));
-      setTaskIds((current) => [...current, ...ids].slice(0, 60));
+      setTaskPreviews((current) => new Map([...current, ...bundle.previews]));
+      setTaskIds((current) => [...current, ...bundle.ids].slice(0, 60));
       setTaskInput("");
     } catch (lookupError) {
       setError(lookupError instanceof Error ? lookupError.message : "Не удалось проверить ID");
@@ -610,7 +622,7 @@ function VariantEditor({ variant, folders, initialFolder, onClose, onSaved }: {
           ))}</div> : <div className="teacher-inline-empty">Можно смешивать любые номера и повторять типы заданий.</div>}
         </section>
       </div>
-      {error && <p className="teacher-form-error" role="alert">{error}</p>}
+      {error && <div className="teacher-screen-alert" role="alert"><span>{error}</span><button type="button" onClick={() => setError("")} aria-label="Закрыть уведомление"><X /></button></div>}
       <div className="teacher-editor-bottom"><button type="button" onClick={onClose}>Отмена</button><button type="button" className="teacher-primary" onClick={() => void save()} disabled={busy}>{busy ? "Сохраняем..." : "Сохранить вариант"}</button></div>
     </section>
   );

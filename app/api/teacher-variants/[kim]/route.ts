@@ -108,7 +108,16 @@ export async function GET(request: Request, context: RouteContext) {
   const items = await communityDb().prepare(
     "SELECT position, task_public_id FROM teacher_variant_tasks WHERE variant_id = ? ORDER BY position",
   ).bind(variant.id).all<{ position: number; task_public_id: string }>();
-  const ids = items.results.map((item) => item.task_public_id);
+  const storedIds = new Set(items.results.map((item) => item.task_public_id));
+  const expandedItems = items.results.flatMap((item) => {
+    const id = item.task_public_id;
+    return !isTeacherTaskId(id) && (taskIndex as Record<string, number>)[id] === 19
+      ? [id, `${id}20`, `${id}21`]
+          .filter((taskId) => taskId === id || !storedIds.has(taskId))
+          .map((task_public_id) => ({ ...item, task_public_id }))
+      : [item];
+  });
+  const ids = expandedItems.map((item) => item.task_public_id);
   const [teacherTasks, importedTasks] = await Promise.all([
     loadTeacherTasks([...new Set(ids.filter(isTeacherTaskId))]),
     loadImportedTasks(request, [...new Set(ids.filter((id) => !isTeacherTaskId(id)))]),
@@ -117,7 +126,7 @@ export async function GET(request: Request, context: RouteContext) {
   if (missing) {
     return Response.json({ error: `Задание ${missing} не найдено. Удалите его из варианта.` }, { status: 409 });
   }
-  const tasks = items.results.flatMap((item) => {
+  const tasks = expandedItems.flatMap((item) => {
     const teacherTask = teacherTasks.get(item.task_public_id);
     const importedTask = importedTasks.get(item.task_public_id);
     const loaded = teacherTask ?? (importedTask ? [importedTask] : undefined);

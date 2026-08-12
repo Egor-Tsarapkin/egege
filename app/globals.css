@@ -584,6 +584,9 @@
 }
 
 .teacher-form-error { background: color-mix(in srgb, #dc5b5b 13%, transparent); border: 1px solid color-mix(in srgb, #dc5b5b 30%, transparent); border-radius: 8px; color: #ef9b9b; font-size: 12px; margin: 18px 0 0; padding: 12px 14px; }
+.teacher-screen-alert { align-items: center; background: color-mix(in srgb, #451d1d 94%, var(--surface)); border: 1px solid #a54848; border-radius: 10px; box-shadow: 0 18px 55px rgb(0 0 0 / .32); color: #ffd0d0; display: flex; font-size: 13px; gap: 16px; left: 50%; max-width: min(520px, calc(100vw - 32px)); padding: 14px 14px 14px 18px; position: fixed; top: 22px; transform: translateX(-50%); width: max-content; z-index: 1000; }
+.teacher-screen-alert button { align-items: center; background: transparent; border: 0; color: inherit; display: flex; height: 30px; justify-content: center; width: 30px; }
+.teacher-screen-alert svg { height: 16px; width: 16px; }
 .teacher-helper { color: var(--muted); font-size: 12px; margin: -12px 2px 0; }
 .teacher-variant-options { border: 1px solid var(--line); border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; }
 .teacher-switch-row { align-items: flex-start; border-bottom: 1px solid var(--line); display: flex; gap: 13px; padding: 18px; }
