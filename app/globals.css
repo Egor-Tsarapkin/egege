@@ -11925,6 +11925,10 @@ footer {
   z-index: 1;
 }
 
+.trainer-code-scroll.is-language {
+  padding-right: clamp(230px, 18vw, 290px);
+}
+
 .trainer-code-lines {
   display: flex;
   flex-direction: column;
@@ -12084,6 +12088,53 @@ footer {
   flex: 0 0 auto;
   height: 5px;
   width: 5px;
+}
+
+.trainer-language-timer {
+  align-items: flex-start;
+  background: var(--surface-raised);
+  border-radius: 18px;
+  box-shadow: 0 0 0 1px var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 16px 18px;
+  pointer-events: none;
+  position: absolute;
+  right: clamp(24px, 3vw, 48px);
+  top: 50%;
+  transform: translateY(-38%);
+  width: clamp(170px, 14vw, 220px);
+  z-index: 3;
+}
+
+.trainer-language-timer > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.trainer-language-timer strong {
+  color: var(--accent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: clamp(30px, 3vw, 46px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 620;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.trainer-language-timer strong small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 520;
+  letter-spacing: 0;
+}
+
+.trainer-language-timer p {
+  color: var(--dim);
+  font-size: 10px;
+  line-height: 1.45;
+  margin: 4px 0 0;
 }
 
 .trainer-guidance {
@@ -12570,7 +12621,7 @@ footer {
 
   .trainer-modes {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     margin-top: 0;
     width: 100%;
   }
@@ -12650,6 +12701,32 @@ footer {
   .trainer-code-scroll {
     inset: 52px 0 0;
     padding: 28px 16px 38px;
+  }
+
+  .trainer-code-scroll.is-language {
+    padding: 112px 16px 38px;
+  }
+
+  .trainer-language-timer {
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+    left: 14px;
+    padding: 11px 14px;
+    right: 14px;
+    top: 64px;
+    transform: none;
+    width: auto;
+  }
+
+  .trainer-language-timer strong {
+    font-size: 28px;
+  }
+
+  .trainer-language-timer p {
+    margin: 0;
+    max-width: 120px;
+    text-align: right;
   }
 
   .trainer-code-lines {
@@ -22080,7 +22157,7 @@ footer {
   }
 
   .trainer-modes {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .trainer-modes button {

@@ -3,7 +3,7 @@
 import { Hand, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type TrainerMode = "python" | "russian";
+type TrainerMode = "python" | "russian" | "english";
 type RussianDuration = 30 | 60 | 90 | 120;
 type HandSide = "left" | "right";
 type Finger = "little" | "ring" | "middle" | "index" | "thumb";
@@ -34,6 +34,7 @@ const BEST_KEY = "egege-typing-best-v1";
 const MODE_OPTIONS: Array<{ id: TrainerMode; label: string }> = [
   { id: "python", label: "Python" },
   { id: "russian", label: "Русский" },
+  { id: "english", label: "Английский" },
 ];
 
 const RUSSIAN_DURATIONS: RussianDuration[] = [30, 60, 90, 120];
@@ -47,12 +48,34 @@ const RUSSIAN_WORDS = `время человек работа жизнь ден�
 сохранять получать использовать проверять исправлять продолжать понимать помнить узнавать выбирать
 новый старый большой маленький точный обычный главный следующий последний правильный сложный
 короткий длинный русский язык печать тренировка привычка знание экзамен информатика сегодня завтра`.split(/\s+/);
+const ENGLISH_WORDS = `time people work life day home task program student teacher school result
+solution example practice speed accuracy keyboard screen hand finger word line number function list
+loop condition file data memory network system algorithm command value variable sequence range sum
+count minimum maximum element index remainder division power root module start end first second each
+other together after before between through again always sometimes quickly simply important correct
+good fast calm careful confident think write read count find change run return print create open save
+receive use check fix continue understand remember learn choose new old big small exact usual main next
+last right difficult short long english language typing training habit knowledge exam computer today
+tomorrow world place way year thing problem question answer code learn build make take give know see`.split(/\s+/);
 
 function createRussianText(wordCount = 420) {
   const words: string[] = [];
   let previous = "";
   while (words.length < wordCount) {
     const word = RUSSIAN_WORDS[Math.floor(Math.random() * RUSSIAN_WORDS.length)];
+    if (word !== previous) {
+      words.push(word);
+      previous = word;
+    }
+  }
+  return words.join(" ");
+}
+
+function createEnglishText(wordCount = 420) {
+  const words: string[] = [];
+  let previous = "";
+  while (words.length < wordCount) {
+    const word = ENGLISH_WORDS[Math.floor(Math.random() * ENGLISH_WORDS.length)];
     if (word !== previous) {
       words.push(word);
       previous = word;
@@ -396,6 +419,9 @@ if r <= 150:
 print(max(a))`,
   ],
   russian: [
+    "",
+  ],
+  english: [
     "",
   ],
 };
@@ -797,6 +823,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
   const [mode, setMode] = useState<TrainerMode>("python");
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [russianText, setRussianText] = useState(() => createRussianText());
+  const [englishText, setEnglishText] = useState(() => createEnglishText());
   const [russianDuration, setRussianDuration] = useState<RussianDuration>(60);
   const [typed, setTyped] = useState("");
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -813,13 +840,17 @@ export default function TypingTrainer({ userId }: { userId: string }) {
   const exerciseBags = useRef<Record<TrainerMode, number[]>>({
     python: [],
     russian: [],
+    english: [],
   });
 
+  const isLanguageMode = mode !== "python";
   const target = mode === "russian"
     ? russianText
-    : EXERCISES.python[exerciseIndex % EXERCISES.python.length];
+    : mode === "english"
+      ? englishText
+      : EXERCISES.python[exerciseIndex % EXERCISES.python.length];
   const timeLimitMs = russianDuration * 1000;
-  const timeExpired = mode === "russian" && elapsedMs >= timeLimitMs;
+  const timeExpired = isLanguageMode && elapsedMs >= timeLimitMs;
   const completed = timeExpired || (typed.length === target.length && target.length > 0);
   const currentCharacter = target[typed.length] ?? "";
   const nextKey = useMemo(
@@ -832,7 +863,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
   const speed = elapsedMs > 0
     ? Math.round((typed.length / elapsedMs) * 60_000)
     : 0;
-  const displayedTime = mode === "russian"
+  const displayedTime = isLanguageMode
     ? Math.max(0, timeLimitMs - elapsedMs)
     : elapsedMs;
 
@@ -849,7 +880,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
     const interval = window.setInterval(() => {
       if (startedAtRef.current === null) return;
       const nextElapsed = Date.now() - startedAtRef.current;
-      if (mode === "russian" && nextElapsed >= timeLimitMs) {
+      if (isLanguageMode && nextElapsed >= timeLimitMs) {
         const resultSpeed = Math.round((typed.length / timeLimitMs) * 60_000);
         const nextIsBest = resultSpeed > best;
         setElapsedMs(timeLimitMs);
@@ -861,7 +892,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
         if (nextIsBest) {
           setBest(resultSpeed);
           try {
-            window.localStorage.setItem(`${BEST_KEY}:${userId}:russian`, String(resultSpeed));
+            window.localStorage.setItem(`${BEST_KEY}:${userId}:${mode}`, String(resultSpeed));
           } catch {
             // The result still remains visible for this session.
           }
@@ -871,7 +902,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
       setElapsedMs(nextElapsed);
     }, 100);
     return () => window.clearInterval(interval);
-  }, [best, mode, running, timeLimitMs, typed.length, userId]);
+  }, [best, isLanguageMode, mode, running, timeLimitMs, typed.length, userId]);
 
   useEffect(() => {
     if (!window.matchMedia("(pointer: fine)").matches) return;
@@ -930,6 +961,11 @@ export default function TypingTrainer({ userId }: { userId: string }) {
       reset("russian", 0);
       return;
     }
+    if (nextMode === "english") {
+      setEnglishText(createEnglishText());
+      reset("english", 0);
+      return;
+    }
     let bag = exerciseBags.current[nextMode];
     const currentIndex = nextMode === mode ? exerciseIndex : -1;
     if (!bag.length) {
@@ -942,7 +978,15 @@ export default function TypingTrainer({ userId }: { userId: string }) {
 
   const selectRussianDuration = (duration: RussianDuration) => {
     setRussianDuration(duration);
-    reset("russian", 0);
+    if (mode === "russian") setRussianText(createRussianText());
+    if (mode === "english") setEnglishText(createEnglishText());
+    reset(mode, 0);
+  };
+
+  const restartExercise = () => {
+    if (mode === "russian") setRussianText(createRussianText());
+    if (mode === "english") setEnglishText(createEnglishText());
+    reset();
   };
 
   const startTimer = () => {
@@ -1043,13 +1087,13 @@ export default function TypingTrainer({ userId }: { userId: string }) {
             </div>
             <button
               className="trainer-restart"
-              onClick={() => reset()}
+              onClick={restartExercise}
               aria-label="Начать упражнение заново"
               title="Начать заново"
             >
               <RotateCcw size={18} strokeWidth={2} />
             </button>
-            {mode === "russian" && (
+            {isLanguageMode && (
               <div className="trainer-duration" aria-label="Продолжительность тренировки">
                 {RUSSIAN_DURATIONS.map((duration) => (
                   <button
@@ -1084,15 +1128,15 @@ export default function TypingTrainer({ userId }: { userId: string }) {
 
       <section className={`trainer-stage ${focused ? "is-focused" : ""} ${completed ? "is-complete" : ""}`}>
         <div className="trainer-stage-toolbar">
-          <span>{mode === "russian" ? `Случайный текст · ${russianDuration} секунд` : `Случайное упражнение · ${EXERCISES.python.length} вариантов`}</span>
+          <span>{isLanguageMode ? `Случайный текст · ${russianDuration} секунд` : `Случайное упражнение · ${EXERCISES.python.length} вариантов`}</span>
           <div>
             {best > 0 && <span>Лучший: <b>{best}</b> зн/мин</span>}
             <button onClick={pause} disabled={!running}>Пауза</button>
           </div>
         </div>
 
-        <div className="trainer-code-scroll" ref={codeScrollRef}>
-          {mode === "russian"
+        <div className={`trainer-code-scroll ${isLanguageMode ? "is-language" : ""}`} ref={codeScrollRef}>
+          {isLanguageMode
             ? <RussianTarget target={target} typed={typed} />
             : <CodeTarget target={target} typed={typed} />}
         </div>
@@ -1134,10 +1178,18 @@ export default function TypingTrainer({ userId }: { userId: string }) {
           aria-label="Поле тренировки печати"
         />
 
-        {!typed && !completed && (
+        {!isLanguageMode && !typed && !completed && (
           <div className="trainer-start-note" aria-hidden="true">
             <i />
             <span>Как только начнёте писать, таймер пойдёт</span>
+          </div>
+        )}
+
+        {isLanguageMode && !completed && (
+          <div className="trainer-language-timer" aria-live="polite">
+            <span>Осталось</span>
+            <strong>{Math.ceil(displayedTime / 1000)}<small> сек</small></strong>
+            {!typed && <p>Начните печатать — таймер пойдёт</p>}
           </div>
         )}
 
@@ -1145,7 +1197,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
           <section className="trainer-result-overlay" aria-live="polite">
             <div>
               <p className="eyebrow">Результат</p>
-              <h2>{mode === "russian" ? "Время вышло!" : "Код набран!"}</h2>
+              <h2>{isLanguageMode ? "Время вышло!" : "Код набран!"}</h2>
               <p>{isNewBest ? "Новый лучший темп — отличная работа." : "Точность важнее спешки. Попробуйте ещё раз."}</p>
             </div>
             <div className="trainer-result-stats">
@@ -1154,11 +1206,11 @@ export default function TypingTrainer({ userId }: { userId: string }) {
               <span><strong>{mistakes}</strong> ошибок</span>
             </div>
             <div className="trainer-result-actions">
-              <button onClick={() => reset()}>Повторить</button>
+              <button onClick={restartExercise}>Повторить</button>
               <button
                 onClick={() => nextRandomExercise(mode)}
               >
-                {mode === "russian" ? "Новый текст" : "Следующее"}
+                {isLanguageMode ? "Новый текст" : "Следующее"}
               </button>
             </div>
           </section>
