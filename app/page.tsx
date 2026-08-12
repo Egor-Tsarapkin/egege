@@ -528,7 +528,7 @@ function Dock({
     },
     {
       section: "trainer",
-      label: "Тренажёр",
+      label: "Печать",
       icon: <TrainerIcon />,
       locked: !isRegistered,
     },
@@ -613,7 +613,7 @@ function AppHeader({
       premium: true,
     },
     { section: "game", label: "EGE-марафон", locked: !isRegistered },
-    { section: "trainer", label: "Тренажёр", locked: !isRegistered },
+    { section: "trainer", label: "Печать", locked: !isRegistered },
     { section: "dashboard", label: "Дашборд", locked: !isRegistered },
   ];
 
