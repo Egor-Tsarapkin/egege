@@ -6012,7 +6012,7 @@ footer {
   align-items: center;
   background: color-mix(in srgb, var(--surface) 86%, var(--accent));
   box-shadow: inset 0 -1px color-mix(in srgb, var(--accent) 30%, transparent);
-  color: #f5f7f9;
+  color: var(--text);
   display: grid;
   gap: 20px;
   grid-area: top;
@@ -6042,7 +6042,7 @@ footer {
 }
 
 .exam-time span {
-  color: rgb(255 255 255 / 0.64);
+  color: var(--muted);
   font-size: 10px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -6077,7 +6077,7 @@ footer {
 }
 
 .exam-window-actions button:hover {
-  background: rgb(255 255 255 / 0.1);
+  background: color-mix(in srgb, var(--text) 9%, transparent);
 }
 
 .exam-window-actions button:active {
