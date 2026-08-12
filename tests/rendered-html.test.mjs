@@ -23,8 +23,13 @@ test("builds the teacher workspace into the site", async () => {
 });
 
 test("keeps generated IDs separate from imported KIMs and tasks", async () => {
-  const server = await readFile(new URL("../lib/teacher-studio-server.ts", import.meta.url), "utf8");
+  const [server, route] = await Promise.all([
+    readFile(new URL("../lib/teacher-studio-server.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/teacher-studio/route.ts", import.meta.url), "utf8"),
+  ]);
   assert.match(server, /`0\$\{String\(rowId\)\.padStart\(5, "0"\)\}`/);
   assert.match(server, /`0\$\{String\(rowId\)\.padStart\(7, "0"\)\}`/);
   assert.match(server, /\^0\\d\{7\}\$/);
+  assert.match(route, /nextAvailableTaskId/);
+  assert.match(route, /NOT EXISTS \(SELECT 1 FROM teacher_tasks WHERE public_id = '000001'\)/);
 });

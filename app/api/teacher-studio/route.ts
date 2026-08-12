@@ -41,6 +41,23 @@ async function ownedVariant(ownerId: string, kim: string) {
   ).bind(kim, ownerId).first<D1Row>();
 }
 
+async function nextAvailableTaskId() {
+  const row = await communityDb().prepare(`SELECT CASE
+      WHEN NOT EXISTS (SELECT 1 FROM teacher_tasks WHERE public_id = '000001') THEN 1
+      ELSE COALESCE((
+        SELECT MIN(CAST(substr(current.public_id, 2) AS INTEGER) + 1)
+        FROM teacher_tasks current
+        WHERE current.public_id GLOB '0[0-9]*'
+          AND NOT EXISTS (
+            SELECT 1 FROM teacher_tasks following
+            WHERE following.public_id = '0' || printf('%05d', CAST(substr(current.public_id, 2) AS INTEGER) + 1)
+          )
+      ), 1)
+    END AS number`).first<{ number: number }>();
+  if (!row?.number) throw new Error("Не удалось выдать ID задания");
+  return publicTaskId(row.number);
+}
+
 function normalizeTaskIds(value: unknown) {
   if (!Array.isArray(value)) return [];
   return value.map((item) => cleanText(item, 32)).filter(Boolean).slice(0, 60);
@@ -189,14 +206,20 @@ export async function POST(request: Request) {
     }
 
     if (action === "create_task") {
-      const insert = await db.prepare(`INSERT INTO teacher_tasks
-        (public_id, owner_id, folder_id, exam_number, note, statement_html, answer_type,
-         answer_json, solution_video_url, solution_timecode, solution_html, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .bind(`pending:${crypto.randomUUID()}`, auth.user.id, folderId, examNumber, note, statementHtml, answer.type, JSON.stringify(answer), videoUrl, timecode, solutionHtml, now, now).run();
-      const id = Number(insert.meta.last_row_id);
-      const publicId = publicTaskId(id);
-      await db.prepare("UPDATE teacher_tasks SET public_id = ? WHERE id = ?").bind(publicId, id).run();
+      let publicId = "";
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        publicId = await nextAvailableTaskId();
+        try {
+          await db.prepare(`INSERT INTO teacher_tasks
+            (public_id, owner_id, folder_id, exam_number, note, statement_html, answer_type,
+             answer_json, solution_video_url, solution_timecode, solution_html, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`) 
+            .bind(publicId, auth.user.id, folderId, examNumber, note, statementHtml, answer.type, JSON.stringify(answer), videoUrl, timecode, solutionHtml, now, now).run();
+          break;
+        } catch (insertError) {
+          if (attempt === 2) throw insertError;
+        }
+      }
       return Response.json({ ...(await studioPayload(auth.user.id)), savedId: publicId });
     }
 
