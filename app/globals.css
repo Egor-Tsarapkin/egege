@@ -11700,13 +11700,21 @@ footer {
   text-wrap: pretty;
 }
 
+.trainer-controls-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
 .trainer-modes {
   background: var(--surface);
   border-radius: 15px;
   box-shadow: var(--shadow-soft);
   display: inline-flex;
   gap: 4px;
-  margin-top: 24px;
+  margin-top: 0;
   padding: 4px;
 }
 
@@ -11735,6 +11743,63 @@ footer {
 
 .trainer-modes button:active {
   transform: scale(0.96);
+}
+
+.trainer-restart {
+  align-items: center;
+  background: var(--surface);
+  border-radius: 13px;
+  box-shadow: var(--shadow-soft);
+  color: var(--muted);
+  display: inline-flex;
+  height: 50px;
+  justify-content: center;
+  padding: 0;
+  transition: color 140ms ease-out, transform 140ms ease-out;
+  width: 50px;
+}
+
+.trainer-restart:hover {
+  color: var(--accent);
+}
+
+.trainer-restart:active {
+  transform: scale(0.94) rotate(-18deg);
+}
+
+.trainer-duration {
+  align-items: center;
+  background: var(--surface);
+  border-radius: 13px;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  gap: 3px;
+  padding: 4px;
+}
+
+.trainer-duration button {
+  background: transparent;
+  border-radius: 9px;
+  color: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  min-height: 42px;
+  min-width: 46px;
+  padding: 0 10px;
+  transition: background-color 140ms ease-out, color 140ms ease-out, transform 140ms ease-out;
+}
+
+.trainer-duration button:hover {
+  color: var(--text);
+}
+
+.trainer-duration button.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.trainer-duration button:active {
+  transform: scale(0.95);
 }
 
 .trainer-metrics {
@@ -11929,6 +11994,45 @@ footer {
   height: 2px;
   inset-inline: 0;
   position: absolute;
+}
+
+.trainer-russian-text {
+  color: var(--text);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: clamp(20px, 2vw, 30px);
+  font-variant-ligatures: none;
+  font-weight: 540;
+  letter-spacing: 0.01em;
+  line-height: 1.65;
+  max-width: 1200px;
+  white-space: pre-wrap;
+}
+
+.trainer-russian-text span {
+  border-radius: 4px;
+  position: relative;
+}
+
+.trainer-russian-text .is-future {
+  color: color-mix(in srgb, var(--muted) 50%, transparent);
+}
+
+.trainer-russian-text .is-correct {
+  color: var(--text);
+}
+
+.trainer-russian-text .is-current {
+  background: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent-ink);
+}
+
+.trainer-russian-text .is-mistake {
+  color: #ff9e95;
+  text-decoration: underline;
+  text-decoration-color: #ff7e75;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 .trainer-capture {
@@ -12466,9 +12570,32 @@ footer {
 
   .trainer-modes {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    margin-top: 19px;
+    grid-template-columns: repeat(2, 1fr);
+    margin-top: 0;
     width: 100%;
+  }
+
+  .trainer-controls-row {
+    align-items: stretch;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 48px;
+    margin-top: 19px;
+  }
+
+  .trainer-restart {
+    height: 100%;
+    min-height: 52px;
+    width: 48px;
+  }
+
+  .trainer-duration {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .trainer-duration button {
+    flex: 1;
   }
 
   .trainer-modes button {
@@ -12532,6 +12659,11 @@ footer {
   .trainer-code-line {
     gap: 12px;
     grid-template-columns: 19px auto;
+  }
+
+  .trainer-russian-text {
+    font-size: 18px;
+    line-height: 1.65;
   }
 
   .trainer-line-number {
@@ -14278,14 +14410,29 @@ footer {
     margin-top: 5px;
   }
 
-  .trainer-modes {
+  .trainer-controls-row {
     margin-top: 10px;
+  }
+
+  .trainer-modes {
+    margin-top: 0;
     padding: 3px;
   }
 
   .trainer-modes button {
     min-height: 34px;
     padding: 0 12px;
+  }
+
+  .trainer-restart {
+    height: 40px;
+    width: 40px;
+  }
+
+  .trainer-duration button {
+    min-height: 32px;
+    min-width: 38px;
+    padding-inline: 8px;
   }
 
   .trainer-metrics {
@@ -21933,7 +22080,7 @@ footer {
   }
 
   .trainer-modes {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .trainer-modes button {
