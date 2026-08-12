@@ -2560,16 +2560,10 @@ export default function Home() {
     const client = await getSupabaseBrowserClient();
     if (client) await client.auth.signOut();
     setUser(null);
-    if (
-      section === "dashboard" ||
-      section === "theory" ||
-      section === "game" ||
-      section === "trainer" ||
-      section === "admin"
-    ) {
-      setSection("tasks");
-    }
+    setSection("home");
+    window.history.replaceState({ section: "home" }, "", sectionPaths.home);
     setProfileOpen(false);
+    window.scrollTo({ top: 0, behavior: "auto" });
     notify("Вы вышли из профиля");
   };
 
