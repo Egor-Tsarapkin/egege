@@ -11841,6 +11841,17 @@ footer {
   letter-spacing: 0;
 }
 
+.trainer-metrics strong em {
+  color: var(--dim);
+  display: block;
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 520;
+  letter-spacing: 0.015em;
+  margin-top: 4px;
+}
+
 .trainer-stage {
   background: var(--surface);
   border-radius: 27px;
@@ -11885,6 +11896,15 @@ footer {
 .trainer-stage-toolbar b {
   color: var(--text-soft);
   font-variant-numeric: tabular-nums;
+}
+
+.trainer-best small {
+  color: var(--dim);
+  display: block;
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: 9px;
+  margin-top: 2px;
+  text-align: right;
 }
 
 .trainer-stage-toolbar button {
@@ -12450,6 +12470,15 @@ footer {
   font-family: var(--font-geist-mono), monospace;
   font-size: 17px;
   font-variant-numeric: tabular-nums;
+}
+
+.trainer-result-speed small {
+  color: var(--dim);
+  display: block;
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: 10px;
+  font-weight: 520;
+  margin-top: 4px;
 }
 
 .trainer-result-actions {

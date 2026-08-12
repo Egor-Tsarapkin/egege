@@ -863,6 +863,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
   const speed = elapsedMs > 0
     ? Math.round((typed.length / elapsedMs) * 60_000)
     : 0;
+  const wordSpeed = Math.round(speed / 5);
   const displayedTime = isLanguageMode
     ? Math.max(0, timeLimitMs - elapsedMs)
     : elapsedMs;
@@ -1117,7 +1118,10 @@ export default function TypingTrainer({ userId }: { userId: string }) {
           </div>
           <div>
             <span>Скорость</span>
-            <strong>{speed}<small> зн/мин</small></strong>
+            <strong>
+              {wordSpeed}<small> сл/мин</small>
+              <em>{speed} зн/мин</em>
+            </strong>
           </div>
           <div>
             <span>Точность</span>
@@ -1130,7 +1134,12 @@ export default function TypingTrainer({ userId }: { userId: string }) {
         <div className="trainer-stage-toolbar">
           <span>{isLanguageMode ? `Случайный текст · ${russianDuration} секунд` : `Случайное упражнение · ${EXERCISES.python.length} вариантов`}</span>
           <div>
-            {best > 0 && <span>Лучший: <b>{best}</b> зн/мин</span>}
+            {best > 0 && (
+              <span className="trainer-best">
+                Лучший: <b>{Math.round(best / 5)} сл/мин</b>
+                <small>{best} зн/мин</small>
+              </span>
+            )}
             <button onClick={pause} disabled={!running}>Пауза</button>
           </div>
         </div>
@@ -1201,7 +1210,10 @@ export default function TypingTrainer({ userId }: { userId: string }) {
               <p>{isNewBest ? "Новый лучший темп — отличная работа." : "Точность важнее спешки. Попробуйте ещё раз."}</p>
             </div>
             <div className="trainer-result-stats">
-              <span><strong>{speed}</strong> зн/мин</span>
+              <span className="trainer-result-speed">
+                <strong>{wordSpeed}</strong> сл/мин
+                <small>{speed} зн/мин</small>
+              </span>
               <span><strong>{accuracy}%</strong> точность</span>
               <span><strong>{mistakes}</strong> ошибок</span>
             </div>
