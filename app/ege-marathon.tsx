@@ -40,6 +40,7 @@ type AnswerState = "correct" | "wrong";
 type LocalState = {
   answered: Record<string, AnswerState>;
   favorites: string[];
+  marathonOrder: string[];
   autoAdvance: boolean;
   successEffect: boolean;
 };
@@ -48,9 +49,47 @@ const STORAGE_KEY = "egege-marathon-mvp-v1";
 const DEFAULT_LOCAL_STATE: LocalState = {
   answered: {},
   favorites: [],
+  marathonOrder: [],
   autoAdvance: true,
   successEffect: true,
 };
+
+function shuffle<T>(items: T[]) {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [result[index], result[randomIndex]] = [result[randomIndex], result[index]];
+  }
+  return result;
+}
+
+function createMarathonOrder() {
+  const buckets = new Map<string, string[]>();
+  for (const question of QUESTIONS) {
+    const bucket = buckets.get(question.topic) ?? [];
+    bucket.push(question.id);
+    buckets.set(question.topic, bucket);
+  }
+  for (const [topic, ids] of buckets) buckets.set(topic, shuffle(ids));
+
+  const order: string[] = [];
+  let previousTopic = "";
+  while (order.length < QUESTIONS.length) {
+    const availableTopics = [...buckets.entries()]
+      .filter(([topic, ids]) => ids.length > 0 && topic !== previousTopic)
+      .map(([topic, ids]) => ({ topic, ids, random: Math.random() }))
+      .sort((left, right) => right.ids.length - left.ids.length || left.random - right.random);
+    const next = availableTopics[0] ?? [...buckets.entries()]
+      .filter(([, ids]) => ids.length > 0)
+      .map(([topic, ids]) => ({ topic, ids }))[0];
+    if (!next) break;
+    const id = next.ids.pop();
+    if (!id) break;
+    order.push(id);
+    previousTopic = next.topic;
+  }
+  return order;
+}
 
 const PYTHON_KEYWORDS = new Set([
   "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del",
@@ -137,6 +176,7 @@ export default function EgeMarathon({
       setLocal({
         answered: saved.answered ?? {},
         favorites: Array.isArray(saved.favorites) ? saved.favorites : [],
+        marathonOrder: Array.isArray(saved.marathonOrder) ? saved.marathonOrder : [],
         autoAdvance: saved.autoAdvance ?? true,
         successEffect: saved.successEffect ?? true,
       });
@@ -184,7 +224,13 @@ export default function EgeMarathon({
   const queueCorrectCount = queue.filter((id) => local.answered[id] === "correct").length;
   const errorIds = allQuestionIds.filter((id) => local.answered[id] === "wrong");
   const isWarmAccent = ["red", "pink", "orange"].includes(accent);
-  const resumeIndex = Math.max(0, allQuestionIds.findIndex((id) => !local.answered[id]));
+  const savedMarathonOrder = local.marathonOrder.length === QUESTIONS.length
+    && new Set(local.marathonOrder).size === QUESTIONS.length
+    && local.marathonOrder.every((id) => byId.has(id))
+    ? local.marathonOrder
+    : allQuestionIds;
+  const firstUnansweredIndex = savedMarathonOrder.findIndex((id) => !local.answered[id]);
+  const resumeIndex = firstUnansweredIndex < 0 ? 0 : firstUnansweredIndex;
 
   const resetAnswer = () => {
     setSelected(null);
@@ -236,6 +282,13 @@ export default function EgeMarathon({
     setGraded(false);
     setScreen("quiz");
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const startNewMarathon = () => {
+    const order = createMarathonOrder();
+    setLocal((current) => ({ ...current, answered: {}, marathonOrder: order }));
+    setShowResumePrompt(false);
+    start(order);
   };
 
   const answer = (optionIndex: number) => {
@@ -546,16 +599,14 @@ export default function EgeMarathon({
               className="is-primary"
               onClick={() => {
                 setShowResumePrompt(false);
-                start(allQuestionIds, resumeIndex);
+                start(savedMarathonOrder, resumeIndex);
               }}
             >
               Продолжить с вопроса {resumeIndex + 1}
             </button>
             <button
               onClick={() => {
-                setLocal((current) => ({ ...current, answered: {} }));
-                setShowResumePrompt(false);
-                start(allQuestionIds);
+                startNewMarathon();
               }}
             >
               Начать заново
@@ -575,7 +626,7 @@ export default function EgeMarathon({
           <p>Вопросы ЕГЭ и Python в одном спокойном режиме.</p>
         </div>
         <div className="marathon-progress-grid">
-          <button onClick={() => start(allQuestionIds, resumeIndex)}>
+          <button onClick={() => answeredCount ? start(savedMarathonOrder, resumeIndex) : startNewMarathon()}>
             <strong>{correctCount}<small> / {QUESTIONS.length}</small></strong><i><b style={{ width: `${(correctCount / QUESTIONS.length) * 100}%` }} /></i><span>Вопросы</span>
           </button>
           <button onClick={() => setScreen("themes")}>
@@ -585,7 +636,7 @@ export default function EgeMarathon({
       </section>
 
       <div className="marathon-menu-grid">
-        <button className="is-marathon" onClick={() => answeredCount ? setShowResumePrompt(true) : start(allQuestionIds)}><span><Timer /></span><div><strong>Марафон</strong><small>{correctCount} правильных ответов</small></div><ChevronRight /></button>
+        <button className="is-marathon" onClick={() => answeredCount ? setShowResumePrompt(true) : startNewMarathon()}><span><Timer /></span><div><strong>Марафон</strong><small>{correctCount} правильных ответов</small></div><ChevronRight /></button>
         <button onClick={() => setScreen("themes")}><span><BookOpen /></span><div><strong>Темы</strong><small>{topics.length} подборки</small></div><ChevronRight /></button>
         <button onClick={() => setScreen("errors")}><span><AlertTriangle /></span><div><strong>Ошибки</strong><small>{errorIds.length} для повтора</small></div><ChevronRight /></button>
         <button onClick={() => setScreen("favorites")}><span><Star /></span><div><strong>Избранное</strong><small>{favorites.size} сохранено</small></div><ChevronRight /></button>
