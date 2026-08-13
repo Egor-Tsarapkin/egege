@@ -10632,6 +10632,8 @@ footer {
 }
 
 .preview-trainer-code i {
+  animation: preview-trainer-type 4.8s cubic-bezier(0.77, 0, 0.175, 1) infinite;
+  animation-delay: calc((var(--trainer-line, 0) * 720ms));
   background: var(--line-strong);
   border-radius: 999px;
   display: block;
@@ -10640,11 +10642,17 @@ footer {
 }
 
 .preview-trainer-code i:first-child {
+  --trainer-line: 0;
   background: color-mix(in srgb, var(--accent) 64%, var(--line-strong));
   width: 56%;
 }
 
+.preview-trainer-code i:nth-child(2) {
+  --trainer-line: 1;
+}
+
 .preview-trainer-code i:last-child {
+  --trainer-line: 2;
   margin-left: 17px;
   width: 68%;
 }
@@ -10663,12 +10671,20 @@ footer {
   height: 22px;
 }
 
-.preview-trainer-keyboard i:nth-child(11) {
+.preview-trainer-keyboard i:nth-child(5),
+.preview-trainer-keyboard i:nth-child(11),
+.preview-trainer-keyboard i:nth-child(16) {
+  animation: preview-trainer-key 4.8s ease-in-out infinite;
   background: var(--accent);
   box-shadow: none;
 }
 
+.preview-trainer-keyboard i:nth-child(5) { animation-delay: 0.15s; }
+.preview-trainer-keyboard i:nth-child(11) { animation-delay: 0.9s; }
+.preview-trainer-keyboard i:nth-child(16) { animation-delay: 1.65s; }
+
 .preview-trainer > span {
+  animation: preview-trainer-speed 4.8s cubic-bezier(0.23, 1, 0.32, 1) infinite;
   color: var(--accent);
   display: block;
   font-family: var(--font-geist-mono), monospace;
@@ -10835,6 +10851,50 @@ footer {
   33.333%, 100% {
     opacity: 0;
     transform: translate(-34px, -8px) rotate(-8deg) scale(0.96);
+  }
+}
+
+@keyframes preview-trainer-type {
+  0%, 8% {
+    opacity: 0.3;
+    transform: scaleX(0.12);
+    transform-origin: left;
+  }
+  32%, 76% {
+    opacity: 1;
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+  92%, 100% {
+    opacity: 0.3;
+    transform: scaleX(0.12);
+    transform-origin: left;
+  }
+}
+
+@keyframes preview-trainer-key {
+  0%, 18%, 100% {
+    filter: brightness(0.78);
+    transform: translateY(0);
+  }
+  7%, 11% {
+    filter: brightness(1.08);
+    transform: translateY(2px) scale(0.94);
+  }
+}
+
+@keyframes preview-trainer-speed {
+  0%, 12% {
+    opacity: 0.42;
+    transform: translateY(3px);
+  }
+  32%, 76% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  92%, 100% {
+    opacity: 0.42;
+    transform: translateY(3px);
   }
 }
 
@@ -13814,6 +13874,12 @@ footer {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .preview-trainer-code i,
+  .preview-trainer-keyboard i,
+  .preview-trainer > span {
+    animation: none;
+  }
+
   .marathon-question-track.is-settling {
     transition-duration: 90ms;
   }
