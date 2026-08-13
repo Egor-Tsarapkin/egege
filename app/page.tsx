@@ -175,6 +175,15 @@ type ClaimResult = {
   dateKey?: string;
   retryAfter?: number;
 };
+type TrainerClaimResult = {
+  status: "awarded" | "duplicate" | "limit" | "too_slow";
+  message: string;
+  awarded: number;
+  earnedToday?: number;
+  remaining?: number;
+  xp?: number;
+  dateKey?: string;
+};
 
 const PREFERENCES_KEY = "egege-preferences-v1";
 const EXAM_HISTORY_KEY = "egege-exam-history-v1";
@@ -2525,6 +2534,27 @@ export default function Home() {
     });
   };
 
+  const claimTrainerXp = async (mode: "python" | "russian" | "english", wordsPerMinute: number, attemptId: string) => {
+    const result = await communityRequest<TrainerClaimResult>("/api/community", {
+      method: "POST",
+      body: JSON.stringify({ action: "claim_trainer_xp", mode, wordsPerMinute, attemptId }),
+    });
+    if (result.awarded > 0) {
+      setCommunity((current) => current ? {
+        ...current,
+        profile: { ...current.profile, xp: result.xp ?? current.profile.xp + result.awarded },
+      } : current);
+      if (result.dateKey) {
+        setActivity((current) => ({
+          ...current,
+          [result.dateKey as string]: (current[result.dateKey as string] ?? 0) + 1,
+        }));
+      }
+      void refreshCommunity().catch(() => undefined);
+    }
+    return result;
+  };
+
   const loginWithProvider = async (provider: Provider, label: string) => {
     const client = await getSupabaseBrowserClient();
     if (!client) return "Нужно подключить Supabase — инструкция уже подготовлена.";
@@ -3080,7 +3110,7 @@ export default function Home() {
               </div>
             }
           >
-            <TypingTrainer userId={user.id} />
+            <TypingTrainer userId={user.id} onComplete={claimTrainerXp} />
           </Suspense>
         )}
 

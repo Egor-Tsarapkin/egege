@@ -29,6 +29,14 @@ type NextKey = {
   highlightCodes: string[];
 };
 
+type TrainerXpResult = {
+  status: "awarded" | "duplicate" | "limit" | "too_slow";
+  message: string;
+  awarded: number;
+  earnedToday?: number;
+  remaining?: number;
+};
+
 const BEST_KEY = "egege-typing-best-v1";
 
 const MODE_OPTIONS: Array<{ id: TrainerMode; label: string }> = [
@@ -819,7 +827,13 @@ function RussianTarget({ target, typed }: { target: string; typed: string }) {
   );
 }
 
-export default function TypingTrainer({ userId }: { userId: string }) {
+export default function TypingTrainer({
+  userId,
+  onComplete,
+}: {
+  userId: string;
+  onComplete: (mode: TrainerMode, wordsPerMinute: number, attemptId: string) => Promise<TrainerXpResult>;
+}) {
   const [mode, setMode] = useState<TrainerMode>("python");
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [russianText, setRussianText] = useState(() => createRussianText());
@@ -833,6 +847,8 @@ export default function TypingTrainer({ userId }: { userId: string }) {
   const [mistakes, setMistakes] = useState(0);
   const [best, setBest] = useState(() => readBest(userId, "python"));
   const [isNewBest, setIsNewBest] = useState(false);
+  const [xpMessage, setXpMessage] = useState("");
+  const [dailyXp, setDailyXp] = useState<number | null>(null);
   const captureRef = useRef<HTMLTextAreaElement>(null);
   const codeScrollRef = useRef<HTMLDivElement>(null);
   const startedAtRef = useRef<number | null>(null);
@@ -842,6 +858,24 @@ export default function TypingTrainer({ userId }: { userId: string }) {
     russian: [],
     english: [],
   });
+  const awardedAttemptRef = useRef("");
+  const initialCodeChosenRef = useRef(false);
+
+  const awardResult = (resultMode: TrainerMode, resultWordSpeed: number) => {
+    const attemptId = crypto.randomUUID();
+    awardedAttemptRef.current = attemptId;
+    setXpMessage("Сохраняем результат…");
+    void onComplete(resultMode, resultWordSpeed, attemptId)
+      .then((result) => {
+        if (awardedAttemptRef.current !== attemptId) return;
+        setXpMessage(result.message);
+        if (typeof result.earnedToday === "number") setDailyXp(result.earnedToday);
+      })
+      .catch((error) => {
+        if (awardedAttemptRef.current !== attemptId) return;
+        setXpMessage(error instanceof Error ? error.message : "Не удалось начислить XP.");
+      });
+  };
 
   const isLanguageMode = mode !== "python";
   const target = mode === "russian"
@@ -873,6 +907,14 @@ export default function TypingTrainer({ userId }: { userId: string }) {
   }, [elapsedMs]);
 
   useEffect(() => {
+    if (initialCodeChosenRef.current) return;
+    initialCodeChosenRef.current = true;
+    const choices = shuffledIndexes(EXERCISES.python.length, 0);
+    queueMicrotask(() => setExerciseIndex(choices[0] ?? 0));
+    exerciseBags.current.python = choices.slice(1);
+  }, []);
+
+  useEffect(() => {
     queueMicrotask(() => setBest(readBest(userId, mode)));
   }, [mode, userId]);
 
@@ -898,6 +940,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
             // The result still remains visible for this session.
           }
         }
+        awardResult(mode, Math.round(resultSpeed / 5));
         return;
       }
       setElapsedMs(nextElapsed);
@@ -947,6 +990,9 @@ export default function TypingTrainer({ userId }: { userId: string }) {
     setMistakes(0);
     setBest(readBest(userId, nextMode));
     setIsNewBest(false);
+    setXpMessage("");
+    setDailyXp(null);
+    awardedAttemptRef.current = "";
     startedAtRef.current = null;
     elapsedRef.current = 0;
     if (codeScrollRef.current) {
@@ -987,6 +1033,10 @@ export default function TypingTrainer({ userId }: { userId: string }) {
   const restartExercise = () => {
     if (mode === "russian") setRussianText(createRussianText());
     if (mode === "english") setEnglishText(createEnglishText());
+    if (mode === "python") {
+      nextRandomExercise("python");
+      return;
+    }
     reset();
   };
 
@@ -1054,6 +1104,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
           // The result still remains visible for this session.
         }
       }
+      awardResult(mode, Math.round(resultSpeed / 5));
     }
   };
 
@@ -1208,6 +1259,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
               <p className="eyebrow">Результат</p>
               <h2>{isLanguageMode ? "Время вышло!" : "Код набран!"}</h2>
               <p>{isNewBest ? "Новый лучший темп — отличная работа." : "Точность важнее спешки. Попробуйте ещё раз."}</p>
+              {xpMessage && <p className="trainer-xp-message">{xpMessage}{dailyXp !== null ? ` · сегодня ${dailyXp}/100 XP` : ""}</p>}
             </div>
             <div className="trainer-result-stats">
               <span className="trainer-result-speed">
@@ -1218,7 +1270,7 @@ export default function TypingTrainer({ userId }: { userId: string }) {
               <span><strong>{mistakes}</strong> ошибок</span>
             </div>
             <div className="trainer-result-actions">
-              <button onClick={restartExercise}>Повторить</button>
+              <button onClick={restartExercise}>{isLanguageMode ? "Повторить" : "Новый код"}</button>
               <button
                 onClick={() => nextRandomExercise(mode)}
               >

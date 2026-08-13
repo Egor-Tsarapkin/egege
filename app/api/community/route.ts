@@ -14,6 +14,16 @@ const MIN_AWARD_INTERVAL_SECONDS = 12;
 const BURST_WINDOW_SECONDS = 5 * 60;
 const BURST_AWARD_LIMIT = 8;
 const PROTECTION_SECONDS = 10 * 60;
+const TRAINER_DAILY_LIMIT = 100;
+const TRAINER_MODES = new Set(["python", "russian", "english"]);
+
+function trainerXpForSpeed(wordsPerMinute: number) {
+  if (wordsPerMinute > 100) return 30;
+  if (wordsPerMinute >= 50) return 15;
+  if (wordsPerMinute > 25) return 10;
+  if (wordsPerMinute > 10) return 5;
+  return 0;
+}
 
 type LeaderboardRow = CommunityProfileRow & { is_friend: number };
 type FriendRow = {
@@ -177,6 +187,102 @@ export async function POST(request: Request) {
     const profile = await ensureCommunityProfile(user);
     const action = String(body.action ?? "");
     const now = Math.floor(Date.now() / 1000);
+
+    if (action === "claim_trainer_xp") {
+      const mode = String(body.mode ?? "");
+      const wordsPerMinute = Math.max(0, Math.min(500, Math.round(Number(body.wordsPerMinute))));
+      const attemptId = String(body.attemptId ?? "");
+      if (!TRAINER_MODES.has(mode) || !Number.isFinite(wordsPerMinute)) {
+        return response({ error: "Некорректный результат тренировки." }, 400);
+      }
+      if (!/^[a-z0-9-]{16,64}$/i.test(attemptId)) {
+        return response({ error: "Некорректный ID тренировки." }, 400);
+      }
+
+      const dateKey = moscowDateKey();
+      const eventId = `trainer:${mode}:${attemptId}`;
+      const existing = await db
+        .prepare("SELECT xp_awarded FROM score_events WHERE user_id = ? AND task_id = ?")
+        .bind(user.id, eventId)
+        .first<{ xp_awarded: number }>();
+      if (existing) {
+        return response({
+          status: "duplicate",
+          message: "Этот результат тренировки уже учтён.",
+          awarded: 0,
+        });
+      }
+
+      const reason = `trainer_${mode}`;
+      const requestedXp = trainerXpForSpeed(wordsPerMinute);
+      const insert = await db
+        .prepare(
+          `INSERT OR IGNORE INTO score_events
+           (user_id, task_id, xp_awarded, reason, date_key, created_at)
+           SELECT ?, ?,
+                  MIN(?, MAX(0, ? - COALESCE((
+                    SELECT SUM(xp_awarded) FROM score_events
+                    WHERE user_id = ? AND date_key = ? AND reason = ?
+                  ), 0))),
+                  ?, ?, ?`,
+        )
+        .bind(
+          user.id,
+          eventId,
+          requestedXp,
+          TRAINER_DAILY_LIMIT,
+          user.id,
+          dateKey,
+          reason,
+          reason,
+          dateKey,
+          now,
+        )
+        .run();
+      if (!insert.meta.changes) {
+        return response({
+          status: "duplicate",
+          message: "Этот результат тренировки уже учтён.",
+          awarded: 0,
+        });
+      }
+
+      const savedEvent = await db
+        .prepare("SELECT xp_awarded FROM score_events WHERE user_id = ? AND task_id = ?")
+        .bind(user.id, eventId)
+        .first<{ xp_awarded: number }>();
+      const awarded = Number(savedEvent?.xp_awarded ?? 0);
+
+      if (awarded > 0) {
+        await db
+          .prepare("UPDATE profiles SET xp = xp + ?, updated_at = ? WHERE user_id = ?")
+          .bind(awarded, now, user.id)
+          .run();
+      }
+
+      const daily = await db
+        .prepare(
+          `SELECT COALESCE(SUM(xp_awarded), 0) AS xp
+           FROM score_events
+           WHERE user_id = ? AND date_key = ? AND reason = ?`,
+        )
+        .bind(user.id, dateKey, reason)
+        .first<{ xp: number }>();
+      const totalToday = Number(daily?.xp ?? 0);
+      return response({
+        status: awarded > 0 ? "awarded" : totalToday >= TRAINER_DAILY_LIMIT ? "limit" : "too_slow",
+        message: awarded > 0
+          ? `+${awarded} XP · за тренировку`
+          : totalToday >= TRAINER_DAILY_LIMIT
+            ? "Лимит 100 XP для этого режима на сегодня достигнут."
+            : "Для XP нужна скорость выше 10 слов в минуту.",
+        awarded,
+        earnedToday: totalToday,
+        remaining: Math.max(0, TRAINER_DAILY_LIMIT - totalToday),
+        xp: profile.xp + awarded,
+        dateKey,
+      });
+    }
 
     if (action === "claim_xp") {
       const taskId = String(body.taskId ?? "");
