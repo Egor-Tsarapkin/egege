@@ -2047,6 +2047,7 @@ export default function Home() {
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantSearch, setVariantSearch] = useState("");
   const [examVariant, setExamVariant] = useState<ExamVariantData | null>(null);
+  const [variantKimFromUrl, setVariantKimFromUrl] = useState("");
   const [openingVariantKim, setOpeningVariantKim] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [activity, setActivity] = useState<Activity>({});
@@ -2089,7 +2090,15 @@ export default function Home() {
   );
 
   useEffect(() => {
-    const syncSectionFromUrl = () => setSection(sectionFromPath(window.location.pathname));
+    const syncSectionFromUrl = () => {
+      const nextSection = sectionFromPath(window.location.pathname);
+      const nextKim = nextSection === "variants"
+        ? new URL(window.location.href).searchParams.get("kim")?.trim() ?? ""
+        : "";
+      setSection(nextSection);
+      setVariantKimFromUrl(nextKim);
+      setExamVariant((current) => current && current.kim === nextKim ? current : null);
+    };
     syncSectionFromUrl();
     window.addEventListener("popstate", syncSectionFromUrl);
     return () => window.removeEventListener("popstate", syncSectionFromUrl);
@@ -2471,9 +2480,10 @@ export default function Home() {
     }
     setSection(nextSection);
     const nextPath = sectionPaths[nextSection];
-    if (window.location.pathname !== nextPath) {
+    if (`${window.location.pathname}${window.location.search}` !== nextPath) {
       window.history.pushState({ section: nextSection }, "", nextPath);
     }
+    if (nextSection === "variants") setVariantKimFromUrl("");
     setProfileOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -2724,10 +2734,17 @@ export default function Home() {
       }
       setExamVariant(payload);
       const currentUrl = new URL(window.location.href);
-      if (currentUrl.searchParams.get("kim") === kim) {
-        currentUrl.searchParams.delete("kim");
-        window.history.replaceState({}, "", `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+      if (currentUrl.pathname !== sectionPaths.variants || currentUrl.searchParams.get("kim") !== kim) {
+        currentUrl.pathname = sectionPaths.variants;
+        currentUrl.search = "";
+        currentUrl.searchParams.set("kim", kim);
+        window.history.pushState(
+          { section: "variants", kim },
+          "",
+          `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`,
+        );
       }
+      setVariantKimFromUrl(kim);
       if (analyticsSession.current) {
         void fetch("/api/analytics", {
           method: "POST",
@@ -2744,12 +2761,26 @@ export default function Home() {
 
   useEffect(() => {
     if (section !== "variants" || variantsLoading || examVariant) return;
-    const kim = new URL(window.location.href).searchParams.get("kim")?.trim();
+    const kim = variantKimFromUrl;
     if (!kim || (!kim.startsWith("0") && !variants.some((variant) => variant.kim === kim))) return;
     window.setTimeout(() => void openExamVariant(kim), 0);
     // Глубокая ссылка открывается один раз после загрузки каталога.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, variantsLoading, variants.length, user]);
+  }, [section, variantsLoading, variants.length, variantKimFromUrl, user]);
+
+  const closeExamVariant = () => {
+    setExamVariant(null);
+    setVariantKimFromUrl("");
+    const currentUrl = new URL(window.location.href);
+    if (currentUrl.pathname === sectionPaths.variants && currentUrl.searchParams.has("kim")) {
+      currentUrl.searchParams.delete("kim");
+      window.history.replaceState(
+        { section: "variants" },
+        "",
+        `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`,
+      );
+    }
+  };
 
   const saveExamAttempt = (attempt: ExamAttempt) => {
     setExamAttempts((current) => {
@@ -3237,7 +3268,7 @@ export default function Home() {
         <Suspense fallback={<div className="exam-loading-screen">Готовим вариант…</div>}>
           <ExamStation
             variant={examVariant}
-            onClose={() => setExamVariant(null)}
+            onClose={closeExamVariant}
             onFinish={saveExamAttempt}
           />
         </Suspense>
