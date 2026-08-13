@@ -3941,6 +3941,7 @@ p,
 .cabinet-avatar {
   align-items: center;
   background: var(--accent);
+  border: 0;
   border-radius: 20px;
   color: var(--accent-ink);
   display: flex;
@@ -3951,6 +3952,121 @@ p,
   justify-content: center;
   transform: rotate(-2deg);
   width: 78px;
+}
+
+.cabinet-avatar-picker {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 4;
+}
+
+.cabinet-avatar {
+  cursor: pointer;
+  transition:
+    box-shadow 160ms ease-out,
+    scale 140ms ease-out,
+    transform 180ms cubic-bezier(.2, 0, 0, 1);
+}
+
+.cabinet-avatar:hover {
+  box-shadow: 0 0 0 6px var(--accent-wash);
+  transform: rotate(0deg);
+}
+
+.cabinet-avatar:active {
+  scale: .96;
+}
+
+.cabinet-avatar:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
+}
+
+.cabinet-avatar .avatar-emoji {
+  font-size: 38px;
+}
+
+.avatar-picker-panel {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  box-shadow: 0 22px 60px color-mix(in srgb, #000 34%, transparent);
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 12px);
+  width: min(330px, calc(100vw - 40px));
+}
+
+.avatar-picker-panel > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.avatar-picker-panel strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.avatar-picker-panel > div:first-child span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.avatar-picker-grid {
+  display: grid;
+  gap: 7px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.avatar-picker-grid button {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  display: flex;
+  font-size: 25px;
+  height: 48px;
+  justify-content: center;
+  min-width: 0;
+  transition:
+    background-color 140ms ease-out,
+    border-color 140ms ease-out,
+    scale 140ms ease-out;
+}
+
+.avatar-picker-grid button:hover {
+  background: var(--accent-wash);
+  border-color: var(--line-strong);
+}
+
+.avatar-picker-grid button:active {
+  scale: .96;
+}
+
+.avatar-picker-grid button.is-selected {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+}
+
+.avatar-emoji {
+  animation: avatar-float 3.8s ease-in-out infinite;
+  display: inline-block;
+  line-height: 1;
+  transform-origin: 50% 70%;
+}
+
+@keyframes avatar-float {
+  0%, 78%, 100% { transform: translateY(0) rotate(0deg); }
+  84% { transform: translateY(-2px) rotate(-5deg); }
+  91% { transform: translateY(0) rotate(4deg); }
+  96% { transform: rotate(-2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-emoji { animation: none; }
 }
 
 .cabinet-stats {

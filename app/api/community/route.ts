@@ -6,6 +6,7 @@ import {
   publicProfile,
   type CommunityProfileRow,
 } from "@/lib/community-server";
+import { isAvatarEmoji } from "@/lib/avatar-emojis";
 
 export const dynamic = "force-dynamic";
 
@@ -415,6 +416,18 @@ export async function POST(request: Request) {
         return response({ error: "Этот username уже занят." }, 409);
       }
       return response({ status: "updated", message: `Username изменён на @${username}.` });
+    }
+
+    if (action === "set_avatar") {
+      const avatarEmoji = String(body.avatarEmoji ?? "");
+      if (!isAvatarEmoji(avatarEmoji)) {
+        return response({ error: "Выберите эмодзи из списка." }, 400);
+      }
+      await db
+        .prepare("UPDATE profiles SET avatar_emoji = ?, updated_at = ? WHERE user_id = ?")
+        .bind(avatarEmoji, now, user.id)
+        .run();
+      return response({ status: "updated", message: "Аватар обновлён.", avatarEmoji });
     }
 
     if (action === "add_friend") {

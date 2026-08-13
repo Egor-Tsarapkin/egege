@@ -7,6 +7,7 @@ import {
   getSupabaseBrowserClient,
 } from "@/lib/supabase-browser";
 import { taskDownloadHref, taskDownloadName } from "@/lib/task-download";
+import { AVATAR_EMOJIS } from "@/lib/avatar-emojis";
 import type { ExamAttempt } from "./exam-station";
 import RichHtml from "./rich-html";
 
@@ -721,6 +722,7 @@ function ProfileMenu({
   authConfigured,
   preferences,
   isPremium,
+  avatarEmoji,
   onToggle,
   onPreference,
   onGoogleLogin,
@@ -733,6 +735,7 @@ function ProfileMenu({
   authConfigured: boolean | null;
   preferences: Preferences;
   isPremium: boolean;
+  avatarEmoji?: string;
   onToggle: () => void;
   onPreference: (next: Partial<Preferences>) => void;
   onGoogleLogin: () => Promise<string>;
@@ -774,7 +777,7 @@ function ProfileMenu({
           aria-label="Открыть личный кабинет"
         >
           {isPremium && <i className="premium-crown" aria-hidden="true" />}
-          <span>{userInitial}</span>
+          <span className={avatarEmoji ? "avatar-emoji" : ""}>{avatarEmoji || userInitial}</span>
         </button>
       </div>
     );
@@ -793,7 +796,7 @@ function ProfileMenu({
         {isRegistered ? (
           <>
             {isPremium && <i className="premium-crown" aria-hidden="true" />}
-            <span>{userInitial}</span>
+            <span className={avatarEmoji ? "avatar-emoji" : ""}>{avatarEmoji || userInitial}</span>
           </>
         ) : "Войти"}
       </button>
@@ -1556,7 +1559,7 @@ function Dashboard({
                   key={entry.userId}
                 >
                   <span className={`leaderboard-rank rank-${entry.rank}`}>{entry.rank}</span>
-                  <span className="leaderboard-avatar" aria-hidden="true">{entry.avatarEmoji}</span>
+                  <span className="leaderboard-avatar" aria-hidden="true"><span className="avatar-emoji">{entry.avatarEmoji}</span></span>
                   <div className="leaderboard-person">
                     <strong>{entry.displayName}</strong>
                     <small>
@@ -1664,7 +1667,7 @@ function Dashboard({
               <p>Входящие заявки</p>
               {incoming.map((friend) => (
                 <article className="friend-row" key={friend.userId}>
-                  <span>{friend.avatarEmoji}</span>
+                  <span><span className="avatar-emoji">{friend.avatarEmoji}</span></span>
                   <div>
                     <strong>{friend.displayName}</strong>
                     <small>@{friend.username}</small>
@@ -1703,7 +1706,7 @@ function Dashboard({
             {friends.length ? (
               friends.map((friend) => (
                 <article className="friend-row" key={friend.userId}>
-                  <span>{friend.avatarEmoji}</span>
+                  <span><span className="avatar-emoji">{friend.avatarEmoji}</span></span>
                   <div>
                     <strong>{friend.displayName}</strong>
                     <small>@{friend.username} · {friend.xp} XP</small>
@@ -1754,9 +1757,11 @@ function StudentCabinet({
   preferences,
   isPremium,
   isAdmin,
+  avatarEmoji,
   onPreference,
   onDeleteAttempt,
   onOpenAdmin,
+  onAvatarChange,
   onLogout,
 }: {
   user: User;
@@ -1764,12 +1769,16 @@ function StudentCabinet({
   preferences: Preferences;
   isPremium: boolean;
   isAdmin: boolean;
+  avatarEmoji: string;
   onPreference: (next: Partial<Preferences>) => void;
   onDeleteAttempt: (attempt: ExamAttempt) => void;
   onOpenAdmin: () => void;
+  onAvatarChange: (avatarEmoji: string) => Promise<void>;
   onLogout: () => Promise<void>;
 }) {
   const [cabinetView, setCabinetView] = useState<"overview" | "variants" | "tasks">("overview");
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
   const scores = attempts.map((attempt) => attempt.testScore);
   const average = scores.length
     ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length)
@@ -1789,6 +1798,20 @@ function StudentCabinet({
     { value: "fireworks", label: "Салют", icon: "✦" },
     { value: "random", label: "Случайно", icon: "?" },
   ];
+  const selectAvatar = async (nextAvatar: string) => {
+    if (avatarSaving) return;
+    if (nextAvatar === avatarEmoji) {
+      setAvatarPickerOpen(false);
+      return;
+    }
+    setAvatarSaving(true);
+    try {
+      await onAvatarChange(nextAvatar);
+      setAvatarPickerOpen(false);
+    } finally {
+      setAvatarSaving(false);
+    }
+  };
 
   const cabinetNavigation = (
     <nav className="cabinet-workspace-nav" aria-label="Разделы личного кабинета">
@@ -1824,7 +1847,38 @@ function StudentCabinet({
         </div>
         <div className="cabinet-hero-actions">
           {isAdmin && <button className="cabinet-admin-button" onClick={onOpenAdmin}>Админ-панель</button>}
-          <div className="cabinet-avatar">{name.trim().charAt(0).toUpperCase() || "Е"}</div>
+          <div className="cabinet-avatar-picker">
+            <button
+              type="button"
+              className="cabinet-avatar"
+              onClick={() => setAvatarPickerOpen((current) => !current)}
+              aria-expanded={avatarPickerOpen}
+              aria-label="Выбрать эмодзи для аватара"
+              title="Изменить аватар"
+            >
+              <span className="avatar-emoji">{avatarEmoji}</span>
+            </button>
+            {avatarPickerOpen && (
+              <div className="avatar-picker-panel" role="dialog" aria-label="Выбор аватара">
+                <div><strong>Выберите эмодзи</strong><span>Он появится в профиле и рейтинге</span></div>
+                <div className="avatar-picker-grid">
+                  {AVATAR_EMOJIS.map((emoji) => (
+                    <button
+                      type="button"
+                      className={emoji === avatarEmoji ? "is-selected" : ""}
+                      onClick={() => void selectAvatar(emoji)}
+                      disabled={avatarSaving}
+                      aria-label={`Выбрать ${emoji}`}
+                      aria-pressed={emoji === avatarEmoji}
+                      key={emoji}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -1964,7 +2018,7 @@ function StudentCabinet({
             <div className="profile-person">
               <span className={isPremium ? "has-premium" : ""}>
                 {isPremium && <i className="premium-crown" aria-hidden="true" />}
-                {userInitial}
+                <span className="avatar-emoji">{avatarEmoji}</span>
               </span>
               <div>
                 <strong>{name}</strong>
@@ -2604,6 +2658,7 @@ export default function Home() {
       authConfigured={authConfigured}
       preferences={preferences}
       isPremium={isPremium}
+      avatarEmoji={community?.profile.avatarEmoji}
       onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
       onPreference={updatePreferences}
       onGoogleLogin={loginWithGoogle}
@@ -2781,6 +2836,9 @@ export default function Home() {
   const setCommunityUsername = (username: string) =>
     mutateCommunity({ action: "set_username", username });
 
+  const setCommunityAvatar = (avatarEmoji: string) =>
+    mutateCommunity({ action: "set_avatar", avatarEmoji });
+
   const addCommunityFriend = (username: string) =>
     mutateCommunity({ action: "add_friend", username });
 
@@ -2821,6 +2879,7 @@ export default function Home() {
           authConfigured={authConfigured}
           preferences={preferences}
           isPremium={isPremium}
+          avatarEmoji={community?.profile.avatarEmoji}
           onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
           onPreference={updatePreferences}
           onGoogleLogin={loginWithGoogle}
@@ -3141,9 +3200,11 @@ export default function Home() {
             preferences={preferences}
             isPremium={isPremium}
             isAdmin={isAdmin}
+            avatarEmoji={community?.profile.avatarEmoji ?? "🙂"}
             onPreference={updatePreferences}
             onDeleteAttempt={deleteExamAttempt}
             onOpenAdmin={() => navigate("admin")}
+            onAvatarChange={setCommunityAvatar}
             onLogout={logout}
           />
         )}
