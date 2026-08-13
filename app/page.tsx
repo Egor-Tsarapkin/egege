@@ -204,7 +204,7 @@ const defaultPreferences: Preferences = {
   reaction: "xp",
   siteStyle: "base",
   styleMotion: true,
-  taskGifs: true,
+  taskGifs: false,
 };
 const accentOptions: Array<{ value: Accent; label: string }> = [
   { value: "lime", label: "Лаймовый сорбет" },
@@ -2067,7 +2067,7 @@ export default function Home() {
           ? (saved.siteStyle as SiteStyle)
           : defaultPreferences.siteStyle,
         styleMotion: saved.styleMotion !== false,
-        taskGifs: saved.taskGifs !== false,
+        taskGifs: saved.taskGifs === true,
       };
     } catch {
       // Invalid local preferences are replaced with safe defaults.
@@ -2308,8 +2308,8 @@ export default function Home() {
       const guestAccent = guestAccentOptions.some((accent) => accent.value === current.accent)
         ? current.accent
         : defaultPreferences.accent;
-      if (current.siteStyle === "base" && current.accent === guestAccent) return current;
-      const updated: Preferences = { ...current, siteStyle: "base", accent: guestAccent };
+      if (current.siteStyle === "base" && current.accent === guestAccent && !current.taskGifs) return current;
+      const updated: Preferences = { ...current, siteStyle: "base", accent: guestAccent, taskGifs: false };
       document.documentElement.dataset.accent = updated.accent;
       try {
         window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
@@ -2550,7 +2550,7 @@ export default function Home() {
       const guestAccent = guestAccentOptions.some((accent) => accent.value === current.accent)
         ? current.accent
         : defaultPreferences.accent;
-      const updated: Preferences = { ...current, siteStyle: "base", accent: guestAccent };
+      const updated: Preferences = { ...current, siteStyle: "base", accent: guestAccent, taskGifs: false };
       document.documentElement.dataset.accent = updated.accent;
       try {
         window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
@@ -2863,7 +2863,7 @@ export default function Home() {
         className={`tasks-shell ${section === "tasks" ? "is-task-shell" : ""} ${section === "trainer" ? "is-trainer-shell" : ""} ${
           section === "theory" ? "is-theory-shell" : ""
         } ${section === "game" ? "is-marathon-shell" : ""
-        } ${section === "tasks" && preferences.taskGifs && taskStyleAssets.length ? "has-task-style" : ""} ${
+        } ${section === "tasks" && isRegistered && preferences.taskGifs && taskStyleAssets.length ? "has-task-style" : ""} ${
           section === "tasks" && !type ? "is-task-empty" : ""
         }`}
       >
@@ -2953,7 +2953,7 @@ export default function Home() {
                   <TaskItem
                     task={task}
                     completed={completedTaskIds.has(task.id)}
-                    decoration={preferences.taskGifs && taskStyleAssets.length
+                    decoration={isRegistered && preferences.taskGifs && taskStyleAssets.length
                       ? taskStyleAssets[index % taskStyleAssets.length]
                       : undefined}
                     decorationMotion={preferences.styleMotion}
