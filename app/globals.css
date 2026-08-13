@@ -2831,6 +2831,36 @@
   --accent-ink: #153121;
 }
 
+[data-accent="coral"] {
+  --accent: #ff8f7d;
+  --accent-hover: #ffa99a;
+  --accent-ink: #3b1914;
+}
+
+[data-accent="indigo"] {
+  --accent: #9ea8ff;
+  --accent-hover: #b5bdff;
+  --accent-ink: #191d42;
+}
+
+[data-accent="violet"] {
+  --accent: #df98ff;
+  --accent-hover: #e8b2ff;
+  --accent-ink: #32163e;
+}
+
+[data-accent="teal"] {
+  --accent: #62d4bd;
+  --accent-hover: #83dfcd;
+  --accent-ink: #0d3029;
+}
+
+[data-accent="matcha"] {
+  --accent: #b7d86e;
+  --accent-hover: #c8e38b;
+  --accent-ink: #202b10;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -4291,6 +4321,11 @@ p,
 .accent-cyan { background: #82ddd8; }
 .accent-yellow { background: #f4dc67; }
 .accent-mint { background: #8fe1ae; }
+.accent-coral { background: #ff8f7d; }
+.accent-indigo { background: #9ea8ff; }
+.accent-violet { background: #df98ff; }
+.accent-teal { background: #62d4bd; }
+.accent-matcha { background: #b7d86e; }
 
 .site-style-options {
   display: grid;

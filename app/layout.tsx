@@ -7,7 +7,10 @@ const appearanceScript = `
 (() => {
   const defaults = { theme: "dark", accent: "lime" };
   const themes = new Set(["dark", "light"]);
-  const accents = new Set(["lime", "blue", "red", "pink", "beige"]);
+  const accents = new Set([
+    "lime", "blue", "red", "pink", "beige", "orange", "purple", "cyan",
+    "yellow", "mint", "coral", "indigo", "violet", "teal", "matcha"
+  ]);
 
   try {
     const saved = JSON.parse(localStorage.getItem("egege-preferences-v1") || "{}");

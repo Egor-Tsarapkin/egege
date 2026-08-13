@@ -33,7 +33,12 @@ type Accent =
   | "purple"
   | "cyan"
   | "yellow"
-  | "mint";
+  | "mint"
+  | "coral"
+  | "indigo"
+  | "violet"
+  | "teal"
+  | "matcha";
 type Reaction = "xp" | "hearts" | "letters" | "fire" | "fireworks" | "random";
 type BurstReaction = Exclude<Reaction, "random">;
 type Preferences = {
@@ -212,7 +217,13 @@ const accentOptions: Array<{ value: Accent; label: string }> = [
   { value: "cyan", label: "Ледяная лагуна" },
   { value: "yellow", label: "Банановое солнце" },
   { value: "mint", label: "Мятный сад" },
+  { value: "coral", label: "Коралловый закат" },
+  { value: "indigo", label: "Черничная ночь" },
+  { value: "violet", label: "Электрический ирис" },
+  { value: "teal", label: "Океанский бриз" },
+  { value: "matcha", label: "Матча-латте" },
 ];
+const guestAccentOptions = accentOptions.slice(0, 5);
 const siteStyleOptions: Array<{ value: SiteStyle; label: string; note: string }> = [
   { value: "base", label: "Base", note: "Чистый интерфейс" },
   { value: "animals", label: "Animals", note: "Кошки и собаки" },
@@ -811,7 +822,7 @@ function ProfileMenu({
         <fieldset className="settings-block">
           <legend>Акцент</legend>
           <div className="accent-options">
-            {accentOptions.map((accent) => (
+            {guestAccentOptions.map((accent) => (
               <button
                 className={`accent-swatch accent-${accent.value} ${
                   preferences.accent === accent.value ? "is-selected" : ""
@@ -823,51 +834,6 @@ function ProfileMenu({
                 key={accent.value}
               />
             ))}
-          </div>
-        </fieldset>
-
-        <fieldset className="settings-block site-style-settings">
-          <legend>Стиль главной</legend>
-          <div className="site-style-options">
-            {siteStyleOptions.map((style) => (
-              <button
-                className={preferences.siteStyle === style.value ? "is-selected" : ""}
-                onClick={() => onPreference({ siteStyle: style.value })}
-                key={style.value}
-              >
-                <span className={`style-preview style-preview-${style.value}`} aria-hidden="true">
-                  {style.value !== "base" && (() => {
-                    const preview = getStyleAssets(style.value, preferences.theme)[0];
-                    return <img alt="" src={preferences.styleMotion ? preview.animated : preview.poster} />;
-                  })()}
-                </span>
-                <span className="style-option-copy"><strong>{style.label}</strong><small>{style.note}</small></span>
-              </button>
-            ))}
-          </div>
-          <div className="style-motion-control">
-            <span>Движение</span>
-            <button
-              className={preferences.styleMotion ? "is-active" : ""}
-              onClick={() => onPreference({ styleMotion: !preferences.styleMotion })}
-              aria-pressed={preferences.styleMotion}
-              aria-label="Движение декоративных GIF"
-            >
-              <i />
-              <span className="switch-status">{preferences.styleMotion ? "Включено" : "Выключено"}</span>
-            </button>
-          </div>
-          <div className="style-motion-control">
-            <span>GIF в базе заданий</span>
-            <button
-              className={preferences.taskGifs ? "is-active" : ""}
-              onClick={() => onPreference({ taskGifs: !preferences.taskGifs })}
-              aria-pressed={preferences.taskGifs}
-              aria-label="GIF в базе заданий"
-            >
-              <i />
-              <span className="switch-status">{preferences.taskGifs ? "Включены" : "Выключены"}</span>
-            </button>
           </div>
         </fieldset>
 
@@ -2035,6 +2001,7 @@ export default function Home() {
   const [isPremium, setIsPremium] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authConfigured, setAuthConfigured] = useState<boolean | null>(null);
+  const [authResolved, setAuthResolved] = useState(false);
   const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
   const [examAttempts, setExamAttempts] = useState<ExamAttempt[]>(() => {
     if (typeof window === "undefined") return [];
@@ -2303,6 +2270,7 @@ export default function Home() {
       if (!active) return;
       if (!client) {
         setAuthConfigured(false);
+        setAuthResolved(true);
         return;
       }
 
@@ -2311,6 +2279,7 @@ export default function Home() {
       if (active) {
         setUser(data.session?.user ?? null);
         setAuthAccessToken(data.session?.access_token ?? "");
+        setAuthResolved(true);
       }
 
       const listener = client.auth.onAuthStateChange((_event, session) => {
@@ -2332,6 +2301,24 @@ export default function Home() {
       unsubscribe?.();
     };
   }, []);
+
+  useEffect(() => {
+    if (!authResolved || user) return;
+    setPreferences((current) => {
+      const guestAccent = guestAccentOptions.some((accent) => accent.value === current.accent)
+        ? current.accent
+        : defaultPreferences.accent;
+      if (current.siteStyle === "base" && current.accent === guestAccent) return current;
+      const updated: Preferences = { ...current, siteStyle: "base", accent: guestAccent };
+      document.documentElement.dataset.accent = updated.accent;
+      try {
+        window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
+      } catch {
+        // Guest defaults still apply for the current session.
+      }
+      return updated;
+    });
+  }, [authResolved, user]);
 
   useEffect(() => {
     if (!analyticsSession.current) return;
@@ -2559,6 +2546,19 @@ export default function Home() {
   const logout = async () => {
     const client = await getSupabaseBrowserClient();
     if (client) await client.auth.signOut();
+    setPreferences((current) => {
+      const guestAccent = guestAccentOptions.some((accent) => accent.value === current.accent)
+        ? current.accent
+        : defaultPreferences.accent;
+      const updated: Preferences = { ...current, siteStyle: "base", accent: guestAccent };
+      document.documentElement.dataset.accent = updated.accent;
+      try {
+        window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
+      } catch {
+        // Guest defaults still apply for the current session.
+      }
+      return updated;
+    });
     setUser(null);
     setSection("home");
     window.history.replaceState({ section: "home" }, "", sectionPaths.home);
