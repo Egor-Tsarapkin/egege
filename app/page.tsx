@@ -516,12 +516,10 @@ function AccessBadge({
 function Dock({
   navigate,
   isRegistered,
-  isPremium,
   rattlingSection,
 }: {
   navigate: (section: Section) => void;
   isRegistered: boolean;
-  isPremium: boolean;
   rattlingSection: GateSection | null;
 }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -538,8 +536,7 @@ function Dock({
       section: "theory",
       label: "Теория",
       icon: <TheoryIcon />,
-      locked: !isRegistered || !isPremium,
-      premium: true,
+      locked: !isRegistered,
     },
     {
       section: "game",
@@ -604,14 +601,12 @@ function AppHeader({
   section,
   navigate,
   isRegistered,
-  isPremium,
   rattlingSection,
   profile,
 }: {
   section: Section;
   navigate: (section: Section) => void;
   isRegistered: boolean;
-  isPremium: boolean;
   rattlingSection: GateSection | null;
   profile: React.ReactNode;
 }) {
@@ -630,8 +625,7 @@ function AppHeader({
     {
       section: "theory",
       label: "Теория",
-      locked: !isRegistered || !isPremium,
-      premium: true,
+      locked: !isRegistered,
     },
     { section: "game", label: "EGE-марафон", locked: !isRegistered },
     { section: "trainer", label: "Тренажёр", locked: !isRegistered },
@@ -688,7 +682,6 @@ function AppHeader({
       <button className="wordmark" onClick={() => navigate("home")}>
         <span className="mini-mark">Е</span>
         <span className="wordmark-name"><b>EGE</b>GE</span>
-        <small className="wordmark-by">by Tsarapkin</small>
       </button>
       <div className="topbar-actions">
         <nav ref={navRef} aria-label="Разделы">
@@ -1202,7 +1195,7 @@ function GatePreview({ section }: { section: GateSection }) {
           </div>
         ))}
         <div className="preview-premium-lock">
-          <AccessBadge premium compact />
+          <AccessBadge compact />
         </div>
       </div>
     );
@@ -1253,7 +1246,6 @@ function AccessGateModal({
   onClose: () => void;
   onContinue: () => void;
 }) {
-  const isTheory = section === "theory";
   const copy = {
     game: {
       eyebrow: "Бесплатно после регистрации",
@@ -1277,11 +1269,11 @@ function AccessGateModal({
       features: ["Python, русский и символы", "На компьютере и телефоне"],
     },
     theory: {
-      eyebrow: "Премиум-раздел",
+      eyebrow: "Бесплатно после регистрации",
       title: "Теория без лишней воды",
       description:
         "Главы по программированию и темам ЕГЭ с понятными примерами, мини-проверками и связями с практикой.",
-      features: ["Нужна регистрация", "Нужен премиум"],
+      features: ["9 глав по программированию", "Бесплатно после регистрации"],
     },
   }[section];
 
@@ -1317,11 +1309,9 @@ function AccessGateModal({
           <h2 id="gate-title">{copy.title}</h2>
           <p className="gate-description">{copy.description}</p>
           <div className="gate-features">
-            {copy.features.map((feature, index) => (
+            {copy.features.map((feature) => (
               <span key={feature}>
-                {isTheory && index === 1 ? (
-                  <span className="feature-lock-mark" aria-hidden="true"><i /></span>
-                ) : <i />}
+                <i />
                 {feature}
               </span>
             ))}
@@ -1329,16 +1319,9 @@ function AccessGateModal({
           <button className="gate-primary" onClick={onContinue}>
             {!isRegistered
               ? "Войти или зарегистрироваться"
-              : isTheory
-                ? "Посмотреть премиум"
-                : "Продолжить"}
+              : "Продолжить"}
           </button>
           <button className="gate-secondary" onClick={onClose}>Пока не сейчас</button>
-          {isTheory && isRegistered && (
-            <small className="gate-demo-note">
-              В тестовой версии премиум включается в личном кабинете.
-            </small>
-          )}
         </div>
       </section>
     </div>
@@ -2434,10 +2417,6 @@ export default function Home() {
     }
     if (!pending) return;
     queueMicrotask(() => {
-      if (pending === "theory") {
-        setGateSection("theory");
-        return;
-      }
       setSection(pending);
       window.scrollTo({ top: 0 });
     });
@@ -2474,7 +2453,7 @@ export default function Home() {
       showAccessGate(nextSection);
       return;
     }
-    if (nextSection === "theory" && (!isRegistered || !isPremium)) {
+    if (nextSection === "theory" && !isRegistered) {
       showAccessGate("theory");
       return;
     }
@@ -2926,17 +2905,9 @@ export default function Home() {
           <Dock
             navigate={navigate}
             isRegistered={isRegistered}
-            isPremium={isPremium}
             rattlingSection={rattlingSection}
           />
         </div>
-        <p className="home-note">
-          {isPremium
-            ? "Премиум активен · теория открыта"
-            : isRegistered
-              ? "EGE-марафон, тренажёр и дашборд открыты · теория в премиуме"
-              : "Открытая база · без регистрации"}
-        </p>
         {gateSection && (
           <AccessGateModal
             section={gateSection}
@@ -2974,7 +2945,6 @@ export default function Home() {
         section={section}
         navigate={navigate}
         isRegistered={isRegistered}
-        isPremium={isPremium}
         rattlingSection={rattlingSection}
         profile={profile}
       />
@@ -3245,7 +3215,7 @@ export default function Home() {
         <button className="wordmark footer-wordmark" onClick={() => navigate("home")}>
           <span className="wordmark-name"><b>EGE</b>GE</span>
         </button>
-        <span>by Tsarapkin · открытая база заданий</span>
+        <span>Открытая база заданий</span>
       </footer>
 
       {gateSection && (

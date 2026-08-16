@@ -3165,7 +3165,7 @@ p,
   }
 }
 
-.dock-item:first-child:hover {
+.dock-item:hover {
   color: var(--accent);
 }
 
