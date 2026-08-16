@@ -1212,18 +1212,34 @@ function GatePreview({ section }: { section: GateSection }) {
 
   return (
     <div className="gate-preview preview-game" aria-hidden="true">
-      <span className="preview-path-line" />
-      <i className="preview-level level-one" />
-      <i className="preview-level level-two" />
-      <i className="preview-level level-three" />
-      <i className="preview-level level-four" />
-      <span className="preview-computer-mascot">
-        <span className="computer-screen">
-          <i />
-          <i />
-        </span>
-        <span className="computer-stand" />
-      </span>
+      <div className="preview-marathon-topbar">
+        <span>ЕГЭ-марафон</span>
+        <i><b /></i>
+        <small>12 / 670</small>
+      </div>
+      <div className="preview-marathon-deck">
+        <article className="preview-marathon-card" style={{ "--question-index": 0 } as React.CSSProperties}>
+          <span>Python · операции</span>
+          <strong>Что выведет код?</strong>
+          <code>print(15 // 4)</code>
+          <div><i>4</i><i className="is-correct">3</i><i>3.75</i></div>
+        </article>
+        <article className="preview-marathon-card" style={{ "--question-index": 1 } as React.CSSProperties}>
+          <span>Python · типы данных</span>
+          <strong>Какой тип у значения "15"?</strong>
+          <div><i>int</i><i className="is-correct">str</i><i>float</i></div>
+        </article>
+        <article className="preview-marathon-card" style={{ "--question-index": 2 } as React.CSSProperties}>
+          <span>ЕГЭ · системы счисления</span>
+          <strong>Чему равно 2⁵?</strong>
+          <div><i>10</i><i>25</i><i className="is-correct">32</i></div>
+        </article>
+      </div>
+      <div className="preview-marathon-footer">
+        <span>‹</span>
+        <i /><i /><i />
+        <span>›</span>
+      </div>
     </div>
   );
 }
