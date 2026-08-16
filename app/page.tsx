@@ -578,6 +578,9 @@ function Dock({
           onPointerEnter={(event) => {
             if (event.pointerType !== "touch") setHoveredIndex(index);
           }}
+          onPointerLeave={() => {
+            setHoveredIndex((current) => current === index ? null : current);
+          }}
           onClick={() => navigate(item.section)}
           aria-label={
             item.locked
@@ -1786,9 +1789,9 @@ function StudentCabinet({
       return;
     }
     setAvatarSaving(true);
+    setAvatarPickerOpen(false);
     try {
       await onAvatarChange(nextAvatar);
-      setAvatarPickerOpen(false);
     } finally {
       setAvatarSaving(false);
     }
@@ -2844,8 +2847,30 @@ export default function Home() {
   const setCommunityUsername = (username: string) =>
     mutateCommunity({ action: "set_username", username });
 
-  const setCommunityAvatar = (avatarEmoji: string) =>
-    mutateCommunity({ action: "set_avatar", avatarEmoji });
+  const setCommunityAvatar = async (avatarEmoji: string) => {
+    const previousAvatar = community?.profile.avatarEmoji;
+    setCommunity((current) => current ? {
+      ...current,
+      profile: { ...current.profile, avatarEmoji },
+    } : current);
+
+    try {
+      const result = await communityRequest<{ message: string; avatarEmoji: string }>("/api/community", {
+        method: "POST",
+        body: JSON.stringify({ action: "set_avatar", avatarEmoji }),
+      });
+      notify(result.message);
+    } catch (error) {
+      if (previousAvatar) {
+        setCommunity((current) => current ? {
+          ...current,
+          profile: { ...current.profile, avatarEmoji: previousAvatar },
+        } : current);
+      }
+      notify(error instanceof Error ? error.message : "Не удалось сохранить изменение.");
+      throw error;
+    }
+  };
 
   const addCommunityFriend = (username: string) =>
     mutateCommunity({ action: "add_friend", username });
