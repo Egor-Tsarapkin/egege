@@ -566,15 +566,7 @@ function Dock({
         <button
           className={`dock-item ${item.locked ? "is-locked" : ""} ${
             rattlingSection === item.section ? "is-rattling" : ""
-          } ${hoveredIndex === index ? "is-dock-hovered" : ""} ${
-            hoveredIndex !== null && Math.abs(hoveredIndex - index) === 1
-              ? "is-dock-neighbor"
-              : ""
-          } ${
-            hoveredIndex !== null && Math.abs(hoveredIndex - index) === 2
-              ? "is-dock-far-neighbor"
-              : ""
-          }`}
+          } ${hoveredIndex === index ? "is-dock-hovered" : ""}`}
           onPointerEnter={(event) => {
             if (event.pointerType !== "touch") setHoveredIndex(index);
           }}
