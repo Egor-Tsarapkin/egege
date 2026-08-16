@@ -499,14 +499,12 @@ function AccessBadge({
             <rect x={x - 7} y="30" width="14" height="12" rx="6" key={x} />
           ))}
         </g>
-        {premium && (
-          <g className="access-chain-row access-chain-reverse" transform="rotate(-22 60 36)">
-            <path d="M13 36H107" />
-            {[20, 36, 52, 68, 84, 100].map((x) => (
-              <rect x={x - 7} y="30" width="14" height="12" rx="6" key={x} />
-            ))}
-          </g>
-        )}
+        <g className="access-chain-row access-chain-reverse" transform="rotate(-22 60 36)">
+          <path d="M13 36H107" />
+          {[20, 36, 52, 68, 84, 100].map((x) => (
+            <rect x={x - 7} y="30" width="14" height="12" rx="6" key={x} />
+          ))}
+        </g>
       </svg>
       <span className="chain-padlock"><i /></span>
     </span>
