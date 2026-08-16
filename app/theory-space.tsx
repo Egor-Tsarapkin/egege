@@ -2462,14 +2462,182 @@ function ForTheoryChapter({
   );
 }
 
+type MatchChoice = { id: string; label: string };
+type MatchTarget = { id: string; label: string; correctChoiceId: string };
+
+const termMatchChoices: MatchChoice[] = [
+  { id: "variable", label: "Переменная" },
+  { id: "print", label: "print()" },
+  { id: "input", label: "input()" },
+  { id: "int", label: "int" },
+  { id: "float", label: "float" },
+  { id: "str", label: "str" },
+];
+
+const termMatchTargets: MatchTarget[] = [
+  { id: "term-1", label: "Именованный контейнер для хранения значения", correctChoiceId: "variable" },
+  { id: "term-2", label: "Выводит информацию на экран", correctChoiceId: "print" },
+  { id: "term-3", label: "Ожидает ввод пользователя", correctChoiceId: "input" },
+  { id: "term-4", label: "Тип данных для целых чисел", correctChoiceId: "int" },
+  { id: "term-5", label: "Тип данных для дробных чисел", correctChoiceId: "float" },
+  { id: "term-6", label: "Тип данных для текста", correctChoiceId: "str" },
+];
+
+const operationMatchChoices: MatchChoice[] = [
+  { id: "power", label: "4 ** 2" },
+  { id: "whole", label: "123 // 10" },
+  { id: "remainder", label: "123 % 10" },
+  { id: "small-remainder", label: "7 % 10" },
+  { id: "strings", label: '"10" + "20"' },
+];
+
+const operationMatchTargets: MatchTarget[] = [
+  { id: "result-1", label: "16", correctChoiceId: "power" },
+  { id: "result-2", label: "12", correctChoiceId: "whole" },
+  { id: "result-3", label: "3", correctChoiceId: "remainder" },
+  { id: "result-4", label: "7", correctChoiceId: "small-remainder" },
+  { id: "result-5", label: "1020", correctChoiceId: "strings" },
+];
+
+function MatchingExercise({
+  title,
+  description,
+  choices,
+  targets,
+}: {
+  title: string;
+  description: string;
+  choices: MatchChoice[];
+  targets: MatchTarget[];
+}) {
+  const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
+  const [placements, setPlacements] = useState<Record<string, string>>({});
+  const [result, setResult] = useState<number | null>(null);
+
+  const placeChoice = (targetId: string, choiceId: string) => {
+    setPlacements((current) => {
+      const next = Object.fromEntries(
+        Object.entries(current).filter(([, placedChoice]) => placedChoice !== choiceId),
+      );
+      next[targetId] = choiceId;
+      return next;
+    });
+    setSelectedChoice(null);
+    setResult(null);
+  };
+
+  const check = () => {
+    setResult(
+      targets.reduce(
+        (score, target) => score + (placements[target.id] === target.correctChoiceId ? 1 : 0),
+        0,
+      ),
+    );
+  };
+
+  const choiceLabel = (choiceId?: string) =>
+    choices.find((choice) => choice.id === choiceId)?.label ?? "Перетащи сюда";
+
+  return (
+    <section className="theory-match-exercise">
+      <header>
+        <div>
+          <p className="eyebrow">Перетаскивание</p>
+          <h4>{title}</h4>
+        </div>
+        <small>{description}</small>
+      </header>
+
+      <div className="theory-match-bank" aria-label="Варианты для перетаскивания">
+        {choices.map((choice) => {
+          const isSelected = selectedChoice === choice.id;
+          const isUsed = Object.values(placements).includes(choice.id);
+          return (
+            <button
+              type="button"
+              draggable
+              className={`${isSelected ? "is-selected" : ""} ${isUsed ? "is-used" : ""}`}
+              aria-pressed={isSelected}
+              onClick={() => setSelectedChoice(isSelected ? null : choice.id)}
+              onDragStart={(event) => {
+                event.dataTransfer.setData("text/plain", choice.id);
+                event.dataTransfer.effectAllowed = "move";
+              }}
+              key={choice.id}
+            >
+              {choice.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="theory-match-targets">
+        {targets.map((target) => {
+          const placedChoice = placements[target.id];
+          const checked = result !== null;
+          const correct = checked && placedChoice === target.correctChoiceId;
+          const wrong = checked && placedChoice !== target.correctChoiceId;
+          return (
+            <button
+              type="button"
+              className={`${placedChoice ? "has-choice" : ""} ${correct ? "is-correct" : ""} ${wrong ? "is-wrong" : ""}`}
+              onClick={() => {
+                if (selectedChoice) placeChoice(target.id, selectedChoice);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                const choiceId = event.dataTransfer.getData("text/plain");
+                if (choices.some((choice) => choice.id === choiceId)) {
+                  placeChoice(target.id, choiceId);
+                }
+              }}
+              key={target.id}
+            >
+              <span>{target.label}</span>
+              <strong>{choiceLabel(placedChoice)}</strong>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="theory-match-footer">
+        {result !== null && (
+          <p className={result === targets.length ? "is-success" : ""}>
+            {result === targets.length
+              ? "Всё верно."
+              : `Верно ${result} из ${targets.length}. Исправь выделенные ответы.`}
+          </p>
+        )}
+        <button
+          type="button"
+          disabled={Object.keys(placements).length !== targets.length}
+          onClick={check}
+        >
+          Проверить
+        </button>
+      </div>
+    </section>
+  );
+}
+
 const firstPlanetQuestions = [
   {
-    question: "Что делает запись x = 5?",
-    answers: [
-      "Сравнивает x и 5",
-      "Связывает имя x со значением 5",
-      "Печатает число 5",
-    ],
+    question: "Что делает функция print()?",
+    answers: ["Ожидает ввод пользователя", "Выводит информацию на экран", "Создаёт переменную"],
+    correct: 1,
+  },
+  {
+    question: "Что произойдёт при выполнении input()?",
+    answers: ["Программа будет ждать ввод", "Python выведет число 0", "Программа создаст строку"],
+    correct: 0,
+  },
+  {
+    question: "Что означает запись x = 5?",
+    answers: ["Сравнить x и 5", "Сохранить значение 5 в переменной x", "Вывести число 5"],
     correct: 1,
   },
   {
@@ -2478,13 +2646,23 @@ const firstPlanetQuestions = [
     correct: 2,
   },
   {
-    question: "Чему равно 17 // 5?",
-    answers: ["2", "3", "3.4"],
+    question: "Что выведет print(40 / 4)?",
+    answers: ["10", "10.0", "4.0"],
     correct: 1,
   },
   {
-    question: "Чему равно 17 % 5?",
-    answers: ["2", "3", "5"],
+    question: "Чему равно 123 // 10?",
+    answers: ["12", "12.3", "3"],
+    correct: 0,
+  },
+  {
+    question: "Чему равно 7 % 10?",
+    answers: ["0", "3", "7"],
+    correct: 2,
+  },
+  {
+    question: 'Что выведет print("Hello " + "World")?',
+    answers: ["Hello World", "Hello + World", "Программа завершится с ошибкой"],
     correct: 0,
   },
 ] as const;
@@ -2501,16 +2679,18 @@ function FirstPlanetVideoChapter({
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [result, setResult] = useState<number | null>(complete ? firstPlanetQuestions.length : null);
 
+  const requiredScore = 6;
+
   const checkTest = () => {
     const score = firstPlanetQuestions.reduce(
       (total, question, index) => total + (answers[index] === question.correct ? 1 : 0),
       0,
     );
     setResult(score);
-    if (score >= 3) onComplete();
+    if (score >= requiredScore) onComplete();
   };
 
-  const passed = complete || (result !== null && result >= 3);
+  const passed = complete || (result !== null && result >= requiredScore);
 
   return (
     <div className="theory-document theory-video-chapter">
@@ -2518,23 +2698,24 @@ function FirstPlanetVideoChapter({
         <p className="eyebrow">Глава 1 · Основы Python</p>
         <h2>Переменные, типы данных, арифметические операции</h2>
         <p>
-          Узнаем, как Python хранит значения, почему тип данных влияет на результат и какими
-          операциями программа выполняет вычисления.
+          Напишем первые команды, научимся хранить значения и разберём все арифметические
+          операции, которые понадобятся дальше.
         </p>
         <div className="theory-document-meta">
           <span>Видео + конспект</span>
-          <span>4 вопроса</span>
+          <span>2 практикума</span>
+          <span>8 вопросов</span>
           <span>{passed ? "Пройдено" : "Не пройдено"}</span>
         </div>
       </div>
 
       <section className="theory-video-intro">
         <p className="eyebrow">Перед просмотром</p>
-        <h3>У любой программы есть данные и действия с ними</h3>
+        <h3>Здесь начинается программирование</h3>
         <p>
-          На этой планете разберём самый первый строительный материал Python. Переменные дают
-          значениям понятные имена, типы данных объясняют компьютеру, что перед ним, а
-          арифметические операции позволяют получать новые значения.
+          Ты познакомишься с <code>print()</code> и <code>input()</code>, создашь первые
+          переменные и увидишь, почему число <code>10</code> и строка <code>"10"</code> — разные
+          значения. После видео закрепи материал в практикуме.
         </p>
       </section>
 
@@ -2548,7 +2729,7 @@ function FirstPlanetVideoChapter({
         </div>
         <div className="theory-youtube-frame">
           <iframe
-            src="https://www.youtube.com/embed/AV4PR1iD-fI?si=E5PHaOEYLSBWHWpg"
+            src="https://www.youtube.com/embed/OSL3TmvP54Y?si=4jcacgp4gGKoMhWE"
             title="Переменные, типы данных и арифметические операции"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             referrerPolicy="strict-origin-when-cross-origin"
@@ -2565,18 +2746,24 @@ function FirstPlanetVideoChapter({
             <h3>Главное из занятия</h3>
           </div>
         </div>
-        <div className="theory-note-grid">
+        <div className="theory-note-grid theory-note-grid-first">
+          <article>
+            <small>Ввод и вывод</small>
+            <strong>print() и input()</strong>
+            <code>print("Hello")</code>
+            <p><code>print()</code> выводит данные, а <code>input()</code> ждёт ответ пользователя.</p>
+          </article>
           <article>
             <small>Переменная</small>
-            <strong>Имя для значения</strong>
-            <code>score = 10</code>
-            <p>Знак <code>=</code> присваивает значение справа имени слева.</p>
+            <strong>Контейнер с именем</strong>
+            <code>x = 100</code>
+            <p>Знак <code>=</code> сохраняет значение справа в переменной слева.</p>
           </article>
           <article>
             <small>Типы данных</small>
-            <strong>int, float, str, bool</strong>
+            <strong>int, float и str</strong>
             <code>age = 16</code>
-            <p>Тип определяет, какие действия Python может выполнить со значением.</p>
+            <p>Целые числа, дробные числа и текст ведут себя по-разному.</p>
           </article>
           <article>
             <small>Арифметика</small>
@@ -2584,49 +2771,78 @@ function FirstPlanetVideoChapter({
             <code>remainder = 17 % 5</code>
             <p><code>//</code> даёт целую часть, а <code>%</code> — остаток от деления.</p>
           </article>
+          <article>
+            <small>Строки</small>
+            <strong>Текст живёт в кавычках</strong>
+            <code>"Hello " + "World"</code>
+            <p>Знак <code>+</code> соединяет строки, но не складывает их как числа.</p>
+          </article>
+          <article>
+            <small>Комментарии</small>
+            <strong>Пояснения после #</strong>
+            <code>x = 10  # целое число</code>
+            <p>Python пропускает комментарии — они помогают человеку читать код.</p>
+          </article>
         </div>
+        <div className="theory-summary-details">
+          <article>
+            <h4>Python читает код сверху вниз</h4>
+            <p>Переменная должна появиться раньше, чем программа попробует её использовать.</p>
+            <pre><code>{`x = 100\nprint(x + 20)  # 120`}</code></pre>
+          </article>
+          <article>
+            <h4>Обычное деление возвращает float</h4>
+            <p>Даже при делении нацело результат операции <code>/</code> содержит дробную часть.</p>
+            <pre><code>{`print(40 / 4)  # 10.0`}</code></pre>
+          </article>
+          <article>
+            <h4>Целая часть и остаток</h4>
+            <p><code>//</code> показывает целую часть деления, а <code>%</code> — остаток.</p>
+            <pre><code>{`print(123 // 10)  # 12\nprint(123 % 10)   # 3`}</code></pre>
+          </article>
+          <article>
+            <h4>Красная ошибка — это подсказка</h4>
+            <p><code>NameError</code> означает, что имя не найдено. <code>TypeError</code> — что операция не подходит для этих типов.</p>
+            <pre><code>{`print("10" + 20)  # TypeError`}</code></pre>
+          </article>
+        </div>
+        <aside className="theory-key-point">
+          <strong>Главная привычка</strong>
+          <p>Перед вычислением спроси себя: какое значение и какого типа сейчас лежит в каждой переменной?</p>
+        </aside>
       </section>
 
-      <section className="theory-video-transcript">
+      <section className="theory-first-practice" id="first-planet-practice">
         <div className="theory-section-heading">
-          <span>03</span>
+          <span>04</span>
           <div>
-            <p className="eyebrow">Занятие в текстовом виде</p>
-            <h3>Если удобнее читать</h3>
+            <p className="eyebrow">Практикум</p>
+            <h3>Закрепи материал руками</h3>
           </div>
         </div>
-        <div className="theory-prose">
-          <p>
-            Переменная — это имя, связанное со значением. В записи <code>x = 5</code> Python
-            сначала вычисляет правую часть, а затем связывает результат с именем <code>x</code>.
-            Позже значение можно получить, просто обратившись к этому имени.
-          </p>
-          <p>
-            Значения бывают разных типов. <code>int</code> хранит целые числа, <code>float</code>
-            — дробные, <code>str</code> — текст в кавычках, а <code>bool</code> — логические
-            значения <code>True</code> и <code>False</code>. Число <code>5</code> и строка
-            <code> "5"</code> для компьютера не одно и то же.
-          </p>
-          <p>
-            Для вычислений используются <code>+</code>, <code>-</code>, <code>*</code> и
-            <code> /</code>. Обычное деление всегда возвращает дробное число. Операция
-            <code> //</code> оставляет целую часть результата, <code>%</code> находит остаток, а
-            <code> **</code> возводит число в степень. Скобки позволяют явно задать порядок
-            действий.
-          </p>
-          <p>
-            Тип влияет и на знак <code>+</code>: числа складываются, а строки соединяются. Поэтому
-            перед операцией важно понимать, какие значения находятся в переменных.
-          </p>
-        </div>
+        <p className="theory-practice-hint">
+          На компьютере перетаскивай карточки. На телефоне нажми на карточку, затем на подходящее поле.
+        </p>
+        <MatchingExercise
+          title="Сопоставь термин и определение"
+          description="Каждый термин используется один раз"
+          choices={termMatchChoices}
+          targets={termMatchTargets}
+        />
+        <MatchingExercise
+          title="Соедини код и результат"
+          description="Сначала вычисли ответ, потом расставь карточки"
+          choices={operationMatchChoices}
+          targets={operationMatchTargets}
+        />
       </section>
 
       <section className="theory-planet-test" id="first-planet-test">
         <div className="theory-section-heading">
-          <span>04</span>
+          <span>05</span>
           <div>
-            <p className="eyebrow">Проверка знаний</p>
-            <h3>Ответь минимум на 3 из 4</h3>
+            <p className="eyebrow">Финальный тест</p>
+            <h3>Набери минимум {requiredScore} из {firstPlanetQuestions.length}</h3>
           </div>
         </div>
         <div className="theory-test-list">
@@ -2661,7 +2877,7 @@ function FirstPlanetVideoChapter({
         </div>
         <div className={`theory-test-result ${passed ? "is-passed" : ""}`}>
           {result !== null && (
-            <p>{passed ? `Готово: ${result} из 4. Планета пройдена.` : `Пока ${result} из 4. Исправь ответы и попробуй ещё раз.`}</p>
+            <p>{passed ? `Готово: ${result} из ${firstPlanetQuestions.length}. Планета пройдена.` : `Пока ${result} из ${firstPlanetQuestions.length}. Исправь ответы и попробуй ещё раз.`}</p>
           )}
           {passed ? (
             <button onClick={onNext}>Перейти к следующей планете <span>→</span></button>
@@ -2716,6 +2932,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const [futureInterestWaiting, setFutureInterestWaiting] = useState(false);
   const [futureInterestLoading, setFutureInterestLoading] = useState(false);
   const [futureInterestError, setFutureInterestError] = useState("");
+  const [pendingPlanetId, setPendingPlanetId] = useState<number | null>(null);
   const [firstPlanetComplete, setFirstPlanetComplete] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
   const [completedArithmeticLessons, setCompletedArithmeticLessons] = useState<
@@ -2880,6 +3097,20 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [futurePreviewOpen]);
+
+  useEffect(() => {
+    if (pendingPlanetId === null) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPendingPlanetId(null);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [pendingPlanetId]);
 
   useEffect(() => {
     return () => {
@@ -3272,7 +3503,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     }
   };
 
-  const openPlanet = (planetId: number) => {
+  const openPlanetNow = (planetId: number) => {
     if (closeChapterTimerRef.current) {
       window.clearTimeout(closeChapterTimerRef.current);
       closeChapterTimerRef.current = null;
@@ -3332,6 +3563,17 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
       );
       if (firstIncomplete) goToForTheoryLesson(firstIncomplete, 360);
     }
+  };
+
+  const openPlanet = (planetId: number) => {
+    const requiredPlanetId = planets.find(
+      (planet) => getPlanetProgress(planet.id) < 100,
+    )?.id;
+    if (requiredPlanetId !== undefined && planetId > requiredPlanetId) {
+      setPendingPlanetId(planetId);
+      return;
+    }
+    openPlanetNow(planetId);
   };
 
   const closePlanet = () => {
@@ -3473,7 +3715,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
         </div>
 
         <p className="theory-map-hint">
-          Выберите планету, чтобы открыть главу. Темы можно проходить в своём порядке.
+          Выберите планету, чтобы открыть главу. Для лучшего результата двигайтесь по порядку.
         </p>
       </div>
 
@@ -3519,6 +3761,55 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
           </section>
         </div>
       )}
+
+      {pendingPlanetId !== null && (() => {
+        const requiredPlanet = planets.find(
+          (planet) => getPlanetProgress(planet.id) < 100,
+        ) ?? planets[0];
+        const requestedPlanet = planets[pendingPlanetId];
+        return (
+          <div
+            className="theory-order-backdrop"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.currentTarget === event.target) setPendingPlanetId(null);
+            }}
+          >
+            <section
+              className="theory-order-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="theory-order-title"
+            >
+              <p className="eyebrow">Похоже, ты перепрыгиваешь тему</p>
+              <h2 id="theory-order-title">Сначала стоит пройти предыдущую планету</h2>
+              <p>
+                Ты ещё не завершил тему <strong>«{requiredPlanet.title}»</strong>. Она нужна,
+                чтобы материал планеты <strong>«{requestedPlanet.title}»</strong> был понятнее.
+              </p>
+              <button
+                className="theory-order-primary"
+                onClick={() => {
+                  setPendingPlanetId(null);
+                  openPlanetNow(requiredPlanet.id);
+                }}
+              >
+                Сначала пройти нужную тему
+              </button>
+              <button
+                className="theory-order-secondary"
+                onClick={() => {
+                  const requestedId = pendingPlanetId;
+                  setPendingPlanetId(null);
+                  openPlanetNow(requestedId);
+                }}
+              >
+                Всё равно открыть эту планету
+              </button>
+            </section>
+          </div>
+        );
+      })()}
 
       {activePlanet && (
         <>
