@@ -2675,23 +2675,18 @@ function CodeDragExercise({
 }) {
   const [placements, setPlacements] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<string | null>(null);
-  const [checked, setChecked] = useState(false);
 
   const place = (targetId: string, choiceId: string) => {
-    setPlacements((current) => ({ ...current, [targetId]: choiceId }));
+    setPlacements((current) => {
+      const updated = { ...current, [targetId]: choiceId };
+      onPassedChange(targets.every((target) => updated[target.id] === target.answer));
+      return updated;
+    });
     setSelected(null);
-    setChecked(false);
-    onPassedChange(false);
-  };
-  const check = () => {
-    const passed = targets.every((target) => placements[target.id] === target.answer);
-    setChecked(true);
-    onPassedChange(passed);
   };
   const reset = () => {
     setPlacements({});
     setSelected(null);
-    setChecked(false);
     onPassedChange(false);
   };
 
@@ -2714,12 +2709,10 @@ function CodeDragExercise({
       <div className="theory-code-drop-list">
         {targets.map((target) => {
           const choice = choices.find((item) => item.id === placements[target.id]);
-          const correct = checked && placements[target.id] === target.answer;
-          const wrong = checked && placements[target.id] !== target.answer;
           return (
             <button
               type="button"
-              className={`${choice ? "has-choice" : ""} ${correct ? "is-correct" : ""} ${wrong ? "is-wrong" : ""}`}
+              className={choice ? "has-choice" : ""}
               onClick={() => selected && place(target.id, selected)}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => { event.preventDefault(); place(target.id, event.dataTransfer.getData("text/plain")); }}
@@ -2733,9 +2726,7 @@ function CodeDragExercise({
         })}
       </div>
       <div className="theory-match-footer">
-        {checked && <p className={targets.every((target) => placements[target.id] === target.answer) ? "is-success" : ""}>{targets.every((target) => placements[target.id] === target.answer) ? "Всё верно." : "Есть ошибка. Проверь смысл каждого условия."}</p>}
         <button className="is-secondary" type="button" disabled={Object.keys(placements).length === 0} onClick={reset}>Сбросить всё</button>
-        <button type="button" disabled={Object.keys(placements).length !== targets.length} onClick={check}>Проверить</button>
       </div>
     </fieldset>
   );
@@ -2892,8 +2883,7 @@ function FirstPlanetVideoChapter({
         <div className="theory-section-heading">
           <span>05</span>
           <div>
-            <p className="eyebrow">Небольшая проверка</p>
-            <h3>Одно сопоставление и шесть вопросов</h3>
+            <h3>Тест</h3>
           </div>
         </div>
         <div className="theory-test-list">
@@ -2978,7 +2968,6 @@ const secondPlanetQuestions = [
   },
   {
     question: "Как записать проверку «x не больше 20»?",
-    code: "# Выбери равносильное условие",
     answers: ["x > 20", "x <= 20", "x == 20"],
     correct: 1,
   },
@@ -3121,7 +3110,7 @@ function SecondPlanetVideoChapter({
       </article>
 
       <section className="theory-planet-test" id="second-planet-test">
-        <div className="theory-section-heading"><span>05</span><div><p className="eyebrow">Проверка</p><h3>Два задания с перетаскиванием и шесть вопросов</h3></div></div>
+        <div className="theory-section-heading"><span>05</span><div><h3>Тест</h3></div></div>
         <div className="theory-test-list">
           <CodeDragExercise
             title="Вставь and или or, чтобы утверждение стало верным"
@@ -3152,7 +3141,7 @@ function SecondPlanetVideoChapter({
           {secondPlanetQuestions.map((item, questionIndex) => (
             <fieldset key={item.question}>
               <legend><span>{questionIndex + 1}</span><span className="theory-question-text">{item.question}</span></legend>
-              <TheoryPythonCode code={item.code} />
+              {"code" in item && item.code ? <TheoryPythonCode code={item.code} /> : null}
               {item.answers.map((answer, answerIndex) => {
                 const isSelected = answers[questionIndex] === answerIndex;
                 const isCorrect = result !== null && answerIndex === item.correct;
@@ -3167,9 +3156,66 @@ function SecondPlanetVideoChapter({
         </div>
         <div className={`theory-test-result ${passed ? "is-passed" : ""}`}>
           {result !== null && <p>{passed ? `Готово: ${result} из ${secondPlanetQuestions.length}. Все задания выполнены.` : !logicDragPassed || !blockDragPassed ? "Сначала правильно выполни оба задания с перетаскиванием." : `Пока ${result} из ${secondPlanetQuestions.length}. Нужно минимум ${requiredScore}.`}</p>}
-          {passed ? <button onClick={onNext}>Перейти к следующей планете <span>→</span></button> : <button disabled={!logicDragPassed || !blockDragPassed || Object.keys(answers).length !== secondPlanetQuestions.length} onClick={checkTest}>Проверить ответы</button>}
+          {passed ? <button onClick={onNext}>Перейти к следующей планете <span>→</span></button> : <button disabled={Object.keys(answers).length !== secondPlanetQuestions.length} onClick={checkTest}>Проверить ответы</button>}
         </div>
       </section>
+    </div>
+  );
+}
+
+const thirdPlanetQuestions = [
+  { question: "Что выведет код?", code: `x = 10\nwhile x < 14:\n    x += 1\n    print(x)`, answers: ["10 11 12 13", "11 12 13 14", "11 12 13"], correct: 1 },
+  { question: "Почему этот цикл бесконечный?", code: `x = 10\nwhile x < 20:\n    print(x)`, answers: ["Нет двоеточия", "x внутри цикла не изменяется", "Нужно использовать if"], correct: 1 },
+  { question: "Сколько раз выведется hello?", code: `x = 0\nwhile x < 4:\n    x += 1\n    print("hello")`, answers: ["3", "4", "5"], correct: 1 },
+  { question: "Какая запись увеличивает x на 2?", answers: ["x =+ 2", "x += 2", "x == x + 2"], correct: 1 },
+  { question: "Когда сработает break?", code: `x = 10\nwhile x < 100:\n    x += 2\n    if x == 50:\n        break`, answers: ["При x = 50", "Никогда", "При x = 100"], correct: 0 },
+  { question: "Где выполнится команда без отступа после while?", answers: ["На каждой итерации", "Один раз после завершения цикла", "Только при первой итерации"], correct: 1 },
+] as const;
+
+function ThirdPlanetVideoChapter({ complete, onComplete }: { complete: boolean; onComplete: () => void }) {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [result, setResult] = useState<number | null>(complete ? thirdPlanetQuestions.length : null);
+  const requiredScore = 5;
+  const passed = complete || (result !== null && result >= requiredScore);
+  const check = () => {
+    const score = thirdPlanetQuestions.reduce((sum, item, index) => sum + (answers[index] === item.correct ? 1 : 0), 0);
+    setResult(score);
+    if (score >= requiredScore) onComplete();
+  };
+  return (
+    <div className="theory-document theory-video-chapter">
+      <div className="theory-document-title">
+        <p className="eyebrow">Глава 3 · Циклы</p><h2>Цикл while</h2>
+        <p>Научимся повторять команды, считать итерации, избегать бесконечных циклов и выходить раньше с помощью <code>break</code>.</p>
+        <div className="theory-document-meta"><span>Видео · конспект</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed ? "Пройдено" : "Не пройдено"}</span></div>
+      </div>
+      <section className="theory-video-section">
+        <div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div>
+        <div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/jpaB6sDtLv8?si=4vLM5p1plkBFDUqx" title="Цикл while в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>
+      </section>
+      <article className="theory-notion-body">
+        <h2>Конспект урока</h2>
+        <h3><code>=</code> присваивает, <code>==</code> сравнивает</h3>
+        <div className="theory-branch-table"><div><code>=</code><p><strong>Присваивание:</strong> <code>x = x + 100</code> берёт старое значение x, прибавляет 100 и сохраняет результат обратно.</p></div><div><code>==</code><p><strong>Сравнение:</strong> <code>x == 10</code> возвращает <code>True</code> или <code>False</code>.</p></div><div><code>!=</code><p><strong>Не равно:</strong> <code>x != 10</code> истинно, если в x другое значение.</p></div></div>
+        <h3>Проверка делимости</h3><p>Остаток от деления помогает проверять числа. Если <code>x % 2 == 0</code>, число чётное. Если <code>x % 10 == 0</code>, оно делится на 10.</p>
+        <TheoryPythonCode code={`x = 81\nprint(x % 2)       # 1\nprint(x % 2 == 0)  # False`} />
+        <h3>Зачем нужен цикл</h3><p>Цикл убирает повторяющиеся строки. <code>while</code> означает «пока»: перед каждой итерацией Python проверяет условие, выполняет блок с отступом и возвращается к проверке.</p>
+        <div className="theory-loop-steps"><span>1. Проверить условие</span><b>→</b><span>2. Выполнить блок</span><b>→</b><span>3. Изменить переменную</span><b>↺</b></div>
+        <TheoryPythonCode code={`x = 10\nwhile x < 14:\n    x += 1\n    print(x)`} />
+        <blockquote>Результат: <code>11 12 13 14</code>. Значение 14 печатается внутри последней итерации, а затем проверка <code>14 &lt; 14</code> становится ложной.</blockquote>
+        <h3>Короткая запись</h3><div className="theory-type-grid"><div><code>x += 1</code><strong>увеличить</strong><span>то же, что x = x + 1</span></div><div><code>x -= 1</code><strong>уменьшить</strong><span>то же, что x = x - 1</span></div><div><code>x *= 2</code><strong>умножить</strong><span>то же, что x = x * 2</span></div></div>
+        <h3>Бесконечный цикл</h3><p>Если условие всегда остаётся истинным, цикл не закончится. Перед запуском найди переменную в условии и убедись, что внутри цикла она приближается к границе.</p>
+        <TheoryPythonCode code={`x = 10\nwhile x < 20:\n    print(x)  # x не меняется — цикл бесконечный`} />
+        <h3>Отступы и вложенный if</h3><p>Один отступ — команда повторяется в <code>while</code>. Два отступа — команда дополнительно зависит от вложенного <code>if</code>. Без отступа — выполняется один раз после цикла.</p>
+        <TheoryPythonCode code={`x = 0\nwhile x < 4:\n    x += 1\n    print("каждый круг")\n    if x % 2 == 0:\n        print("только для чётных")\nprint("после цикла")`} />
+        <h3>Досрочный выход: <code>break</code></h3><p><code>break</code> немедленно завершает ближайший цикл. Но условие должно быть достижимым: если идти от 11 с шагом 2, значение 50 никогда не встретится.</p>
+        <TheoryPythonCode code={`x = 0\nwhile x < 100:\n    x += 1\n    if x == 50:\n        break\nprint(x)  # 50`} />
+        <hr /><h2>Текстовая версия занятия</h2>
+        <div className="theory-transcript-steps"><section><span>01</span><div><h3>Готовим условие</h3><p>Не путай присваивание <code>=</code> со сравнением <code>==</code>. Для проверки чётности используй остаток: <code>x % 2 == 0</code>.</p></div></section><section><span>02</span><div><h3>Запускаем повторение</h3><p><code>while</code> проверяет условие перед каждым кругом. Один круг называется итерацией. Всё с отступом повторяется, пока условие истинно.</p></div></section><section><span>03</span><div><h3>Обеспечиваем выход</h3><p>Переменная из условия должна меняться. Запись <code>x += 1</code> постепенно ведёт её к границе и предотвращает случайный бесконечный цикл.</p></div></section><section><span>04</span><div><h3>Управляем выполнением</h3><p>Внутри цикла можно использовать <code>if</code>. Команда <code>break</code> завершает ближайший цикл раньше, если программа достигла нужного значения.</p></div></section></div>
+      </article>
+      <section className="theory-planet-test"><div className="theory-section-heading"><span>05</span><div><h3>Тест</h3></div></div><div className="theory-test-list">
+        {thirdPlanetQuestions.map((item, index) => <fieldset key={item.question}><legend><span>{index + 1}</span><span className="theory-question-text">{item.question}</span></legend>{"code" in item && item.code ? <TheoryPythonCode code={item.code} /> : null}{item.answers.map((answer, answerIndex) => { const selected = answers[index] === answerIndex; const correct = result !== null && answerIndex === item.correct; const wrong = result !== null && selected && answerIndex !== item.correct; return <label className={`${selected ? "is-selected" : ""} ${correct ? "is-correct" : ""} ${wrong ? "is-wrong" : ""}`} key={answer}><input type="radio" name={`third-planet-${index}`} checked={selected} disabled={passed} onChange={() => { setAnswers((current) => ({ ...current, [index]: answerIndex })); setResult(null); }} /><span>{answer}</span></label>; })}</fieldset>)}
+      </div><div className={`theory-test-result ${passed ? "is-passed" : ""}`}>{result !== null && <p>{passed ? `Готово: ${result} из 6.` : `Пока ${result} из 6. Нужно минимум 5.`}</p>}{passed ? <span>Планета пройдена</span> : <button disabled={Object.keys(answers).length !== 6} onClick={check}>Проверить ответы</button>}</div></section>
     </div>
   );
 }
@@ -3676,6 +3722,16 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     }
   };
 
+  const completeWhileTheoryChapter = () => {
+    const updated = new Set<WhileTheoryLessonId>(whileTheoryLessonIds);
+    setCompletedWhileTheoryLessons(updated);
+    try {
+      window.localStorage.setItem(whileTheoryStorageKey, JSON.stringify(Array.from(updated)));
+    } catch {
+      // Progress remains available for the current session.
+    }
+  };
+
   const replayWhileTheoryChapter = () => {
     setCompletedWhileTheoryLessons(new Set());
     try {
@@ -4168,6 +4224,11 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
               complete={conditionProgress === 100}
               onComplete={completeConditionChapter}
               onNext={() => openPlanet(2)}
+            />
+          ) : activePlanet.id === 2 ? (
+            <ThirdPlanetVideoChapter
+              complete={whileTheoryProgress === 100}
+              onComplete={completeWhileTheoryChapter}
             />
           ) : activePlanet.id === 5 ? (
             <ForTheoryChapter

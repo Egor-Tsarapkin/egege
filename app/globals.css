@@ -1392,6 +1392,26 @@
 .theory-transcript-steps h3 { font-size: 18px; margin: 0 0 8px; }
 .theory-transcript-steps p { margin: 0; }
 
+.theory-loop-steps {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto;
+  margin: 20px 0;
+}
+
+.theory-loop-steps span {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.theory-loop-steps b { color: var(--accent); font-size: 16px; }
+
 .theory-notion-body ul {
   margin: 12px 0 18px;
   padding-left: 24px;
@@ -1620,6 +1640,9 @@
   .theory-indent-compare { grid-template-columns: 1fr; }
 
   .theory-indent-compare > section { padding: 12px; }
+
+  .theory-loop-steps { grid-template-columns: 1fr; }
+  .theory-loop-steps b { text-align: center; transform: rotate(90deg); }
 
   .theory-test-list label,
   .theory-match-instruction,
