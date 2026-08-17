@@ -1527,19 +1527,19 @@
 .theory-test-list label {
   border-color: var(--line);
   border-radius: 6px;
-  margin-left: 32px;
+  margin-left: 0;
 }
 
 .theory-match-instruction {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.6;
-  margin: 10px 0 0 32px;
+  margin: 10px 0 0;
 }
 
 .theory-match-question .theory-match-bank,
 .theory-match-question .theory-match-targets {
-  margin-left: 32px;
+  margin-left: 0;
 }
 
 .theory-match-targets > button {
@@ -1547,7 +1547,7 @@
 }
 
 .theory-match-footer {
-  margin-left: 32px;
+  margin-left: 0;
 }
 
 .theory-match-footer > button {
@@ -1572,7 +1572,7 @@
 .theory-code-drop-list {
   display: grid;
   gap: 10px;
-  margin: 16px 0 0 32px;
+  margin: 16px 0 0;
 }
 
 .theory-code-drop-list > button {

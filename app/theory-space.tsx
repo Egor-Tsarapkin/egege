@@ -2688,6 +2688,12 @@ function CodeDragExercise({
     setChecked(true);
     onPassedChange(passed);
   };
+  const reset = () => {
+    setPlacements({});
+    setSelected(null);
+    setChecked(false);
+    onPassedChange(false);
+  };
 
   return (
     <fieldset className="theory-match-question theory-code-drag">
@@ -2728,6 +2734,7 @@ function CodeDragExercise({
       </div>
       <div className="theory-match-footer">
         {checked && <p className={targets.every((target) => placements[target.id] === target.answer) ? "is-success" : ""}>{targets.every((target) => placements[target.id] === target.answer) ? "Всё верно." : "Есть ошибка. Проверь смысл каждого условия."}</p>}
+        <button className="is-secondary" type="button" disabled={Object.keys(placements).length === 0} onClick={reset}>Сбросить всё</button>
         <button type="button" disabled={Object.keys(placements).length !== targets.length} onClick={check}>Проверить</button>
       </div>
     </fieldset>
