@@ -278,6 +278,10 @@ function TheoryPythonCode({ code }: { code: string }) {
   );
 }
 
+function TheoryTestDialog({ score, total, onRestart, onReview }: { score: number; total: number; onRestart: () => void; onReview: () => void }) {
+  return <div className="marathon-resume-scrim"><section className="marathon-resume-dialog" role="dialog" aria-modal="true"><span>Результат теста</span><h2>{score} из {total}</h2><p>{score === total ? "Все ответы правильные." : "Хотите пройти тест ещё раз или посмотреть ответы?"}</p><button className="is-primary" onClick={onRestart}>Начать тест заново</button><button onClick={onReview}>Посмотреть ответы</button></section></div>;
+}
+
 function LessonStatus({
   id,
   completed,
@@ -2992,6 +2996,7 @@ function SecondPlanetVideoChapter({
   const [result, setResult] = useState<number | null>(complete ? secondPlanetQuestions.length : null);
   const [logicDragPassed, setLogicDragPassed] = useState(complete);
   const [blockDragPassed, setBlockDragPassed] = useState(complete);
+  const [showResultDialog, setShowResultDialog] = useState(false);
   const requiredScore = 5;
   const passed = complete || (result !== null && result >= requiredScore && logicDragPassed && blockDragPassed);
 
@@ -3001,17 +3006,8 @@ function SecondPlanetVideoChapter({
       0,
     );
     setResult(score);
+    setShowResultDialog(true);
     if (score >= requiredScore && logicDragPassed && blockDragPassed) onComplete();
-    window.requestAnimationFrame(() => {
-      const firstWrongDrag = !logicDragPassed || !blockDragPassed
-        ? document.querySelector("#second-planet-test .theory-code-drag:not([data-passed='true'])")
-        : null;
-      const firstWrongAnswer = secondPlanetQuestions.findIndex((question, index) => answers[index] !== question.correct);
-      const target = firstWrongDrag ?? (firstWrongAnswer >= 0
-        ? document.querySelector(`#second-planet-test [data-question-index='${firstWrongAnswer}']`)
-        : null);
-      target?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
   };
 
   return (
@@ -3169,6 +3165,7 @@ function SecondPlanetVideoChapter({
           {passed ? <button onClick={onNext}>Перейти к следующей планете <span>→</span></button> : <button disabled={Object.keys(answers).length !== secondPlanetQuestions.length} onClick={checkTest}>Проверить ответы</button>}
         </div>
       </section>
+      {showResultDialog && result !== null && <TheoryTestDialog score={result} total={secondPlanetQuestions.length} onRestart={() => { setAnswers({}); setResult(null); setLogicDragPassed(false); setBlockDragPassed(false); setShowResultDialog(false); document.getElementById("second-planet-test")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} onReview={() => setShowResultDialog(false)} />}
     </div>
   );
 }
@@ -3242,8 +3239,9 @@ const listPlanetQuestions = [
 function ListPlanetVideoChapter({ complete, onComplete }: { complete: boolean; onComplete: () => void }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [result, setResult] = useState<number | null>(complete ? 6 : null);
+  const [showResultDialog, setShowResultDialog] = useState(false);
   const passed = complete || (result !== null && result >= 5);
-  const check = () => { const score = listPlanetQuestions.reduce((sum, item, index) => sum + (answers[index] === item.correct ? 1 : 0), 0); setResult(score); if (score >= 5) onComplete(); window.requestAnimationFrame(() => { const wrong = listPlanetQuestions.findIndex((item, index) => answers[index] !== item.correct); if (wrong >= 0) document.querySelector(`#list-planet-test [data-question-index='${wrong}']`)?.scrollIntoView({ behavior: "smooth", block: "center" }); }); };
+  const check = () => { const score = listPlanetQuestions.reduce((sum, item, index) => sum + (answers[index] === item.correct ? 1 : 0), 0); setResult(score); setShowResultDialog(true); if (score >= 5) onComplete(); };
   return <div className="theory-document theory-video-chapter">
     <div className="theory-document-title"><p className="eyebrow">Глава 4 · Коллекции</p><h2>Списки</h2><p>Собираем много значений в одной переменной, обращаемся к элементам по индексам и соединяем списки с уже знакомым циклом <code>while</code>.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed ? "Пройдено" : "Не пройдено"}</span></div></div>
     <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/07CdcaxY8HM?si=z3lqJsjhNpILrWe5" title="Списки в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div></section>
@@ -3258,7 +3256,33 @@ function ListPlanetVideoChapter({ complete, onComplete }: { complete: boolean; o
       <hr/><h2>Текстовая версия занятия</h2><div className="theory-transcript-steps"><section><span>01</span><div><h3>Создаём список</h3><p>Записываем значения в квадратных скобках через запятую. Вместо множества переменных для работников используем один список зарплат.</p></div></section><section><span>02</span><div><h3>Работаем с индексами</h3><p>Счёт слева начинается с нуля, справа — с минус одного. Через индекс можно получить элемент, заменить его или увеличить с помощью <code>+=</code>.</p></div></section><section><span>03</span><div><h3>Перебираем через while</h3><p>Переменная x становится индексом. Пока <code>x &lt; len(список)</code>, выводим элемент и увеличиваем x.</p></div></section><section><span>04</span><div><h3>Считаем данные</h3><p><code>len</code>, <code>sum</code>, <code>max</code> и <code>min</code> дают количество, сумму, максимум и минимум. Сумма, делённая на количество, даёт среднее.</p></div></section></div>
     </article>
     <section className="theory-planet-test" id="list-planet-test"><div className="theory-section-heading"><span>05</span><div><h3>Тест</h3></div></div><div className="theory-test-list">{listPlanetQuestions.map((item,index)=><fieldset data-question-index={index} key={item.question}><legend><span>{index+1}</span><span className="theory-question-text">{item.question}</span></legend>{"code" in item && item.code ? <TheoryPythonCode code={item.code}/> : null}{item.answers.map((answer,answerIndex)=>{const selected=answers[index]===answerIndex;const correct=result!==null&&answerIndex===item.correct;const wrong=result!==null&&selected&&answerIndex!==item.correct;return <label className={`${selected?"is-selected":""} ${correct?"is-correct":""} ${wrong?"is-wrong":""}`} key={answer}><input type="radio" name={`list-${index}`} checked={selected} disabled={passed} onChange={()=>{setAnswers(current=>({...current,[index]:answerIndex}));setResult(null);}}/><span>{answer}</span></label>})}</fieldset>)}</div><div className={`theory-test-result ${passed?"is-passed":""}`}>{result!==null&&<p>{passed?`Готово: ${result} из 6.`:`Пока ${result} из 6. Нужно минимум 5.`}</p>}{passed?<span>Планета пройдена</span>:<button disabled={Object.keys(answers).length!==6} onClick={check}>Проверить ответы</button>}</div></section>
+    {showResultDialog && result !== null && <TheoryTestDialog score={result} total={6} onRestart={() => { setAnswers({}); setResult(null); setShowResultDialog(false); document.getElementById("list-planet-test")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} onReview={() => setShowResultDialog(false)} />}
   </div>;
+}
+
+const fifthPlanetQuestions = [
+  { question: "Что выведет s[1]?", code: `s = "Hello"`, answers: ["H", "e", "l"], correct: 1 },
+  { question: "Можно ли заменить s[0] у строки?", answers: ["Да", "Нет, строки неизменяемы", "Только внутри while"], correct: 1 },
+  { question: "Что получится?", code: `print("Hi" * 3)`, answers: ["HiHiHi", "Hi3", "Ошибка"], correct: 0 },
+  { question: "Что вернёт срез?", code: `s = "Hello, World"\nprint(s[1:5])`, answers: ["Hello", "ello", "ello,"], correct: 1 },
+  { question: "Как развернуть строку?", answers: ["s[::-1]", "s[1::-1]", "s[-1:1]"], correct: 0 },
+  { question: "Что проверяет оператор in?", answers: ["Длину строки", "Наличие символа или подстроки", "Можно ли изменить строку"], correct: 1 },
+] as const;
+
+function StringPlanetVideoChapter({ complete, onComplete }: { complete: boolean; onComplete: () => void }) {
+  const [answers,setAnswers]=useState<Record<number,number>>({}); const [result,setResult]=useState<number|null>(complete?6:null); const [show,setShow]=useState(false); const passed=complete||(result!==null&&result>=5);
+  const check=()=>{const score=fifthPlanetQuestions.reduce((s,q,i)=>s+(answers[i]===q.correct?1:0),0);setResult(score);setShow(true);if(score>=5)onComplete();};
+  return <div className="theory-document theory-video-chapter"><div className="theory-document-title"><p className="eyebrow">Глава 5 · Текст</p><h2>Строки</h2><p>Разберём индексы, неизменяемость строк, сложение, повторение, срезы с шагом и оператор <code>in</code>.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed?"Пройдено":"Не пройдено"}</span></div></div>
+  <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/VW18JxGTJvw?si=5Aevb-B-UVm3yfbI" title="Строки в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+  <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead">Строку можно читать как последовательность символов: у каждого символа есть положительный и отрицательный индекс.</p><div className="theory-index-strip"><span><b>0</b>H<em>-5</em></span><span><b>1</b>e<em>-4</em></span><span><b>2</b>l<em>-3</em></span><span><b>3</b>l<em>-2</em></span></div>
+  <h3>Строка похожа на список, но не изменяется</h3><p><code>s[0]</code> читает символ, однако присвоить новое значение в позицию нельзя — возникнет <code>TypeError</code>.</p><TheoryPythonCode code={`s = "Hello"\nprint(s[0])   # H\n# s[0] = "T"  — ошибка`} />
+  <h3>Сложение и повторение</h3><TheoryPythonCode code={`s = "Hello"\nprint(s + " " + "World")\nprint("1" * 20)`}/><blockquote>Складывать можно строку со строкой. Строка плюс число вызывает ошибку.</blockquote>
+  <h3>Срез: <code>[начало:конец:шаг]</code></h3><p>Начало включается, конец не включается. Пустое начало означает «с самого начала», пустой конец — «до конца».</p><div className="theory-branch-table"><div><code>s[1:5]</code><p>С индекса 1 до 5, не включая 5.</p></div><div><code>s[1:]</code><p>С индекса 1 до конца.</p></div><div><code>s[:5]</code><p>От начала до индекса 5.</p></div><div><code>s[2:-2:2]</code><p>Срез с шагом 2.</p></div></div>
+  <h3>Отрицательный шаг</h3><p>Шаг <code>-1</code> идёт справа налево. Поэтому <code>s[::-1]</code> разворачивает строку. Если начало правее конца, нужен отрицательный шаг.</p><TheoryPythonCode code={`s = "Hello, World"\nprint(s[::-1])\nprint(s[7:2:-1])`} />
+  <h3>Оператор <code>in</code></h3><p><code>in</code> проверяет, входит ли символ или подстрока в строку. Результат можно использовать в уже знакомом <code>if</code>. Так же оператор работает со списком.</p><TheoryPythonCode code={`text = "Hello, World"\nif "Hello" in text:\n    print(1)`}/>
+  <hr/><h2>Текстовая версия занятия</h2><div className="theory-transcript-steps"><section><span>01</span><div><h3>Читаем символы по индексам</h3><p>Слева индексы начинаются с нуля, справа — с минус одного. В отличие от списка, заменить отдельный символ строки нельзя.</p></div></section><section><span>02</span><div><h3>Работаем со строками</h3><p>Строки складываются со строками и повторяются умножением на целое число.</p></div></section><section><span>03</span><div><h3>Вырезаем часть</h3><p>Срез содержит начало, конец и необязательный шаг. Начало включается, конец — нет. Отрицательный шаг меняет направление.</p></div></section><section><span>04</span><div><h3>Проверяем вхождение</h3><p>Оператор <code>in</code> отвечает, находится ли символ или подстрока внутри строки.</p></div></section></div></article>
+  <section className="theory-planet-test" id="string-planet-test"><div className="theory-section-heading"><span>05</span><div><h3>Тест</h3></div></div><div className="theory-test-list">{fifthPlanetQuestions.map((q,i)=><fieldset key={q.question}><legend><span>{i+1}</span><span className="theory-question-text">{q.question}</span></legend>{"code" in q&&q.code?<TheoryPythonCode code={q.code}/>:null}{q.answers.map((a,j)=>{const selected=answers[i]===j,correct=result!==null&&j===q.correct,wrong=result!==null&&selected&&j!==q.correct;return <label className={`${selected?"is-selected":""} ${correct?"is-correct":""} ${wrong?"is-wrong":""}`} key={a}><input type="radio" name={`string-${i}`} checked={selected} disabled={passed} onChange={()=>{setAnswers(v=>({...v,[i]:j}));setResult(null);}}/><span>{a}</span></label>})}</fieldset>)}</div><div className={`theory-test-result ${passed?"is-passed":""}`}>{passed?<span>Планета пройдена</span>:<button disabled={Object.keys(answers).length!==6} onClick={check}>Проверить ответы</button>}</div></section>
+  {show&&result!==null&&<TheoryTestDialog score={result} total={6} onRestart={()=>{setAnswers({});setResult(null);setShow(false);document.getElementById("string-planet-test")?.scrollIntoView({behavior:"smooth",block:"start"});}} onReview={()=>setShow(false)}/>}</div>;
 }
 
 function UnreleasedPlanetChapter({ planet }: { planet: Planet }) {
@@ -3721,6 +3745,12 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
         });
       }, 160);
     }
+  };
+
+  const completeStringPlanetChapter = () => {
+    const updated = new Set<StringTheoryLessonId>(stringTheoryLessonIds);
+    setCompletedStringTheoryLessons(updated);
+    try { window.localStorage.setItem(stringTheoryStorageKey, JSON.stringify(Array.from(updated))); } catch {}
   };
 
   const completeListPlanetChapter = () => {
@@ -4295,6 +4325,11 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
             <ListPlanetVideoChapter
               complete={listPlanetComplete}
               onComplete={completeListPlanetChapter}
+            />
+          ) : activePlanet.id === 4 ? (
+            <StringPlanetVideoChapter
+              complete={stringTheoryProgress === 100}
+              onComplete={completeStringPlanetChapter}
             />
           ) : activePlanet.id === 5 ? (
             <ForTheoryChapter
