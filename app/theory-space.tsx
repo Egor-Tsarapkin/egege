@@ -283,7 +283,7 @@ function AnimatedIndexLine({ items }: { items: readonly string[] }) {
   return <div className="theory-index-runner" aria-label="Индексы элементов">{items.map((item,index)=><span style={{ "--index-delay": `${index * 1.1}s` } as React.CSSProperties} key={`${item}-${index}`}><b>{index}</b><strong>{item}</strong><em>{index-items.length}</em></span>)}</div>;
 }
 
-function TheoryTestDialog({ score, total, onRestart, onReview, onNext }: { score: number; total: number; onRestart: () => void; onReview: () => void; onNext?: () => void }) {
+function TheoryTestDialog({ score, total, onRestart, onReview, onNext, nextLabel = "Перейти на следующую планету" }: { score: number; total: number; onRestart: () => void; onReview: () => void; onNext?: () => void; nextLabel?: string }) {
   if (typeof document === "undefined") return null;
 
   return createPortal(
@@ -292,7 +292,7 @@ function TheoryTestDialog({ score, total, onRestart, onReview, onNext }: { score
         <span>Результат теста</span>
         <h2 id="theory-test-result-title">Верных заданий: {score} из {total}</h2>
         {score === total && onNext ? (
-          <button type="button" className="is-primary" onClick={onNext}>Перейти на следующую планету</button>
+          <button type="button" className="is-primary" onClick={onNext}>{nextLabel}</button>
         ) : (
           <>
             <p>Хотите пройти тест ещё раз или посмотреть ответы?</p>
@@ -3405,6 +3405,41 @@ function EighthPlanetVideoChapter({ complete, onComplete, onNext }: { complete: 
   </div>;
 }
 
+const ninthPlanetQuestions = [
+  { question: "Как обратиться к функции log2 после import math?", answers: ["log2(16)", "math.log2(16)", "import.log2(16)"], correct: 1 },
+  { question: "Что станет доступно после этой строки?", code: `from math import log2, ceil`, answers: ["Только log2 и ceil", "Все инструменты math", "Только math.log2"], correct: 0 },
+  { question: "Что перебирает цикл?", code: `file = open("data.txt")\nfor line in file:\n    print(line)`, answers: ["Символы имени файла", "Строки файла", "Только числа"], correct: 1 },
+  { question: "Зачем нужен int?", code: `numbers = [int(line) for line in open("data.txt")]`, answers: ["Переводит строку файла в число", "Открывает файл", "Удаляет строку"], correct: 0 },
+  { question: "Что делает split() без аргумента?", answers: ["Разделяет строку по пробелам", "Склеивает строки", "Считывает весь файл"], correct: 0 },
+  { question: "Чем отличаются readline() и readlines()?", answers: ["Ничем", "readline() читает одну строку, readlines() — все строки", "readline() читает числа, readlines() — текст"], correct: 1 },
+] as const;
+
+function NinthPlanetVideoChapter({ complete, onComplete, onFinish }: { complete: boolean; onComplete: () => void; onFinish: () => void }) {
+  const [answers,setAnswers]=useState<Record<number,number>>({});
+  const [result,setResult]=useState<number|null>(complete?6:null);
+  const [show,setShow]=useState(false);
+  const passed=complete||(result!==null&&result>=5);
+  const check=()=>{const score=ninthPlanetQuestions.reduce((sum,q,index)=>sum+(answers[index]===q.correct?1:0),0);setResult(score);setShow(true);if(score>=5)onComplete();};
+  return <div className="theory-document theory-video-chapter">
+    <div className="theory-document-title"><p className="eyebrow">Глава 9 · Финал курса</p><h2>Импорты и файлы</h2><p>Подключаем нужные инструменты и считываем данные из текстовых файлов в формате задач ЕГЭ.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Шаблоны ЕГЭ</span><span>6 вопросов</span><span>{passed?"Пройдено":"Не пройдено"}</span></div></div>
+    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Новое видео</p><h3>Сначала посмотри заключительный урок</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/8leWAUizSFI?si=HhHOH95RrRN8oKGN" title="Импорты и работа с файлами в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+    <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead"><code>import</code> подключает дополнительные инструменты, а <code>open</code> открывает файл с данными для программы.</p>
+      <h3>Подключаем библиотеку целиком</h3><TheoryPythonCode code={`import math\n\nprint(math.log2(16))\nprint(math.ceil(2.3))`}/><p>После <code>import math</code> инструмент вызывается через название библиотеки и точку: <code>math.log2</code>, <code>math.ceil</code>.</p>
+      <h3>Берём только нужные инструменты</h3><TheoryPythonCode code={`from math import log2, ceil\n\nprint(log2(16))\nprint(ceil(2.3))`}/><p>Теперь писать <code>math.</code> не нужно. В программе доступны только перечисленные функции.</p><div className="theory-branch-table"><div><code>import math</code><p>Подключить библиотеку и обращаться через <code>math.</code>.</p></div><div><code>from math import log2</code><p>Подключить один конкретный инструмент.</p></div><div><code>from math import *</code><p>Подключить все инструменты библиотеки.</p></div></div><aside className="theory-notion-callout"><span>!</span><p>Звёздочка означает «всё», но точечный импорт понятнее показывает, какие инструменты нужны программе.</p></aside>
+      <h3>Открываем файл</h3><TheoryPythonCode code={`file = open("sample.txt")\nfor line in file:\n    print(line)`}/><p>Файл можно перебирать циклом. На каждой итерации переменная <code>line</code> получает очередную строку файла.</p>
+      <h3>Одно число в каждой строке</h3><TheoryPythonCode code={`numbers = [int(line) for line in open("sample.txt")]`}/><p>Из текстового файла приходят строки. <code>int</code> превращает каждую строку в число, а генератор собирает числа в список. Это знакомый шаблон для задач ЕГЭ.</p>
+      <h3>Несколько чисел в строке</h3><TheoryPythonCode code={`file = open("sample.txt")\nfor line in file:\n    numbers = [int(value) for value in line.split()]\n    print(numbers)`}/><p><code>split()</code> делит строку по пробелам. Затем цикл переводит каждую часть в число.</p><div className="theory-loop-steps"><span><strong>"32 4 2"</strong><br/>строка</span><b>→</b><span><strong>["32", "4", "2"]</strong><br/><code>split()</code></span><b>→</b><span><strong>[32, 4, 2]</strong><br/><code>int</code></span><b>✓</b></div>
+      <h3>Свой разделитель</h3><TheoryPythonCode code={`parts = "10,20,30".split(",")\nprint(parts)  # ['10', '20', '30']`}/><p>Если передать разделитель в скобках, <code>split</code> разделит строку именно по нему. Сам разделитель в результат не попадёт.</p>
+      <h3>Читаем первые строки отдельно</h3><TheoryPythonCode code={`file = open("sample.txt")\nn = int(file.readline())\nk = int(file.readline())`}/><p><code>readline()</code> читает одну следующую строку. Повторный вызов продолжает с того места, где остановился предыдущий.</p>
+      <h3><code>readline</code> и <code>readlines</code></h3><div className="theory-branch-table"><div><code>file.readline()</code><p>Считать одну следующую строку.</p></div><div><code>file.readlines()</code><p>Считать оставшиеся строки в список.</p></div></div>
+      <h3>Первые значения и таблица ниже</h3><TheoryPythonCode code={`file = open("sample.txt")\nn = int(file.readline())\nk = int(file.readline())\nrows = []\nfor line in file:\n    row = [int(value) for value in line.split()]\n    rows.append(row)`}/><p>Первые две строки считываются отдельно. После них цикл продолжает читать оставшуюся часть файла и собирает список списков.</p>
+      <hr/><h2>Текстовая версия занятия</h2><div className="theory-transcript-steps"><section><span>01</span><div><h3>Выбираем способ импорта</h3><p>Подключаем библиотеку целиком либо достаём из неё конкретные функции.</p></div></section><section><span>02</span><div><h3>Открываем файл</h3><p><code>open</code> возвращает файл, строки которого можно перебирать циклом.</p></div></section><section><span>03</span><div><h3>Преобразуем данные</h3><p>Текстовые числа переводим через <code>int</code>.</p></div></section><section><span>04</span><div><h3>Разделяем строку</h3><p><code>split()</code> превращает строку с несколькими значениями в список частей.</p></div></section><section><span>05</span><div><h3>Читаем структуру файла</h3><p><code>readline()</code> позволяет отдельно забрать первые служебные строки, после чего цикл читает остальные данные.</p></div></section></div>
+    </article>
+    <section className="theory-planet-test" id="ninth-planet-test"><div className="theory-section-heading"><span>05</span><div><h3>Тест</h3></div></div><div className="theory-test-list">{ninthPlanetQuestions.map((q,i)=><fieldset key={q.question}><legend><span>{i+1}</span><span className="theory-question-text">{q.question}</span></legend>{"code" in q&&q.code?<TheoryPythonCode code={q.code}/>:null}{q.answers.map((answer,j)=>{const selected=answers[i]===j,correct=result!==null&&j===q.correct,wrong=result!==null&&selected&&j!==q.correct;return <label className={`${selected?"is-selected":""} ${correct?"is-correct":""} ${wrong?"is-wrong":""}`} key={answer}><input type="radio" name={`ninth-${i}`} checked={selected} disabled={passed} onChange={()=>{setAnswers(value=>({...value,[i]:j}));setResult(null);}}/><span>{answer}</span></label>})}</fieldset>)}</div><div className={`theory-test-result ${passed?"is-passed":""}`}>{passed?<span>Курс пройден</span>:<button disabled={Object.keys(answers).length!==6} onClick={check}>Проверить ответы</button>}</div></section>
+    {show&&result!==null&&<TheoryTestDialog score={result} total={6} onRestart={()=>{setAnswers({});setResult(null);setShow(false);document.getElementById("ninth-planet-test")?.scrollIntoView({behavior:"smooth",block:"start"});}} onReview={()=>setShow(false)} onNext={()=>{setShow(false);onFinish();}} nextLabel="Вернуться к карте"/>}
+  </div>;
+}
+
 function UnreleasedPlanetChapter({ planet }: { planet: Planet }) {
   return (
     <div className="theory-document theory-unreleased-chapter">
@@ -3433,6 +3468,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const forTheoryStorageKey = `egege-theory-for-v1:${userId}`;
   const functionsPlanetStorageKey = `egege-theory-functions-planet-v1:${userId}`;
   const comprehensionsPlanetStorageKey = `egege-theory-comprehensions-planet-v1:${userId}`;
+  const filesPlanetStorageKey = `egege-theory-files-planet-v1:${userId}`;
   const splitStorageKey = `egege-theory-split-v1:${userId}`;
   const theorySpaceRef = useRef<HTMLElement | null>(null);
   const theoryMapRef = useRef<HTMLDivElement | null>(null);
@@ -3452,6 +3488,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const [listPlanetComplete, setListPlanetComplete] = useState(false);
   const [functionsPlanetComplete, setFunctionsPlanetComplete] = useState(false);
   const [comprehensionsPlanetComplete, setComprehensionsPlanetComplete] = useState(false);
+  const [filesPlanetComplete, setFilesPlanetComplete] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
   const [completedArithmeticLessons, setCompletedArithmeticLessons] = useState<
     Set<ArithmeticLessonId>
@@ -3499,6 +3536,13 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
       catch { setComprehensionsPlanetComplete(false); }
     });
   }, [comprehensionsPlanetStorageKey]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try { setFilesPlanetComplete(window.localStorage.getItem(filesPlanetStorageKey) === "complete"); }
+      catch { setFilesPlanetComplete(false); }
+    });
+  }, [filesPlanetStorageKey]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -3670,6 +3714,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     if (planetId === 5) return forTheoryProgress;
     if (planetId === 6) return functionsPlanetComplete ? 100 : 0;
     if (planetId === 7) return comprehensionsPlanetComplete ? 100 : 0;
+    if (planetId === 8) return filesPlanetComplete ? 100 : 0;
     return 0;
   };
   const overallProgress = Math.round(
@@ -4005,6 +4050,11 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const completeComprehensionsPlanetChapter = () => {
     setComprehensionsPlanetComplete(true);
     try { window.localStorage.setItem(comprehensionsPlanetStorageKey, "complete"); } catch {}
+  };
+
+  const completeFilesPlanetChapter = () => {
+    setFilesPlanetComplete(true);
+    try { window.localStorage.setItem(filesPlanetStorageKey, "complete"); } catch {}
   };
 
   const replayForTheoryChapter = () => {
@@ -4433,6 +4483,12 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
               complete={comprehensionsPlanetComplete}
               onComplete={completeComprehensionsPlanetChapter}
               onNext={() => openPlanetNow(8)}
+            />
+          ) : activePlanet.id === 8 ? (
+            <NinthPlanetVideoChapter
+              complete={filesPlanetComplete}
+              onComplete={completeFilesPlanetChapter}
+              onFinish={closePlanet}
             />
           ) : activePlanet.id === 2 ? (
             <div className="theory-document theory-chapter-one theory-chapter-while">
