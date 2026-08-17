@@ -7,6 +7,8 @@ import {
   type CommunityProfileRow,
 } from "@/lib/community-server";
 import { isAvatarEmoji } from "@/lib/avatar-emojis";
+import taskIndex from "@/public/data/task-index.json";
+import { ensureTeacherSchema } from "@/lib/teacher-studio-server";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +19,17 @@ const BURST_AWARD_LIMIT = 8;
 const PROTECTION_SECONDS = 10 * 60;
 const TRAINER_DAILY_LIMIT = 100;
 const TRAINER_MODES = new Set(["python", "russian", "english"]);
+
+async function taskExists(taskId: string) {
+  if (taskId in (taskIndex as Record<string, number>)) return true;
+  if (!/^0\d{5}$/.test(taskId)) return false;
+  await ensureTeacherSchema();
+  const authored = await communityDb()
+    .prepare("SELECT 1 AS found FROM teacher_tasks WHERE public_id = ? AND approved = 1")
+    .bind(taskId)
+    .first<{ found: number }>();
+  return Boolean(authored?.found);
+}
 
 function trainerXpForSpeed(wordsPerMinute: number) {
   if (wordsPerMinute > 100) return 30;
@@ -288,6 +301,7 @@ export async function POST(request: Request) {
     if (action === "claim_xp") {
       const taskId = String(body.taskId ?? "");
       if (!/^\d{1,20}$/.test(taskId)) return response({ error: "Некорректный ID задания." }, 400);
+      if (!(await taskExists(taskId))) return response({ error: "Задание не найдено." }, 404);
 
       const existing = await db
         .prepare("SELECT xp_awarded FROM score_events WHERE user_id = ? AND task_id = ?")

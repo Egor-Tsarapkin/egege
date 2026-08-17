@@ -457,7 +457,7 @@ export default function ExamStation({
 
   if (finished) {
     return (
-      <div className="exam-station exam-result-screen">
+      <div className="exam-station exam-result-screen" role="dialog" aria-modal="true" aria-label="Результаты экзамена">
         <header className="exam-results-title">
           <span>EGEGE</span>
           <b>Результаты варианта</b>
@@ -549,7 +549,7 @@ export default function ExamStation({
   }
 
   return (
-    <div className="exam-station">
+    <div className="exam-station" role="dialog" aria-modal="true" aria-label="Экзаменационная станция">
       <header className="exam-topbar">
         <div className="exam-identifiers">
           <strong>КИМ № {variant.kim}</strong>

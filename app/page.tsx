@@ -2385,6 +2385,17 @@ export default function Home() {
   }, [authResolved, user]);
 
   useEffect(() => {
+    if (!authResolved || user || !["theory", "game", "trainer", "dashboard"].includes(section)) return;
+    const requestedSection = section as GateSection;
+    queueMicrotask(() => {
+      setGateSection(requestedSection);
+      setSection("home");
+      window.history.replaceState({ section: "home" }, "", sectionPaths.home);
+      window.scrollTo({ top: 0 });
+    });
+  }, [authResolved, section, user]);
+
+  useEffect(() => {
     if (!analyticsSession.current) return;
     let disposed = false;
     const send = async (eventType: "page_view" | "login" | "heartbeat", activeSeconds = 0) => {
@@ -3182,7 +3193,7 @@ export default function Home() {
           </Suspense>
         )}
 
-        {section === "game" && (
+        {section === "game" && user && (
           <Suspense fallback={<div className="marathon-loading"><span>•••</span><p>Готовим марафон</p></div>}>
             <EgeMarathon
               theme={preferences.theme}
@@ -3205,7 +3216,7 @@ export default function Home() {
           </Suspense>
         )}
 
-        {section === "dashboard" && (
+        {section === "dashboard" && user && (
           <>
             <PageHeading
               eyebrow="Ваш профиль"

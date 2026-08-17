@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://tsarapkin-ege.vovantsarapkin.chatgpt.site/sitemap.xml
