@@ -17,6 +17,12 @@ type Planet = {
 
 const planets: Planet[] = [
   {
+    id: -1,
+    chapter: "Глава 0",
+    title: "Установка Python",
+    description: "Подготовка Python и редактора к первому занятию.",
+  },
+  {
     id: 0,
     chapter: "Глава 1",
     title: "Переменные, типы данных, арифметические операции",
@@ -197,6 +203,11 @@ function PlanetSphere({
       {variant === 8 && (
         <span className="planet-file-pattern">
           <i>PY</i><i>↗</i><i>TXT</i>
+        </span>
+      )}
+      {variant === 9 && (
+        <span className="planet-install-pattern">
+          <i>↓</i><i>PY</i><i>▶</i>
         </span>
       )}
     </span>
@@ -3440,6 +3451,24 @@ function NinthPlanetVideoChapter({ complete, onComplete, onFinish }: { complete:
   </div>;
 }
 
+function ZeroPlanetVideoChapter({ complete, onComplete, onNext }: { complete: boolean; onComplete: () => void; onNext: () => void }) {
+  const finish = () => { onComplete(); onNext(); };
+  return <div className="theory-document theory-video-chapter">
+    <div className="theory-document-title"><p className="eyebrow">Глава 0 · Подготовка</p><h2>Установка Python</h2><p>Установим Python, выберем редактор и запустим первую программу.</p><div className="theory-document-meta"><span>Видео · инструкция</span><span>Windows · macOS</span><span>Без теста</span><span>{complete?"Готово":"Не пройдено"}</span></div></div>
+    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоинструкция</p><h3>Подготовь компьютер к занятиям</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/ErRi9Gxj98c?si=awFE1F_P-EktCvzz" title="Как установить Python и редактор кода" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+    <article className="theory-notion-body"><h2>Что нужно установить</h2><p className="theory-lead">Для занятий нужны сам <code>Python</code> и один редактор кода: простой <code>VS Code</code> или используемый в курсе <code>PyCharm</code>.</p>
+      <div className="theory-download-grid"><a href="https://www.python.org/downloads/" target="_blank" rel="noreferrer"><span>1</span><strong>Скачать Python</strong><small>Официальный сайт · Windows и macOS</small></a><a href="https://code.visualstudio.com/Download" target="_blank" rel="noreferrer"><span>2A</span><strong>Скачать VS Code</strong><small>Простой редактор для начала</small></a><a href="https://www.jetbrains.com/pycharm/download/" target="_blank" rel="noreferrer"><span>2B</span><strong>Скачать PyCharm</strong><small>Редактор, показанный в курсе</small></a></div>
+      <aside className="theory-notion-callout"><span>!</span><p>Ссылка на Яндекс Диск для PyCharm появится здесь после того, как преподаватель её добавит. Пока доступна официальная загрузка JetBrains.</p></aside>
+      <h3>Шаг 1. Установи Python</h3><div className="theory-transcript-steps"><section><span>01</span><div><h3>Открой официальный сайт</h3><p>Перейди на страницу загрузки Python и выбери установщик для своей системы.</p></div></section><section><span>02</span><div><h3>Выбери Windows или macOS</h3><p>На Windows скачай вариант для своей разрядности; чаще всего используется 64-bit. На Mac выбери загрузку для macOS.</p></div></section><section><span>03</span><div><h3>Важно для Windows</h3><p>Перед кнопкой установки обязательно включи пункт <code>Add Python to PATH</code>, затем нажми <code>Install Now</code>.</p></div></section></div>
+      <h3>Шаг 2A. Быстрый старт в VS Code</h3><ol><li>Скачай VS Code для своей системы и открой программу.</li><li>Нажми <strong>Open Folder</strong> и создай отдельную папку для занятий.</li><li>Создай файл <code>main.py</code>. Расширение <code>.py</code> обязательно.</li><li>Открой раздел запуска, выбери <strong>Run</strong> и подтверди <strong>Trust Folder and Continue</strong>.</li><li>Запусти первую программу.</li></ol><TheoryPythonCode code={`print("Hello")`}/>
+      <h3>Шаг 2B. Работа в PyCharm</h3><ol><li>Скачай PyCharm и открой стартовое окно.</li><li>Нажми <strong>New Project</strong>.</li><li>Проверь, что в поле версии Python выбран установленный интерпретатор.</li><li>Назови проект и создай его.</li><li>Создай Python-файл, напиши код и запусти кнопкой ▶.</li></ol><p>Слева отображаются папки и файлы проекта. Через правую кнопку мыши можно создавать новые папки и Python-файлы для отдельных заданий.</p>
+      <h3>Если кнопки запуска нет</h3><div className="theory-branch-table"><div><strong>VS Code</strong><p>Открой запуск через <strong>Run</strong>, подтверди доверие к папке и выбери установленный Python.</p></div><div><strong>PyCharm</strong><p>Проверь выбранный Python Interpreter в настройках нового проекта.</p></div><div><strong>Windows</strong><p>Если Python не находится, переустанови его с включённым <code>Add Python to PATH</code>.</p></div></div>
+      <hr/><h2>Короткий конспект видео</h2><div className="theory-transcript-steps"><section><span>01</span><div><h3>Python — основа</h3><p>Скачиваем его только с официального сайта и устанавливаем под свою операционную систему.</p></div></section><section><span>02</span><div><h3>Редактор — рабочее место</h3><p>VS Code проще для быстрого старта, PyCharm используется преподавателем в курсе.</p></div></section><section><span>03</span><div><h3>Проект хранится в папке</h3><p>Создаём папку проекта, внутри — файлы с расширением <code>.py</code>.</p></div></section><section><span>04</span><div><h3>Проверяем запуск</h3><p>Команда <code>print("Hello")</code> должна вывести текст в нижней части редактора.</p></div></section></div>
+    </article>
+    <section className="theory-zero-finish"><span>{complete?"✓":"0"}</span><div><p className="eyebrow">Подготовка завершена</p><h3>{complete?"Можно переходить к занятиям":"Python и редактор готовы?"}</h3></div><button type="button" onClick={finish}>Перейти к первой планете</button></section>
+  </div>;
+}
+
 function UnreleasedPlanetChapter({ planet }: { planet: Planet }) {
   return (
     <div className="theory-document theory-unreleased-chapter">
@@ -3458,6 +3487,7 @@ function UnreleasedPlanetChapter({ planet }: { planet: Planet }) {
 }
 
 export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
+  const zeroPlanetStorageKey = `egege-theory-setup-planet-v1:${userId}`;
   const firstPlanetStorageKey = `egege-theory-video-planet-1-v1:${userId}`;
   const storageKey = `egege-theory-progress-v2:${userId}`;
   const arithmeticStorageKey = `egege-theory-arithmetic-v1:${userId}`;
@@ -3485,6 +3515,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const [futureInterestLoading, setFutureInterestLoading] = useState(false);
   const [futureInterestError, setFutureInterestError] = useState("");
   const [firstPlanetComplete, setFirstPlanetComplete] = useState(false);
+  const [zeroPlanetComplete, setZeroPlanetComplete] = useState(false);
   const [listPlanetComplete, setListPlanetComplete] = useState(false);
   const [functionsPlanetComplete, setFunctionsPlanetComplete] = useState(false);
   const [comprehensionsPlanetComplete, setComprehensionsPlanetComplete] = useState(false);
@@ -3505,6 +3536,13 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const [completedForTheoryLessons, setCompletedForTheoryLessons] = useState<
     Set<ForTheoryLessonId>
   >(() => new Set());
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try { setZeroPlanetComplete(window.localStorage.getItem(zeroPlanetStorageKey) === "complete"); }
+      catch { setZeroPlanetComplete(false); }
+    });
+  }, [zeroPlanetStorageKey]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -3706,6 +3744,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const whileTheoryProgress = completedWhileTheoryLessons.size * 25;
   const forTheoryProgress = completedForTheoryLessons.size * 25;
   const getPlanetProgress = (planetId: number) => {
+    if (planetId === -1) return zeroPlanetComplete ? 100 : 0;
     if (planetId === 0) return progress;
     if (planetId === 1) return conditionProgress;
     if (planetId === 2) return whileTheoryProgress;
@@ -4057,6 +4096,11 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     try { window.localStorage.setItem(filesPlanetStorageKey, "complete"); } catch {}
   };
 
+  const completeZeroPlanetChapter = () => {
+    setZeroPlanetComplete(true);
+    try { window.localStorage.setItem(zeroPlanetStorageKey, "complete"); } catch {}
+  };
+
   const replayForTheoryChapter = () => {
     setCompletedForTheoryLessons(new Set());
     try {
@@ -4276,7 +4320,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
           </div>
           <div className="theory-overall-progress">
             <span>{overallProgress}%</span>
-            <small>девять глав</small>
+            <small>десять глав</small>
           </div>
         </header>
 
@@ -4289,6 +4333,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
           <span className="route-line route-line-six" aria-hidden="true" />
           <span className="route-line route-line-seven" aria-hidden="true" />
           <span className="route-line route-line-eight" aria-hidden="true" />
+          <span className="route-line route-line-nine" aria-hidden="true" />
 
           {planets.map((planet) => {
             const planetProgress = getPlanetProgress(planet.id);
@@ -4307,7 +4352,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
                 <span className="theory-planet-visual">
                   <PlanetSphere
                     progress={planetProgress}
-                    variant={planet.id}
+                    variant={planet.id === -1 ? 9 : planet.id}
                     complete={planetProgress === 100}
                   />
                   {routePlanet === planet.id && <MascotRocket />}
@@ -4439,7 +4484,13 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
             </div>
           </header>
 
-          {activePlanet.id === 0 ? (
+          {activePlanet.id === -1 ? (
+            <ZeroPlanetVideoChapter
+              complete={zeroPlanetComplete}
+              onComplete={completeZeroPlanetChapter}
+              onNext={() => openPlanetNow(0)}
+            />
+          ) : activePlanet.id === 0 ? (
             <FirstPlanetVideoChapter
               complete={firstPlanetComplete}
               onComplete={completeFirstPlanet}

@@ -1354,6 +1354,58 @@
   vertical-align: .08em;
 }
 
+.theory-download-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 22px 0;
+}
+
+.theory-download-grid a {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  padding: 18px;
+  text-decoration: none;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.theory-download-grid a:hover { border-color: var(--accent); transform: translateY(-2px); }
+.theory-download-grid span { color: var(--accent); font-family: var(--font-geist-mono); font-size: 11px; }
+.theory-download-grid strong { font-size: 15px; }
+.theory-download-grid small { color: var(--muted); line-height: 1.45; }
+
+.theory-zero-finish {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 18px;
+  grid-template-columns: auto 1fr auto;
+  margin-top: 20px;
+  padding: 30px clamp(22px, 5vw, 58px) 54px;
+}
+
+.theory-zero-finish > span { color: var(--accent); font-family: var(--font-geist-mono); font-size: 26px; }
+.theory-zero-finish h3 { font-size: 20px; margin: 5px 0 0; }
+.theory-zero-finish button { background: var(--accent); border: 0; border-radius: 12px; color: var(--accent-ink); font-weight: 760; min-height: 48px; padding: 0 18px; }
+
+.planet-install-pattern { align-items: center; display: flex; gap: 6px; inset: 0; justify-content: center; position: absolute; z-index: 2; }
+.planet-install-pattern i { color: var(--text); font-family: var(--font-geist-mono); font-size: 11px; font-style: normal; font-weight: 800; }
+.planet-install-pattern i:first-child { color: var(--accent); font-size: 20px; }
+.planet-install-pattern i:last-child { color: var(--text-soft); }
+
+@media (max-width: 700px) {
+  .theory-planet--1 { left: calc(50% + var(--route-offset)); top: 3600px; }
+  .theory-download-grid { grid-template-columns: minmax(0, 1fr); }
+  .theory-zero-finish { align-items: start; grid-template-columns: auto 1fr; }
+  .theory-zero-finish button { grid-column: 1 / -1; width: 100%; }
+}
+
 .theory-type-grid,
 .theory-logic-cards {
   display: grid;
@@ -8824,9 +8876,9 @@ footer {
 
 .theory-route {
   --route-offset: min(28cqw, 180px);
-  height: 3540px;
+  height: 3840px;
   margin-top: -18px;
-  min-height: 3540px;
+  min-height: 3840px;
   position: relative;
   width: 100%;
   z-index: 1;
@@ -8934,6 +8986,19 @@ footer {
   width: calc(var(--route-offset) + var(--route-offset));
 }
 
+.route-line-nine {
+  background-image: linear-gradient(
+    to bottom left,
+    transparent calc(50% - 0.5px),
+    var(--route-color) 50%,
+    transparent calc(50% + 0.5px)
+  );
+  height: 300px;
+  left: calc(50% - var(--route-offset));
+  top: 3300px;
+  width: calc(var(--route-offset) + var(--route-offset));
+}
+
 .theory-planet {
   align-items: center;
   background: transparent;
@@ -8954,6 +9019,11 @@ footer {
 .theory-planet-0 {
   left: calc(50% - var(--route-offset));
   top: 3300px;
+}
+
+.theory-planet--1 {
+  left: calc(50% + var(--route-offset));
+  top: 3600px;
 }
 
 .theory-planet-1 {
