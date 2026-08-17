@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type TheorySpaceProps = {
   accessToken: string;
@@ -283,7 +284,20 @@ function AnimatedIndexLine({ items }: { items: readonly string[] }) {
 }
 
 function TheoryTestDialog({ score, total, onRestart, onReview }: { score: number; total: number; onRestart: () => void; onReview: () => void }) {
-  return <div className="marathon-resume-scrim"><section className="marathon-resume-dialog" role="dialog" aria-modal="true"><span>Результат теста</span><h2>{score} из {total}</h2><p>{score === total ? "Все ответы правильные." : "Хотите пройти тест ещё раз или посмотреть ответы?"}</p><button className="is-primary" onClick={onRestart}>Начать тест заново</button><button onClick={onReview}>Посмотреть ответы</button></section></div>;
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="marathon-resume-scrim">
+      <section className="marathon-resume-dialog" role="dialog" aria-modal="true" aria-labelledby="theory-test-result-title">
+        <span>Результат теста</span>
+        <h2 id="theory-test-result-title">Верных заданий: {score} из {total}</h2>
+        <p>{score === total ? "Все ответы правильные." : "Хотите пройти тест ещё раз или посмотреть ответы?"}</p>
+        <button type="button" className="is-primary" onClick={onRestart}>Начать тест заново</button>
+        <button type="button" onClick={onReview}>Посмотреть ответы</button>
+      </section>
+    </div>,
+    document.body,
+  );
 }
 
 function LessonStatus({
