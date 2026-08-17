@@ -1260,9 +1260,9 @@
 }
 
 /* Calm, document-like layout for the first theory planet */
-.theory-space *,
-.theory-space *::before,
-.theory-space *::after {
+.theory-chapter *,
+.theory-chapter *::before,
+.theory-chapter *::after {
   animation: none !important;
   transition: none !important;
 }
