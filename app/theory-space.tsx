@@ -3371,6 +3371,40 @@ function SeventhPlanetVideoChapter({ complete, onComplete, onNext }: { complete:
   </div>;
 }
 
+const eighthPlanetQuestions = [
+  { question: "Какой список получится?", code: `a = [i for i in range(5)]`, answers: ["[1, 2, 3, 4, 5]", "[0, 1, 2, 3, 4]", "[0, 1, 2, 3, 4, 5]"], correct: 1 },
+  { question: "Какая часть отвечает за условие отбора?", code: `[i for i in numbers if i % 5 == 0]`, answers: ["i", "for i in numbers", "if i % 5 == 0"], correct: 2 },
+  { question: "Что попадёт в список?", code: `[i ** 2 for i in range(6) if i % 2 == 0]`, answers: ["[0, 2, 4]", "[0, 4, 16]", "[4, 16, 36]"], correct: 1 },
+  { question: "Зачем здесь нужен int?", code: `[int(symbol) for symbol in str(314)]`, answers: ["Переводит цифры-строки в числа", "Считает количество цифр", "Переворачивает число"], correct: 0 },
+  { question: "Как проверить последнюю цифру числа x?", answers: ["str(x)[-1]", "str(x)[1]", "x[len]"], correct: 0 },
+  { question: "Какие числа останутся?", code: `[x for x in [25, 315, 1245, 8000] if str(x)[-1] == "5" and len(str(x)) == 4]`, answers: ["25, 315, 1245", "Только 1245", "1245, 8000"], correct: 1 },
+] as const;
+
+function EighthPlanetVideoChapter({ complete, onComplete, onNext }: { complete: boolean; onComplete: () => void; onNext: () => void }) {
+  const [answers,setAnswers]=useState<Record<number,number>>({});
+  const [result,setResult]=useState<number|null>(complete?6:null);
+  const [show,setShow]=useState(false);
+  const passed=complete||(result!==null&&result>=5);
+  const check=()=>{const score=eighthPlanetQuestions.reduce((sum,q,index)=>sum+(answers[index]===q.correct?1:0),0);setResult(score);setShow(true);if(score>=5)onComplete();};
+  return <div className="theory-document theory-video-chapter">
+    <div className="theory-document-title"><p className="eyebrow">Глава 8 · Короткая запись</p><h2>Генераторы списков</h2><p>Создаём и фильтруем списки одной строкой, используя уже знакомые <code>for</code> и <code>if</code>.</p><div className="theory-document-meta"><span>Видео · практика</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed?"Пройдено":"Не пройдено"}</span></div></div>
+    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/WLJJnV2gPXs?si=qIahwkqS0g6XNWHl" title="Генераторы списков в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+    <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead">Генератор списка заменяет создание пустого списка, цикл <code>for</code>, условие <code>if</code> и <code>append</code> одной короткой записью.</p>
+      <h3>Обычный цикл и генератор</h3><div className="theory-indent-compare"><section><span className="theory-case-label">Четыре строки</span><TheoryPythonCode code={`result = []\nfor i in range(10):\n    if i % 2 == 0:\n        result.append(i)`}/></section><section><span className="theory-case-label">Одна строка</span><TheoryPythonCode code={`result = [i for i in range(10) if i % 2 == 0]`}/></section></div><p>Обе записи создадут одинаковый список: <code>[0, 2, 4, 6, 8]</code>.</p>
+      <h3>Как читать запись</h3><div className="theory-loop-steps"><span><strong>i</strong><br/>что кладём</span><b>←</b><span><strong>for i in range(10)</strong><br/>откуда берём</span><b>←</b><span><strong>if i % 2 == 0</strong><br/>при каком условии</span><b>✓</b></div><aside className="theory-notion-callout"><span>!</span><p>Читай генератор по смыслу: «положи <code>i</code> для каждого <code>i</code> из диапазона, если число чётное».</p></aside>
+      <h3>Меняем то, что добавляем</h3><TheoryPythonCode code={`squares = [i ** 2 for i in range(10) if i % 2 == 0]`}/><p>До <code>for</code> записывается значение, которое попадёт в новый список. Можно положить само число, его квадрат или даже одну и ту же строку несколько раз.</p><div className="theory-branch-table"><div><code>[i ...]</code><p>Добавить само значение.</p></div><div><code>[i ** 2 ...]</code><p>Добавить квадрат значения.</p></div><div><code>["да" ...]</code><p>Добавить строку за каждый подходящий элемент.</p></div></div>
+      <h3>Условие можно убрать</h3><TheoryPythonCode code={`values = [10 for symbol in "abc"]\nprint(values)  # [10, 10, 10]`}/><p>Без <code>if</code> подходит каждый элемент коллекции. Поэтому число <code>10</code> добавится столько раз, сколько символов в строке.</p>
+      <h3>Сумма цифр числа</h3><TheoryPythonCode code={`number = 5723\ndigits = [int(symbol) for symbol in str(number)]\nanswer = sum(digits)\nprint(answer)  # 17`}/><p>По числу цикл пройти не может, поэтому сначала превращаем его в строку. Каждый символ снова переводим в число через <code>int</code>, после чего список можно передать в <code>sum</code>.</p>
+      <h3>Фильтрация строки</h3><TheoryPythonCode code={`text = "hello world"\nletters = [symbol for symbol in text if symbol == "l"]\nprint(letters)  # ['l', 'l', 'l']`}/><p>Цикл перебирает символы строки, а условие оставляет только нужную букву.</p>
+      <h3>Числа, которые оканчиваются на 5</h3><TheoryPythonCode code={`numbers = [4, 325, 1245, 8000]\nresult = [x for x in numbers if str(x)[-1] == "5"]`}/><p><code>x</code> — число. Переводим его в строку, берём последний символ по индексу <code>-1</code> и сравниваем со строкой <code>"5"</code>.</p>
+      <h3>Несколько условий</h3><TheoryPythonCode code={`result = [x for x in numbers\n          if str(x)[-1] == "5" and len(str(x)) == 4]`}/><p>В список попадут только четырёхзначные числа, которые заканчиваются на 5. Оба условия должны быть истинны.</p>
+      <hr/><h2>Текстовая версия занятия</h2><div className="theory-transcript-steps"><section><span>01</span><div><h3>Определяем результат</h3><p>В начале генератора пишем значение, которое хотим добавить в новый список.</p></div></section><section><span>02</span><div><h3>Указываем источник</h3><p>После <code>for</code> задаём переменную и коллекцию, которую перебираем.</p></div></section><section><span>03</span><div><h3>Добавляем фильтр</h3><p>Необязательный <code>if</code> пропускает только элементы с нужным свойством.</p></div></section><section><span>04</span><div><h3>Преобразуем элементы</h3><p>До <code>for</code> можно записать квадрат, <code>int(symbol)</code> или другое выражение из урока.</p></div></section><section><span>05</span><div><h3>Соединяем условия</h3><p><code>and</code> позволяет одновременно проверить окончание числа и его длину.</p></div></section></div>
+    </article>
+    <section className="theory-planet-test" id="eighth-planet-test"><div className="theory-section-heading"><span>05</span><div><h3>Тест</h3></div></div><div className="theory-test-list">{eighthPlanetQuestions.map((q,i)=><fieldset key={q.question}><legend><span>{i+1}</span><span className="theory-question-text">{q.question}</span></legend>{"code" in q&&q.code?<TheoryPythonCode code={q.code}/>:null}{q.answers.map((answer,j)=>{const selected=answers[i]===j,correct=result!==null&&j===q.correct,wrong=result!==null&&selected&&j!==q.correct;return <label className={`${selected?"is-selected":""} ${correct?"is-correct":""} ${wrong?"is-wrong":""}`} key={answer}><input type="radio" name={`eighth-${i}`} checked={selected} disabled={passed} onChange={()=>{setAnswers(value=>({...value,[i]:j}));setResult(null);}}/><span>{answer}</span></label>})}</fieldset>)}</div><div className={`theory-test-result ${passed?"is-passed":""}`}>{passed?<span>Планета пройдена</span>:<button disabled={Object.keys(answers).length!==6} onClick={check}>Проверить ответы</button>}</div></section>
+    {show&&result!==null&&<TheoryTestDialog score={result} total={6} onRestart={()=>{setAnswers({});setResult(null);setShow(false);document.getElementById("eighth-planet-test")?.scrollIntoView({behavior:"smooth",block:"start"});}} onReview={()=>setShow(false)} onNext={()=>{setShow(false);onNext();}}/>}
+  </div>;
+}
+
 function UnreleasedPlanetChapter({ planet }: { planet: Planet }) {
   return (
     <div className="theory-document theory-unreleased-chapter">
@@ -3398,6 +3432,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const listPlanetStorageKey = `egege-theory-list-planet-v1:${userId}`;
   const forTheoryStorageKey = `egege-theory-for-v1:${userId}`;
   const functionsPlanetStorageKey = `egege-theory-functions-planet-v1:${userId}`;
+  const comprehensionsPlanetStorageKey = `egege-theory-comprehensions-planet-v1:${userId}`;
   const splitStorageKey = `egege-theory-split-v1:${userId}`;
   const theorySpaceRef = useRef<HTMLElement | null>(null);
   const theoryMapRef = useRef<HTMLDivElement | null>(null);
@@ -3416,6 +3451,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const [firstPlanetComplete, setFirstPlanetComplete] = useState(false);
   const [listPlanetComplete, setListPlanetComplete] = useState(false);
   const [functionsPlanetComplete, setFunctionsPlanetComplete] = useState(false);
+  const [comprehensionsPlanetComplete, setComprehensionsPlanetComplete] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
   const [completedArithmeticLessons, setCompletedArithmeticLessons] = useState<
     Set<ArithmeticLessonId>
@@ -3456,6 +3492,13 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
       catch { setFunctionsPlanetComplete(false); }
     });
   }, [functionsPlanetStorageKey]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try { setComprehensionsPlanetComplete(window.localStorage.getItem(comprehensionsPlanetStorageKey) === "complete"); }
+      catch { setComprehensionsPlanetComplete(false); }
+    });
+  }, [comprehensionsPlanetStorageKey]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -3626,6 +3669,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     if (planetId === 4) return stringTheoryProgress;
     if (planetId === 5) return forTheoryProgress;
     if (planetId === 6) return functionsPlanetComplete ? 100 : 0;
+    if (planetId === 7) return comprehensionsPlanetComplete ? 100 : 0;
     return 0;
   };
   const overallProgress = Math.round(
@@ -3956,6 +4000,11 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const completeFunctionsPlanetChapter = () => {
     setFunctionsPlanetComplete(true);
     try { window.localStorage.setItem(functionsPlanetStorageKey, "complete"); } catch {}
+  };
+
+  const completeComprehensionsPlanetChapter = () => {
+    setComprehensionsPlanetComplete(true);
+    try { window.localStorage.setItem(comprehensionsPlanetStorageKey, "complete"); } catch {}
   };
 
   const replayForTheoryChapter = () => {
@@ -4378,6 +4427,12 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
               complete={functionsPlanetComplete}
               onComplete={completeFunctionsPlanetChapter}
               onNext={() => openPlanetNow(7)}
+            />
+          ) : activePlanet.id === 7 ? (
+            <EighthPlanetVideoChapter
+              complete={comprehensionsPlanetComplete}
+              onComplete={completeComprehensionsPlanetChapter}
+              onNext={() => openPlanetNow(8)}
             />
           ) : activePlanet.id === 2 ? (
             <div className="theory-document theory-chapter-one theory-chapter-while">

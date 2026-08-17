@@ -1340,6 +1340,19 @@
 }
 
 .theory-lead { color: var(--text); font-size: 18px; line-height: 1.65; }
+.theory-lead code {
+  background: var(--accent-wash);
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  border-radius: 9px;
+  color: var(--accent);
+  display: inline-block;
+  font-family: var(--font-geist-mono);
+  font-size: .86em;
+  font-weight: 800;
+  line-height: 1;
+  padding: 6px 9px;
+  vertical-align: .08em;
+}
 
 .theory-type-grid,
 .theory-logic-cards {
