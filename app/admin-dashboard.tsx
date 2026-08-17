@@ -147,14 +147,16 @@ export default function AdminDashboard({ user, onExit }: { user: User; onExit: (
   }, []);
 
   useEffect(() => {
-    void load();
+    queueMicrotask(() => void load());
     const timer = window.setInterval(() => void load(true), 30_000);
     return () => window.clearInterval(timer);
   }, [load]);
 
   useEffect(() => {
-    if (tab === "premium") setFilter("premium");
-    if (tab === "users") setFilter("all");
+    queueMicrotask(() => {
+      if (tab === "premium") setFilter("premium");
+      if (tab === "users") setFilter("all");
+    });
   }, [tab]);
 
   const filteredUsers = useMemo(() => {

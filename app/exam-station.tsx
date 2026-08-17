@@ -71,6 +71,7 @@ export type ExamAttempt = {
     answered: boolean;
     correct: boolean;
     points: number;
+    answer?: string;
   }>;
 };
 
@@ -767,6 +768,7 @@ export default function ExamStation({
                         answered: Boolean(row.userAnswer),
                         correct: row.correct,
                         points: row.points,
+                        answer: row.userAnswer,
                       })),
                     });
                   }}>

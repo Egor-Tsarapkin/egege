@@ -6,4 +6,7 @@ export const OPERATOR_NAME = "Царапкин Егор Владимирович
 export const OPERATOR_STATUS = "самозанятый";
 export const OPERATOR_CITY = "Москва";
 export const OPERATOR_EMAIL = "egortsarapkinpersona@gmail.com";
-export const SITE_URL = "https://tsarapkin-ege.vovantsarapkin.chatgpt.site";
+export const SITE_URL =
+  process.env.SITE_URL ??
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  "https://tsarapkin-ege.vovantsarapkin.chatgpt.site";

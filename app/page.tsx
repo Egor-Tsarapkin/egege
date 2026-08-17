@@ -2479,9 +2479,10 @@ export default function Home() {
     }
     let active = true;
     const syncConsent = async () => {
-      let pending: { termsConsent?: boolean; dataConsent?: boolean; distributionConsent?: boolean } | null = null;
+      type PendingConsent = { termsConsent?: boolean; dataConsent?: boolean; distributionConsent?: boolean };
+      let pending: PendingConsent | null = null;
       try {
-        pending = JSON.parse(window.sessionStorage.getItem(PENDING_CONSENT_KEY) ?? "null") as typeof pending;
+        pending = JSON.parse(window.sessionStorage.getItem(PENDING_CONSENT_KEY) ?? "null") as PendingConsent | null;
       } catch {
         pending = null;
       }
@@ -2513,19 +2514,21 @@ export default function Home() {
 
   useEffect(() => {
     if (!authResolved || user) return;
-    setPreferences((current) => {
-      const guestAccent = guestAccentOptions.some((accent) => accent.value === current.accent)
-        ? current.accent
-        : defaultPreferences.accent;
-      if (current.siteStyle === "base" && current.accent === guestAccent && !current.taskGifs) return current;
-      const updated: Preferences = { ...current, siteStyle: "base", accent: guestAccent, taskGifs: false };
-      document.documentElement.dataset.accent = updated.accent;
-      try {
-        window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
-      } catch {
-        // Guest defaults still apply for the current session.
-      }
-      return updated;
+    queueMicrotask(() => {
+      setPreferences((current) => {
+        const guestAccent = guestAccentOptions.some((accent) => accent.value === current.accent)
+          ? current.accent
+          : defaultPreferences.accent;
+        if (current.siteStyle === "base" && current.accent === guestAccent && !current.taskGifs) return current;
+        const updated: Preferences = { ...current, siteStyle: "base", accent: guestAccent, taskGifs: false };
+        document.documentElement.dataset.accent = updated.accent;
+        try {
+          window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
+        } catch {
+          // Guest defaults still apply for the current session.
+        }
+        return updated;
+      });
     });
   }, [authResolved, user]);
 
@@ -2535,6 +2538,16 @@ export default function Home() {
     queueMicrotask(() => {
       setGateSection(requestedSection);
       setSection("home");
+      window.history.replaceState({ section: "home" }, "", sectionPaths.home);
+      window.scrollTo({ top: 0 });
+    });
+  }, [authResolved, section, user]);
+
+  useEffect(() => {
+    if (!authResolved || user || section !== "profile") return;
+    queueMicrotask(() => {
+      setSection("home");
+      setProfileOpen(true);
       window.history.replaceState({ section: "home" }, "", sectionPaths.home);
       window.scrollTo({ top: 0 });
     });
@@ -2634,13 +2647,19 @@ export default function Home() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
+    const loginRequested = url.searchParams.get("login") === "1";
     const authResult = url.searchParams.get("auth");
-    if (!authResult) return;
+    if (!authResult && !loginRequested) return;
 
     url.searchParams.delete("auth");
+    url.searchParams.delete("login");
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     let timer = 0;
     const frame = window.requestAnimationFrame(() => {
+      if (loginRequested) {
+        setProfileOpen(true);
+        return;
+      }
       setToast(
         authResult === "confirmed"
           ? "Почта подтверждена — профиль открыт"

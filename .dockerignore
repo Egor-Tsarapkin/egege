@@ -1,0 +1,11 @@
+.git
+.next
+.vinext
+dist
+node_modules
+data
+.env
+site-release.tar.gz
+gifs
+qr-egege-black.png
+qr-egege-custom.png

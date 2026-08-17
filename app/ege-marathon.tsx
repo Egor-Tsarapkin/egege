@@ -33,7 +33,12 @@ type MarathonAccent =
   | "purple"
   | "cyan"
   | "yellow"
-  | "mint";
+  | "mint"
+  | "coral"
+  | "indigo"
+  | "violet"
+  | "teal"
+  | "matcha";
 type MarathonScreen = "home" | "quiz" | "themes" | "favorites" | "errors" | "settings";
 type AnswerState = "correct" | "wrong";
 
@@ -171,19 +176,21 @@ export default function EgeMarathon({
   const navigationTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}") as Partial<LocalState>;
-      setLocal({
-        answered: saved.answered ?? {},
-        favorites: Array.isArray(saved.favorites) ? saved.favorites : [],
-        marathonOrder: Array.isArray(saved.marathonOrder) ? saved.marathonOrder : [],
-        autoAdvance: saved.autoAdvance ?? true,
-        successEffect: saved.successEffect ?? true,
-      });
-    } catch {
-      setLocal(DEFAULT_LOCAL_STATE);
-    }
-    setReady(true);
+    queueMicrotask(() => {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}") as Partial<LocalState>;
+        setLocal({
+          answered: saved.answered ?? {},
+          favorites: Array.isArray(saved.favorites) ? saved.favorites : [],
+          marathonOrder: Array.isArray(saved.marathonOrder) ? saved.marathonOrder : [],
+          autoAdvance: saved.autoAdvance ?? true,
+          successEffect: saved.successEffect ?? true,
+        });
+      } catch {
+        setLocal(DEFAULT_LOCAL_STATE);
+      }
+      setReady(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -292,6 +299,7 @@ export default function EgeMarathon({
   };
 
   const answer = (optionIndex: number) => {
+    // eslint-disable-next-line react-hooks/purity -- read only after a user event
     if (graded || performance.now() < suppressAnswerUntil.current) return;
     const isCorrect = optionIndex === activeQuestion.correct;
     setSelected(optionIndex);
@@ -357,6 +365,7 @@ export default function EgeMarathon({
     swipeGesture.current = null;
     if (gesture.axis !== "x") return;
 
+    // eslint-disable-next-line react-hooks/purity -- read only after a pointer event
     suppressAnswerUntil.current = performance.now() + 320;
     const projected = swipeOffset + gesture.velocity * 150;
     const wantsNext = projected < -58 && questionIndex < queue.length - 1;

@@ -1,10 +1,4 @@
-import { env } from "cloudflare:workers";
-
 export const dynamic = "force-dynamic";
-
-type FileEnvironment = {
-  FILES?: R2Bucket;
-};
 
 function safeDownloadName(value: string) {
   return value
@@ -13,7 +7,7 @@ function safeDownloadName(value: string) {
     .slice(0, 160);
 }
 
-function cacheHeaders(contentType: string, downloadName: string) {
+function cacheHeaders(contentType: string, downloadName: string): Record<string, string> {
   return {
     "Cache-Control": "public, max-age=31536000, immutable",
     "Content-Type": contentType || "application/octet-stream",
@@ -25,26 +19,6 @@ function cacheHeaders(contentType: string, downloadName: string) {
 function copyHeader(source: Headers, target: Record<string, string>, name: string) {
   const value = source.get(name);
   if (value) target[name] = value;
-}
-
-function parseRange(value: string, size: number) {
-  const match = /^bytes=(\d*)-(\d*)$/.exec(value.trim());
-  if (!match || (!match[1] && !match[2])) return null;
-  let start: number;
-  let end: number;
-  if (!match[1]) {
-    const suffixLength = Number(match[2]);
-    if (!Number.isInteger(suffixLength) || suffixLength <= 0) return null;
-    start = Math.max(0, size - suffixLength);
-    end = size - 1;
-  } else {
-    start = Number(match[1]);
-    end = match[2] ? Number(match[2]) : size - 1;
-  }
-  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || start >= size || end < start) {
-    return null;
-  }
-  return { start, end: Math.min(end, size - 1) };
 }
 
 export async function GET(request: Request) {
@@ -67,44 +41,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "Этот источник не разрешён" }, { status: 403 });
   }
 
-  const bucket = (env as unknown as FileEnvironment).FILES;
-  const key = `kompege${source.pathname}`;
   const requestRange = request.headers.get("range");
-
-  if (bucket) {
-    const cachedHead = await bucket.head(key);
-    if (cachedHead) {
-      const headers = cacheHeaders(
-        cachedHead.httpMetadata?.contentType ?? "application/octet-stream",
-        requestedName,
-      );
-      headers["Accept-Ranges"] = "bytes";
-      if (cachedHead.httpEtag) headers.ETag = cachedHead.httpEtag;
-      if (requestRange) {
-        const range = parseRange(requestRange, cachedHead.size);
-        if (!range) {
-          return new Response(null, {
-            status: 416,
-            headers: { ...headers, "Content-Range": `bytes */${cachedHead.size}` },
-          });
-        }
-        const cachedPart = await bucket.get(key, {
-          range: { offset: range.start, length: range.end - range.start + 1 },
-        });
-        if (cachedPart) {
-          headers["Content-Range"] = `bytes ${range.start}-${range.end}/${cachedHead.size}`;
-          headers["Content-Length"] = String(range.end - range.start + 1);
-          return new Response(cachedPart.body, { status: 206, headers });
-        }
-      } else {
-        const cached = await bucket.get(key);
-        if (cached) {
-          headers["Content-Length"] = String(cachedHead.size);
-          return new Response(cached.body, { headers });
-        }
-      }
-    }
-  }
 
   const sourceResponse = await fetch(source, {
     headers: {
@@ -125,8 +62,8 @@ export async function GET(request: Request) {
   copyHeader(sourceResponse.headers, headers, "etag");
   copyHeader(sourceResponse.headers, headers, "last-modified");
 
-  // Start sending immediately. Waiting for the complete remote file here made
-  // large task attachments look broken and caused request timeouts.
+  // Stream the authoritative source. A stale object-store copy previously made
+  // individual attachments hang even though the source file was healthy.
   return new Response(sourceResponse.body, {
     status: sourceResponse.status,
     headers,

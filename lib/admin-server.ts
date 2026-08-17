@@ -81,14 +81,7 @@ function configuredAdminEmails() {
 export async function isAdminUser(user: User) {
   const emails = configuredAdminEmails();
   const email = user.email?.toLowerCase() ?? "";
-  if (emails.length) return emails.includes(email);
-
-  // Без переменной окружения первым администратором становится самый ранний
-  // зарегистрированный профиль. Это безопаснее, чем открывать панель всем.
-  const first = await communityDb()
-    .prepare("SELECT user_id FROM profiles ORDER BY created_at ASC LIMIT 1")
-    .first<{ user_id: string }>();
-  return first?.user_id === user.id;
+  return emails.length > 0 && Boolean(email) && emails.includes(email);
 }
 
 export async function ensureUserAccess(user: User) {
