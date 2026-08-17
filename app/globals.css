@@ -1143,6 +1143,14 @@
   border-color: color-mix(in srgb, #e5484d 45%, var(--line));
 }
 
+.theory-test-code {
+  margin: 4px 0 16px;
+}
+
+.theory-test-code pre {
+  padding-bottom: 18px;
+}
+
 .theory-test-list input {
   accent-color: var(--accent);
 }

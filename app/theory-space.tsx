@@ -247,6 +247,37 @@ function EditorFrame({
   );
 }
 
+const pythonKeywords = new Set([
+  "and", "elif", "else", "False", "for", "if", "in", "None", "not", "or", "True", "while",
+]);
+
+function TheoryPythonCode({ code }: { code: string }) {
+  const [scale, setScale] = useState(1);
+  const tokens = code.split(/(#[^\n]*|"[^"\n]*"|'[^'\n]*'|\b\d+(?:\.\d+)?\b|\b[A-Za-z_]\w*\b)/g);
+
+  return (
+    <section className="marathon-code theory-test-code">
+      <div className="marathon-code-bar">
+        <span><i /><i /><i /> Python</span>
+        <div>
+          <button type="button" onClick={() => setScale((value) => Math.max(0.78, value - 0.1))} aria-label="Уменьшить код">−</button>
+          <span>{Math.round(scale * 100)}%</span>
+          <button type="button" onClick={() => setScale((value) => Math.min(1.42, value + 0.1))} aria-label="Увеличить код">+</button>
+        </div>
+      </div>
+      <pre style={{ fontSize: `${scale}rem` }}><code>{tokens.map((token, index) => {
+        let className = "";
+        if (/^#/.test(token)) className = "tok-comment";
+        else if (/^["']/.test(token)) className = "tok-string";
+        else if (/^\d/.test(token)) className = "tok-number";
+        else if (pythonKeywords.has(token)) className = "tok-keyword";
+        else if (["print", "input", "int", "float", "str", "bool", "range", "len"].includes(token)) className = "tok-built-in";
+        return <span className={className} key={`${index}-${token}`}>{token}</span>;
+      })}</code></pre>
+    </section>
+  );
+}
+
 function LessonStatus({
   id,
   completed,
@@ -2628,7 +2659,8 @@ function MatchingExercise({
 
 const firstPlanetQuestions = [
   {
-    question: "Что выведет этот код?\nscore = 9\nbonus = 4\nprint(score + bonus)",
+    question: "Что выведет этот код?",
+    code: "score = 9\nbonus = 4\nprint(score + bonus)",
     answers: ["13", "94", "Ошибка"],
     correct: 0,
   },
@@ -2653,7 +2685,8 @@ const firstPlanetQuestions = [
     correct: 0,
   },
   {
-    question: "Что произойдёт?\nnumber = \"7\"\nprint(number + 3)",
+    question: "Что произойдёт?",
+    code: "number = \"7\"\nprint(number + 3)",
     answers: ["Получится 10", "Получится 73", "Возникнет TypeError"],
     correct: 2,
   },
@@ -2790,6 +2823,7 @@ function FirstPlanetVideoChapter({
           {firstPlanetQuestions.map((item, questionIndex) => (
             <fieldset key={item.question}>
               <legend><span>{questionIndex + 2}</span><span className="theory-question-text">{item.question}</span></legend>
+              {"code" in item && item.code ? <TheoryPythonCode code={item.code} /> : null}
               {item.answers.map((answer, answerIndex) => {
                 const isSelected = answers[questionIndex] === answerIndex;
                 const isCorrect = result !== null && answerIndex === item.correct;
@@ -2827,6 +2861,160 @@ function FirstPlanetVideoChapter({
               Проверить ответы
             </button>
           )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+const secondPlanetQuestions = [
+  {
+    question: "Что выведет программа, если ввести 20?",
+    code: `age = int(input())\nif age >= 18:\n    print("Проход разрешён")\nelse:\n    print("Нужно подрасти")`,
+    answers: ["Проход разрешён", "Нужно подрасти", "Ошибка"],
+    correct: 0,
+  },
+  {
+    question: "Что вернёт это сравнение?",
+    code: "7 == 7",
+    answers: ["True", "False", "7"],
+    correct: 0,
+  },
+  {
+    question: "При каком значении x условие истинно?",
+    code: "x > 15 and x < 20",
+    answers: ["12", "18", "22"],
+    correct: 1,
+  },
+  {
+    question: "Что выведет код?",
+    code: `x = 10\nif x > 18:\n    print("A")\nelse:\n    print("B")\nprint("C")`,
+    answers: ["Только B", "B, затем C", "Только C"],
+    correct: 1,
+  },
+  {
+    question: "Как записать проверку «x не больше 20»?",
+    code: "# Выбери равносильное условие",
+    answers: ["x > 20", "x <= 20", "x == 20"],
+    correct: 1,
+  },
+  {
+    question: "Что произойдёт после ввода числа 17?",
+    code: `age = input()\nif age >= 18:\n    print("Можно")`,
+    answers: ["Выведется «Можно»", "Ничего не выведется", "Возникнет TypeError"],
+    correct: 2,
+  },
+] as const;
+
+function SecondPlanetVideoChapter({
+  complete,
+  onComplete,
+  onNext,
+}: {
+  complete: boolean;
+  onComplete: () => void;
+  onNext: () => void;
+}) {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [result, setResult] = useState<number | null>(complete ? secondPlanetQuestions.length : null);
+  const requiredScore = 5;
+  const passed = complete || (result !== null && result >= requiredScore);
+
+  const checkTest = () => {
+    const score = secondPlanetQuestions.reduce(
+      (total, question, index) => total + (answers[index] === question.correct ? 1 : 0),
+      0,
+    );
+    setResult(score);
+    if (score >= requiredScore) onComplete();
+  };
+
+  return (
+    <div className="theory-document theory-video-chapter">
+      <div className="theory-document-title">
+        <p className="eyebrow">Глава 2 · Условия</p>
+        <h2>Условные конструкции</h2>
+        <p>Научим программу сравнивать значения, выбирать нужную ветку и правильно читать отступы.</p>
+        <div className="theory-document-meta">
+          <span>Видео · конспект</span>
+          <span>Текстовая версия</span>
+          <span>6 вопросов</span>
+          <span>{passed ? "Пройдено" : "Не пройдено"}</span>
+        </div>
+      </div>
+
+      <section className="theory-video-section" aria-labelledby="second-planet-video-title">
+        <div className="theory-section-heading">
+          <span>01</span>
+          <div><p className="eyebrow">Видеоразбор</p><h3 id="second-planet-video-title">Сначала посмотри занятие</h3></div>
+        </div>
+        <div className="theory-youtube-frame">
+          <iframe
+            src="https://www.youtube.com/embed/ZbUNqBxVB_c?si=5xf5LwY1G2EJZe0q"
+            title="Условия в Python"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
+        </div>
+      </section>
+
+      <article className="theory-notion-body">
+        <h2>Короткий конспект</h2>
+        <aside className="theory-notion-callout"><span aria-hidden="true">!</span><p><strong>Главное:</strong> <code>input()</code> всегда возвращает строку, а команды внутри <code>if</code> определяются отступом.</p></aside>
+
+        <h3>Преобразование типов</h3>
+        <p><code>int()</code> превращает подходящую строку в целое число, а <code>str()</code> — значение в строку. Без преобразования число и строку складывать нельзя.</p>
+        <TheoryPythonCode code={`age = int(input())\nprint(age + 1)`} />
+
+        <h3><code>if</code>, <code>else</code> и <code>elif</code></h3>
+        <p><code>if</code> запускает блок, если условие истинно. <code>else</code> задаёт ветку для ложного условия. <code>elif</code> добавляет ещё одну проверку.</p>
+        <TheoryPythonCode code={`age = int(input())\nif age >= 18:\n    print("Проход разрешён")\nelse:\n    print("Нужно подрасти")`} />
+
+        <h3>Отступы задают границы ветки</h3>
+        <p>Строки с четырьмя пробелами относятся к условию. Команда без отступа выполнится после всей конструкции независимо от выбранной ветки.</p>
+        <TheoryPythonCode code={`if age >= 18:\n    print("Проход разрешён")\n    print("Приятной вечеринки")\nprint("Проверка завершена")`} />
+
+        <h3>Сравнения и логические операторы</h3>
+        <div className="theory-notion-table-wrap"><table><thead><tr><th>Запись</th><th>Смысл</th></tr></thead><tbody>
+          <tr><td><code>==</code>, <code>!=</code></td><td>равно, не равно</td></tr>
+          <tr><td><code>&gt;</code>, <code>&lt;</code></td><td>больше, меньше</td></tr>
+          <tr><td><code>&gt;=</code>, <code>&lt;=</code></td><td>больше или равно, меньше или равно</td></tr>
+          <tr><td><code>and</code></td><td>истинны обе части</td></tr>
+          <tr><td><code>or</code></td><td>истинна хотя бы одна часть</td></tr>
+          <tr><td><code>not</code></td><td>меняет результат на противоположный</td></tr>
+        </tbody></table></div>
+
+        <hr />
+        <h2>Текстовая версия занятия</h2>
+        <p>Сначала вспомним типы данных. Значение <code>10</code> — число, а <code>"10"</code> — строка. Функция <code>int()</code> нужна, когда строку требуется использовать в вычислении; <code>str()</code> выполняет обратное преобразование.</p>
+        <p>Ввод пользователя получают через <code>input()</code>. Он всегда приходит строкой, поэтому возраст для сравнения с числом нужно записать как <code>age = int(input())</code>.</p>
+        <p>Конструкция <code>if</code> проверяет условие. Если оно истинно, выполняется блок с отступом. Ветка <code>else</code> срабатывает в противоположном случае. Условия можно вкладывать друг в друга, но важно следить, к какому уровню относится каждая строка.</p>
+        <p>Оператор <code>and</code> требует истинности обеих проверок, <code>or</code> — хотя бы одной, а <code>not</code> отрицает результат. Эти связки позволяют точно описать правила, по которым программа принимает решение.</p>
+      </article>
+
+      <section className="theory-planet-test" id="second-planet-test">
+        <div className="theory-section-heading"><span>05</span><div><p className="eyebrow">Проверка</p><h3>Шесть вопросов по уроку</h3></div></div>
+        <div className="theory-test-list">
+          {secondPlanetQuestions.map((item, questionIndex) => (
+            <fieldset key={item.question}>
+              <legend><span>{questionIndex + 1}</span><span className="theory-question-text">{item.question}</span></legend>
+              <TheoryPythonCode code={item.code} />
+              {item.answers.map((answer, answerIndex) => {
+                const isSelected = answers[questionIndex] === answerIndex;
+                const isCorrect = result !== null && answerIndex === item.correct;
+                const isWrong = result !== null && isSelected && answerIndex !== item.correct;
+                return <label className={`${isSelected ? "is-selected" : ""} ${isCorrect ? "is-correct" : ""} ${isWrong ? "is-wrong" : ""}`} key={answer}>
+                  <input type="radio" name={`second-planet-question-${questionIndex}`} checked={isSelected} disabled={passed} onChange={() => { setAnswers((current) => ({ ...current, [questionIndex]: answerIndex })); setResult(null); }} />
+                  <span>{answer}</span>
+                </label>;
+              })}
+            </fieldset>
+          ))}
+        </div>
+        <div className={`theory-test-result ${passed ? "is-passed" : ""}`}>
+          {result !== null && <p>{passed ? `Готово: ${result} из ${secondPlanetQuestions.length}. Планета пройдена.` : `Пока ${result} из ${secondPlanetQuestions.length}. Нужно минимум ${requiredScore}.`}</p>}
+          {passed ? <button onClick={onNext}>Перейти к следующей планете <span>→</span></button> : <button disabled={Object.keys(answers).length !== secondPlanetQuestions.length} onClick={checkTest}>Проверить ответы</button>}
         </div>
       </section>
     </div>
@@ -3222,6 +3410,16 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
           block: "center",
         });
       }, 160);
+    }
+  };
+
+  const completeConditionChapter = () => {
+    const updated = new Set<ConditionLessonId>(conditionLessonIds);
+    setCompletedConditionLessons(updated);
+    try {
+      window.localStorage.setItem(conditionStorageKey, JSON.stringify(Array.from(updated)));
+    } catch {
+      // Progress remains available for the current session.
     }
   };
 
@@ -3811,6 +4009,12 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
               complete={firstPlanetComplete}
               onComplete={completeFirstPlanet}
               onNext={() => openPlanet(1)}
+            />
+          ) : activePlanet.id === 1 ? (
+            <SecondPlanetVideoChapter
+              complete={conditionProgress === 100}
+              onComplete={completeConditionChapter}
+              onNext={() => openPlanet(2)}
             />
           ) : activePlanet.id === 5 ? (
             <ForTheoryChapter
