@@ -1565,6 +1565,38 @@
   text-underline-offset: 3px;
 }
 
+.theory-code-drag .theory-match-bank button {
+  min-height: 44px;
+}
+
+.theory-code-drop-list {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0 32px;
+}
+
+.theory-code-drop-list > button {
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  color: var(--text);
+  display: grid;
+  gap: 8px 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 64px;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.theory-code-drop-list > button > span { color: var(--muted); font-size: 12px; grid-column: 1 / -1; }
+.theory-code-drop-list > button > code { font-size: 12px; overflow-wrap: anywhere; }
+.theory-code-drop-list > button > strong { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-family: var(--font-geist-mono); font-size: 12px; padding: 8px 10px; }
+.theory-code-drop-list > button.has-choice { border-style: solid; }
+.theory-code-drop-list > button.has-choice > strong { color: var(--accent); }
+.theory-code-drop-list > button.is-correct { border-color: color-mix(in srgb, #27a768 55%, var(--line)); }
+.theory-code-drop-list > button.is-wrong { border-color: color-mix(in srgb, #d35454 62%, var(--line)); }
+
 @media (max-width: 760px) {
   .theory-video-chapter .theory-document-title h2 {
     font-size: clamp(2rem, 10vw, 3rem);
@@ -1596,6 +1628,10 @@
   .theory-match-footer {
     margin-left: 0;
   }
+
+  .theory-code-drop-list { margin-left: 0; }
+  .theory-code-drop-list > button { grid-template-columns: 1fr; }
+  .theory-code-drop-list > button > strong { justify-self: start; }
 }
 
 /* EGE marathon */

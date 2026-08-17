@@ -2657,6 +2657,83 @@ function MatchingExercise({
   );
 }
 
+type DragChoice = { id: string; label: string };
+type DragTarget = { id: string; label: string; code?: string; answer: string };
+
+function CodeDragExercise({
+  title,
+  description,
+  choices,
+  targets,
+  onPassedChange,
+}: {
+  title: string;
+  description: string;
+  choices: readonly DragChoice[];
+  targets: readonly DragTarget[];
+  onPassedChange: (passed: boolean) => void;
+}) {
+  const [placements, setPlacements] = useState<Record<string, string>>({});
+  const [selected, setSelected] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  const place = (targetId: string, choiceId: string) => {
+    setPlacements((current) => ({ ...current, [targetId]: choiceId }));
+    setSelected(null);
+    setChecked(false);
+    onPassedChange(false);
+  };
+  const check = () => {
+    const passed = targets.every((target) => placements[target.id] === target.answer);
+    setChecked(true);
+    onPassedChange(passed);
+  };
+
+  return (
+    <fieldset className="theory-match-question theory-code-drag">
+      <legend><span>↕</span><span className="theory-question-text">{title}</span></legend>
+      <p className="theory-match-instruction">{description}</p>
+      <div className="theory-match-bank">
+        {choices.map((choice) => (
+          <button
+            type="button"
+            draggable
+            className={selected === choice.id ? "is-selected" : ""}
+            onClick={() => setSelected(selected === choice.id ? null : choice.id)}
+            onDragStart={(event) => event.dataTransfer.setData("text/plain", choice.id)}
+            key={choice.id}
+          ><code>{choice.label}</code></button>
+        ))}
+      </div>
+      <div className="theory-code-drop-list">
+        {targets.map((target) => {
+          const choice = choices.find((item) => item.id === placements[target.id]);
+          const correct = checked && placements[target.id] === target.answer;
+          const wrong = checked && placements[target.id] !== target.answer;
+          return (
+            <button
+              type="button"
+              className={`${choice ? "has-choice" : ""} ${correct ? "is-correct" : ""} ${wrong ? "is-wrong" : ""}`}
+              onClick={() => selected && place(target.id, selected)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => { event.preventDefault(); place(target.id, event.dataTransfer.getData("text/plain")); }}
+              key={target.id}
+            >
+              <span>{target.label}</span>
+              {target.code && <code>{target.code}</code>}
+              <strong>{choice?.label ?? "Перетащи сюда"}</strong>
+            </button>
+          );
+        })}
+      </div>
+      <div className="theory-match-footer">
+        {checked && <p className={targets.every((target) => placements[target.id] === target.answer) ? "is-success" : ""}>{targets.every((target) => placements[target.id] === target.answer) ? "Всё верно." : "Есть ошибка. Проверь смысл каждого условия."}</p>}
+        <button type="button" disabled={Object.keys(placements).length !== targets.length} onClick={check}>Проверить</button>
+      </div>
+    </fieldset>
+  );
+}
+
 const firstPlanetQuestions = [
   {
     question: "Что выведет этот код?",
@@ -2917,8 +2994,10 @@ function SecondPlanetVideoChapter({
 }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [result, setResult] = useState<number | null>(complete ? secondPlanetQuestions.length : null);
+  const [logicDragPassed, setLogicDragPassed] = useState(complete);
+  const [blockDragPassed, setBlockDragPassed] = useState(complete);
   const requiredScore = 5;
-  const passed = complete || (result !== null && result >= requiredScore);
+  const passed = complete || (result !== null && result >= requiredScore && logicDragPassed && blockDragPassed);
 
   const checkTest = () => {
     const score = secondPlanetQuestions.reduce(
@@ -2926,7 +3005,7 @@ function SecondPlanetVideoChapter({
       0,
     );
     setResult(score);
-    if (score >= requiredScore) onComplete();
+    if (score >= requiredScore && logicDragPassed && blockDragPassed) onComplete();
   };
 
   return (
@@ -2938,7 +3017,7 @@ function SecondPlanetVideoChapter({
         <div className="theory-document-meta">
           <span>Видео · конспект</span>
           <span>Текстовая версия</span>
-          <span>6 вопросов</span>
+          <span>8 заданий</span>
           <span>{passed ? "Пройдено" : "Не пройдено"}</span>
         </div>
       </div>
@@ -3035,8 +3114,34 @@ function SecondPlanetVideoChapter({
       </article>
 
       <section className="theory-planet-test" id="second-planet-test">
-        <div className="theory-section-heading"><span>05</span><div><p className="eyebrow">Проверка</p><h3>Шесть вопросов по уроку</h3></div></div>
+        <div className="theory-section-heading"><span>05</span><div><p className="eyebrow">Проверка</p><h3>Два задания с перетаскиванием и шесть вопросов</h3></div></div>
         <div className="theory-test-list">
+          <CodeDragExercise
+            title="Вставь and или or, чтобы утверждение стало верным"
+            description="Перетащи оператор в каждую строку. На телефоне можно нажать на оператор, затем на нужное условие."
+            choices={[{ id: "and", label: "and" }, { id: "or", label: "or" }]}
+            targets={[
+              { id: "weekend", label: "Сегодня выходной, если суббота или воскресенье", code: `day == "сб"  ___  day == "вс"`, answer: "or" },
+              { id: "club", label: "В клуб можно, если есть 18 лет и билет", code: "age >= 18  ___  has_ticket", answer: "and" },
+              { id: "discount", label: "Скидка действует школьнику или студенту", code: "is_pupil  ___  is_student", answer: "or" },
+            ]}
+            onPassedChange={(value) => { setLogicDragPassed(value); if (value && blockDragPassed && result !== null && result >= requiredScore) onComplete(); }}
+          />
+          <CodeDragExercise
+            title="Распредели команды по блокам, чтобы программа работала как в описании"
+            description="Нужно вывести разрешение только совершеннолетнему, отказ — только несовершеннолетнему, а завершение проверки — всегда."
+            choices={[
+              { id: "allow", label: `print("Проход разрешён")` },
+              { id: "deny", label: `print("Нужно подрасти")` },
+              { id: "finish", label: `print("Проверка завершена")` },
+            ]}
+            targets={[
+              { id: "if", label: "Внутри if age >= 18:", answer: "allow" },
+              { id: "else", label: "Внутри else:", answer: "deny" },
+              { id: "outside", label: "После if–else, без отступа", answer: "finish" },
+            ]}
+            onPassedChange={(value) => { setBlockDragPassed(value); if (value && logicDragPassed && result !== null && result >= requiredScore) onComplete(); }}
+          />
           {secondPlanetQuestions.map((item, questionIndex) => (
             <fieldset key={item.question}>
               <legend><span>{questionIndex + 1}</span><span className="theory-question-text">{item.question}</span></legend>
@@ -3054,8 +3159,8 @@ function SecondPlanetVideoChapter({
           ))}
         </div>
         <div className={`theory-test-result ${passed ? "is-passed" : ""}`}>
-          {result !== null && <p>{passed ? `Готово: ${result} из ${secondPlanetQuestions.length}. Планета пройдена.` : `Пока ${result} из ${secondPlanetQuestions.length}. Нужно минимум ${requiredScore}.`}</p>}
-          {passed ? <button onClick={onNext}>Перейти к следующей планете <span>→</span></button> : <button disabled={Object.keys(answers).length !== secondPlanetQuestions.length} onClick={checkTest}>Проверить ответы</button>}
+          {result !== null && <p>{passed ? `Готово: ${result} из ${secondPlanetQuestions.length}. Все задания выполнены.` : !logicDragPassed || !blockDragPassed ? "Сначала правильно выполни оба задания с перетаскиванием." : `Пока ${result} из ${secondPlanetQuestions.length}. Нужно минимум ${requiredScore}.`}</p>}
+          {passed ? <button onClick={onNext}>Перейти к следующей планете <span>→</span></button> : <button disabled={!logicDragPassed || !blockDragPassed || Object.keys(answers).length !== secondPlanetQuestions.length} onClick={checkTest}>Проверить ответы</button>}
         </div>
       </section>
     </div>
