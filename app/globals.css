@@ -1332,7 +1332,65 @@
 
 .theory-notion-body p {
   margin: 0 0 14px;
+  text-wrap: pretty;
 }
+
+.theory-lead { color: var(--text); font-size: 18px; line-height: 1.65; }
+
+.theory-type-grid,
+.theory-logic-cards {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 18px 0 22px;
+}
+
+.theory-type-grid > div,
+.theory-logic-cards > div {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.theory-type-grid strong { color: var(--accent); font-family: var(--font-geist-mono); font-size: 21px; }
+.theory-type-grid span,
+.theory-logic-cards span { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.theory-logic-cards strong { color: var(--text); font-size: 11px; letter-spacing: .08em; }
+.theory-logic-cards p { color: var(--text); font-size: 12px; margin: 4px 0; overflow-wrap: anywhere; }
+
+.theory-branch-table { border-bottom: 1px solid var(--line); border-top: 1px solid var(--line); margin: 18px 0 24px; }
+.theory-branch-table > div { align-items: start; display: grid; gap: 18px; grid-template-columns: 48px minmax(0, 1fr); padding: 14px 4px; }
+.theory-branch-table > div + div { border-top: 1px solid var(--line); }
+.theory-branch-table p { margin: 0; }
+
+.theory-indent-compare { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 22px 0 34px; }
+.theory-indent-compare > section { background: color-mix(in srgb, var(--surface-raised) 72%, transparent); border: 1px solid var(--line); border-radius: 16px; min-width: 0; padding: 16px; }
+.theory-indent-compare .theory-test-code { margin-top: 12px; }
+.theory-case-label { color: var(--accent); font-size: 11px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+.theory-indent-compare > section > p { color: var(--muted); font-size: 13px; margin: 14px 2px 0; }
+
+.theory-flow-mini { display: grid; gap: 7px 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 14px 2px 0; position: relative; }
+.theory-flow-mini b { background: var(--accent-wash); border: 1px solid var(--accent); border-radius: 8px; color: var(--accent); grid-column: 1 / -1; padding: 8px; text-align: center; }
+.theory-flow-mini i { color: var(--muted); font-size: 10px; font-style: normal; text-align: center; text-transform: uppercase; }
+.theory-flow-mini span { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-family: var(--font-geist-mono); font-size: 11px; padding: 9px 6px; text-align: center; }
+.theory-flow-mini strong { border-top: 1px solid var(--line-strong); color: var(--text-soft); font-size: 11px; grid-column: 1 / -1; margin-top: 3px; padding-top: 10px; text-align: center; }
+
+.theory-table-title { color: var(--text); font-size: 15px; margin: 24px 0 10px; }
+.theory-truth-table td,
+.theory-truth-table th { text-align: center; }
+.theory-truth-table tbody tr:last-child { background: var(--accent-wash); }
+
+.theory-transcript-steps { margin-top: 24px; }
+.theory-transcript-steps > section { display: grid; gap: 18px; grid-template-columns: 36px minmax(0, 1fr); padding: 22px 0; }
+.theory-transcript-steps > section + section { border-top: 1px solid var(--line); }
+.theory-transcript-steps > section > span { color: var(--accent); font-family: var(--font-geist-mono); font-size: 12px; padding-top: 5px; }
+.theory-transcript-steps h3 { font-size: 18px; margin: 0 0 8px; }
+.theory-transcript-steps p { margin: 0; }
 
 .theory-notion-body ul {
   margin: 12px 0 18px;
@@ -1524,6 +1582,12 @@
   .theory-notion-callout {
     padding: 14px;
   }
+
+  .theory-type-grid,
+  .theory-logic-cards,
+  .theory-indent-compare { grid-template-columns: 1fr; }
+
+  .theory-indent-compare > section { padding: 12px; }
 
   .theory-test-list label,
   .theory-match-instruction,

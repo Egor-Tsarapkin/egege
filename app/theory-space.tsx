@@ -2960,37 +2960,78 @@ function SecondPlanetVideoChapter({
       </section>
 
       <article className="theory-notion-body">
-        <h2>Короткий конспект</h2>
-        <aside className="theory-notion-callout"><span aria-hidden="true">!</span><p><strong>Главное:</strong> <code>input()</code> всегда возвращает строку, а команды внутри <code>if</code> определяются отступом.</p></aside>
+        <h2>Конспект урока</h2>
+        <p className="theory-lead">Условие — это вопрос, на который Python отвечает <code>True</code> или <code>False</code>. По результату программа выбирает, какой блок команд выполнить.</p>
+        <aside className="theory-notion-callout"><span aria-hidden="true">!</span><p><strong>Две вещи, без которых условия не заработают:</strong> данные должны иметь подходящий тип, а команды каждой ветки — правильный отступ.</p></aside>
 
         <h3>Преобразование типов</h3>
-        <p><code>int()</code> превращает подходящую строку в целое число, а <code>str()</code> — значение в строку. Без преобразования число и строку складывать нельзя.</p>
+        <p><code>input()</code> всегда возвращает строку. Даже если пользователь ввёл <code>20</code>, программа получила <code>"20"</code>. Для вычислений и сравнений с числами строку нужно преобразовать.</p>
+        <div className="theory-type-grid">
+          <div><code>int("20")</code><strong>20</strong><span>строка → целое число</span></div>
+          <div><code>float("2.5")</code><strong>2.5</strong><span>строка → дробное число</span></div>
+          <div><code>str(20)</code><strong>"20"</strong><span>число → строка</span></div>
+        </div>
         <TheoryPythonCode code={`age = int(input())\nprint(age + 1)`} />
+        <blockquote>Если оставить <code>age = input()</code>, выражение <code>age + 1</code> вызовет <code>TypeError</code>: строку нельзя сложить с числом.</blockquote>
 
         <h3><code>if</code>, <code>else</code> и <code>elif</code></h3>
-        <p><code>if</code> запускает блок, если условие истинно. <code>else</code> задаёт ветку для ложного условия. <code>elif</code> добавляет ещё одну проверку.</p>
+        <div className="theory-branch-table">
+          <div><code>if</code><p><strong>Первая проверка.</strong> Выполняет свой блок, если условие истинно.</p></div>
+          <div><code>elif</code><p><strong>Дополнительная проверка.</strong> Рассматривается, только если предыдущие ветки не сработали.</p></div>
+          <div><code>else</code><p><strong>Запасная ветка.</strong> Не содержит условия и выполняется, если ничего выше не подошло.</p></div>
+        </div>
         <TheoryPythonCode code={`age = int(input())\nif age >= 18:\n    print("Проход разрешён")\nelse:\n    print("Нужно подрасти")`} />
 
-        <h3>Отступы задают границы ветки</h3>
-        <p>Строки с четырьмя пробелами относятся к условию. Команда без отступа выполнится после всей конструкции независимо от выбранной ветки.</p>
-        <TheoryPythonCode code={`if age >= 18:\n    print("Проход разрешён")\n    print("Приятной вечеринки")\nprint("Проверка завершена")`} />
+        <h3>Отступ меняет смысл программы</h3>
+        <p>По вертикали пустые строки ничего не меняют. По горизонтали отступ определяет, к какой ветке относится команда. Сравни два почти одинаковых примера.</p>
+        <div className="theory-indent-compare">
+          <section>
+            <span className="theory-case-label">Вариант 1 · после условия</span>
+            <TheoryPythonCode code={`x = 10\nif x == 5:\n    print("Да")\nelse:\n    print("Нет")\nprint("Конец")`} />
+            <div className="theory-flow-mini"><b>Проверка</b><i>Да</i><span>«Да»</span><i>Нет</i><span>«Нет»</span><strong>Обе ветки → «Конец»</strong></div>
+            <p><code>print("Конец")</code> стоит без отступа — команда выполнится при любом результате.</p>
+          </section>
+          <section>
+            <span className="theory-case-label">Вариант 2 · внутри else</span>
+            <TheoryPythonCode code={`x = 10\nif x == 5:\n    print("Да")\nelse:\n    print("Нет")\n    print("Конец")`} />
+            <div className="theory-flow-mini"><b>Проверка</b><i>Да</i><span>«Да»</span><i>Нет</i><span>«Нет» + «Конец»</span><strong>«Конец» только в else</strong></div>
+            <p>У последней команды есть отступ — теперь она относится к <code>else</code> и выполняется только при <code>False</code>.</p>
+          </section>
+        </div>
 
-        <h3>Сравнения и логические операторы</h3>
-        <div className="theory-notion-table-wrap"><table><thead><tr><th>Запись</th><th>Смысл</th></tr></thead><tbody>
-          <tr><td><code>==</code>, <code>!=</code></td><td>равно, не равно</td></tr>
-          <tr><td><code>&gt;</code>, <code>&lt;</code></td><td>больше, меньше</td></tr>
-          <tr><td><code>&gt;=</code>, <code>&lt;=</code></td><td>больше или равно, меньше или равно</td></tr>
-          <tr><td><code>and</code></td><td>истинны обе части</td></tr>
-          <tr><td><code>or</code></td><td>истинна хотя бы одна часть</td></tr>
-          <tr><td><code>not</code></td><td>меняет результат на противоположный</td></tr>
+        <h3>Операторы сравнения</h3>
+        <div className="theory-notion-table-wrap"><table><thead><tr><th>Python</th><th>Читаем</th><th>Пример</th><th>Результат</th></tr></thead><tbody>
+          <tr><td><code>==</code></td><td>равно</td><td><code>7 == 7</code></td><td><code>True</code></td></tr>
+          <tr><td><code>!=</code></td><td>не равно</td><td><code>7 != 5</code></td><td><code>True</code></td></tr>
+          <tr><td><code>&gt;</code>, <code>&lt;</code></td><td>больше, меньше</td><td><code>7 &lt; 10</code></td><td><code>True</code></td></tr>
+          <tr><td><code>&gt;=</code>, <code>&lt;=</code></td><td>нестрогое сравнение</td><td><code>18 &gt;= 18</code></td><td><code>True</code></td></tr>
         </tbody></table></div>
+        <aside className="theory-notion-callout"><span aria-hidden="true">=</span><p><code>=</code> присваивает значение: <code>x = 5</code>. <code>==</code> сравнивает: <code>x == 5</code>. Внутри условия нужен именно двойной знак.</p></aside>
+
+        <h3>Логические операторы: <code>and</code>, <code>or</code>, <code>not</code></h3>
+        <div className="theory-logic-cards">
+          <div><code>and</code><strong>И</strong><p><code>age &gt;= 18 and ticket</code></p><span>Истина, только если истинны обе части.</span></div>
+          <div><code>or</code><strong>ИЛИ</strong><p><code>day == "сб" or day == "вс"</code></p><span>Достаточно хотя бы одной истинной части.</span></div>
+          <div><code>not</code><strong>НЕ</strong><p><code>not is_blocked</code></p><span>Меняет <code>True</code> на <code>False</code> и наоборот.</span></div>
+        </div>
+        <h4 className="theory-table-title">Таблица истинности</h4>
+        <div className="theory-notion-table-wrap theory-truth-table"><table><thead><tr><th>A</th><th>B</th><th><code>not A</code></th><th><code>A and B</code></th><th><code>A or B</code></th></tr></thead><tbody>
+          <tr><td>False</td><td>False</td><td>True</td><td>False</td><td>False</td></tr>
+          <tr><td>False</td><td>True</td><td>True</td><td>False</td><td>True</td></tr>
+          <tr><td>True</td><td>False</td><td>False</td><td>False</td><td>True</td></tr>
+          <tr><td>True</td><td>True</td><td>False</td><td>True</td><td>True</td></tr>
+        </tbody></table></div>
+        <blockquote><strong>Быстрая проверка:</strong> <code>and</code> ищет хотя бы один <code>False</code>, а <code>or</code> — хотя бы один <code>True</code>.</blockquote>
 
         <hr />
         <h2>Текстовая версия занятия</h2>
-        <p>Сначала вспомним типы данных. Значение <code>10</code> — число, а <code>"10"</code> — строка. Функция <code>int()</code> нужна, когда строку требуется использовать в вычислении; <code>str()</code> выполняет обратное преобразование.</p>
-        <p>Ввод пользователя получают через <code>input()</code>. Он всегда приходит строкой, поэтому возраст для сравнения с числом нужно записать как <code>age = int(input())</code>.</p>
-        <p>Конструкция <code>if</code> проверяет условие. Если оно истинно, выполняется блок с отступом. Ветка <code>else</code> срабатывает в противоположном случае. Условия можно вкладывать друг в друга, но важно следить, к какому уровню относится каждая строка.</p>
-        <p>Оператор <code>and</code> требует истинности обеих проверок, <code>or</code> — хотя бы одной, а <code>not</code> отрицает результат. Эти связки позволяют точно описать правила, по которым программа принимает решение.</p>
+        <div className="theory-transcript-steps">
+          <section><span>01</span><div><h3>Сначала приводим данные к нужному типу</h3><p>Число <code>10</code> и строка <code>"10"</code> выглядят похоже, но ведут себя по-разному. <code>input()</code> возвращает <code>str</code>, поэтому возраст для вычислений записываем как <code>age = int(input())</code>. Обратное преобразование выполняет <code>str()</code>.</p></div></section>
+          <section><span>02</span><div><h3>Затем задаём условие</h3><p>После <code>if</code> пишется выражение, которое даёт <code>True</code> или <code>False</code>, и двоеточие. При истине выполняется блок <code>if</code>, при лжи — блок <code>else</code>. Для дополнительных вариантов используется <code>elif</code>.</p></div></section>
+          <section><span>03</span><div><h3>Читаем программу по отступам</h3><p>Четыре пробела показывают вложенность. Команда на одном уровне с <code>if</code> выполняется после всей конструкции. Команда внутри <code>else</code> сработает только вместе с этой веткой. Пустые строки по вертикали на логику не влияют.</p></div></section>
+          <section><span>04</span><div><h3>Объединяем несколько проверок</h3><p><code>and</code> требует выполнения всех условий, <code>or</code> — хотя бы одного, <code>not</code> отрицает результат. Например, <code>age &gt;= 18 and has_ticket</code> пропустит человека, только когда выполнены оба требования.</p></div></section>
+          <section><span>05</span><div><h3>Проверяем себя перед запуском</h3><p>Какой тип у каждой переменной? Где заканчивается блок по отступу? Строгое ли сравнение нужно? Все ли части <code>and</code> должны быть истинны? Эти четыре вопроса помогают найти большинство ошибок в условиях.</p></div></section>
+        </div>
       </article>
 
       <section className="theory-planet-test" id="second-planet-test">
