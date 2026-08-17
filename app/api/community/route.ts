@@ -9,6 +9,7 @@ import {
 import { isAvatarEmoji } from "@/lib/avatar-emojis";
 import taskIndex from "@/public/data/task-index.json";
 import { ensureTeacherSchema } from "@/lib/teacher-studio-server";
+import { ensureAdminSchema } from "@/lib/admin-server";
 
 export const dynamic = "force-dynamic";
 
@@ -95,13 +96,18 @@ async function loadCommunity(userId: string, view: "all" | "friends") {
                     )
                 ) THEN 1 ELSE 0 END AS is_friend
          FROM profiles p
+         WHERE p.user_id = ?
+            OR EXISTS (
+              SELECT 1 FROM privacy_consents pc
+              WHERE pc.user_id = p.user_id AND pc.distribution_accepted_at IS NOT NULL
+            )
          ORDER BY p.xp DESC, p.correct_count DESC, p.created_at ASC
          LIMIT 50`;
   const leaderboardQuery = db.prepare(leaderboardSql);
   const leaderboardResult =
     view === "friends"
       ? await leaderboardQuery.bind(userId, userId, userId, userId).all<LeaderboardRow>()
-      : await leaderboardQuery.bind(userId, userId).all<LeaderboardRow>();
+      : await leaderboardQuery.bind(userId, userId, userId).all<LeaderboardRow>();
 
   const friendResult = await db
     .prepare(
@@ -176,6 +182,7 @@ export async function GET(request: Request) {
   if (!user) return response({ error: "Нужно войти в аккаунт." }, 401);
 
   try {
+    await ensureAdminSchema();
     await ensureCommunityProfile(user);
     const view = new URL(request.url).searchParams.get("view") === "friends" ? "friends" : "all";
     return response(await loadCommunity(user.id, view));
@@ -197,6 +204,7 @@ export async function POST(request: Request) {
   }
 
   try {
+    await ensureAdminSchema();
     const db = communityDb();
     const profile = await ensureCommunityProfile(user);
     const action = String(body.action ?? "");

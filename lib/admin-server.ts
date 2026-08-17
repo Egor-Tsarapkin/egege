@@ -50,6 +50,16 @@ export function ensureAdminSchema() {
       action TEXT NOT NULL,
       created_at INTEGER NOT NULL
     )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS privacy_consents (
+      user_id TEXT PRIMARY KEY,
+      data_version TEXT NOT NULL,
+      data_accepted_at INTEGER NOT NULL,
+      distribution_version TEXT NOT NULL DEFAULT '',
+      distribution_accepted_at INTEGER,
+      terms_version TEXT NOT NULL,
+      terms_accepted_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )`),
     db.prepare("CREATE INDEX IF NOT EXISTS analytics_sessions_seen_idx ON analytics_sessions(last_seen_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS analytics_events_type_created_idx ON analytics_events(event_type, created_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS exam_attempts_user_idx ON exam_attempts(user_id, created_at)"),

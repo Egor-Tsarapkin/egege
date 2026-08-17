@@ -1,6 +1,7 @@
 "use client";
 
 import type { Provider, User } from "@supabase/supabase-js";
+import Link from "next/link";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   getSupabaseAuthRedirectUrl,
@@ -189,7 +190,9 @@ type TrainerClaimResult = {
 const PREFERENCES_KEY = "egege-preferences-v1";
 const EXAM_HISTORY_KEY = "egege-exam-history-v1";
 const PENDING_ACCESS_KEY = "egege-pending-access-v1";
+const PENDING_CONSENT_KEY = "egege-pending-consent-v1";
 const ANALYTICS_SESSION_KEY = "egege-analytics-session-v1";
+const ANALYTICS_CONSENT_KEY = "egege-analytics-consent-v1";
 const sectionPaths: Record<Section, string> = {
   home: "/",
   tasks: "/tasks",
@@ -724,13 +727,16 @@ function ProfileMenu({
   avatarEmoji?: string;
   onToggle: () => void;
   onPreference: (next: Partial<Preferences>) => void;
-  onGoogleLogin: () => Promise<string>;
-  onYandexLogin: () => Promise<string>;
+  onGoogleLogin: (distributionConsent: boolean) => Promise<string>;
+  onYandexLogin: (distributionConsent: boolean) => Promise<string>;
   onLogout: () => Promise<void>;
   home?: boolean;
 }) {
   const [authBusy, setAuthBusy] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [dataConsent, setDataConsent] = useState(false);
+  const [distributionConsent, setDistributionConsent] = useState(false);
   const isRegistered = Boolean(user);
   const userLabel =
     user?.email ??
@@ -746,10 +752,14 @@ function ProfileMenu({
     { value: "fireworks", label: "Салют", icon: "✦" },
     { value: "random", label: "Случайно", icon: "?" },
   ];
-  const runAuth = async (action: () => Promise<string>) => {
+  const runAuth = async (action: (distributionConsent: boolean) => Promise<string>) => {
+    if (!termsAccepted || !dataConsent) {
+      setAuthMessage("Подтвердите соглашение и согласие на обработку данных.");
+      return;
+    }
     setAuthBusy(true);
     setAuthMessage("");
-    const message = await action();
+    const message = await action(distributionConsent);
     setAuthMessage(message);
     setAuthBusy(false);
   };
@@ -885,11 +895,25 @@ function ProfileMenu({
           ) : (
             <>
               <p>Войдите через Яндекс или Google — пароль создавать не нужно.</p>
+              <div className="auth-consents">
+                <label>
+                  <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} />
+                  <span>Принимаю <Link href="/terms" target="_blank" rel="noreferrer">пользовательское соглашение</Link></span>
+                </label>
+                <label>
+                  <input type="checkbox" checked={dataConsent} onChange={(event) => setDataConsent(event.target.checked)} />
+                  <span>Даю отдельное <Link href="/consent" target="_blank" rel="noreferrer">согласие на обработку персональных данных</Link></span>
+                </label>
+                <label>
+                  <input type="checkbox" checked={distributionConsent} onChange={(event) => setDistributionConsent(event.target.checked)} />
+                  <span>Разрешаю показывать мой профиль в <Link href="/distribution-consent" target="_blank" rel="noreferrer">общем рейтинге</Link> <small>необязательно</small></span>
+                </label>
+              </div>
               <div className="social-auth-list">
                 <button
                   className="social-auth yandex-auth"
                   onClick={() => void runAuth(onYandexLogin)}
-                  disabled={!authConfigured || authBusy}
+                  disabled={!authConfigured || authBusy || !termsAccepted || !dataConsent}
                 >
                   <b aria-hidden="true">Я</b>
                   Продолжить с Яндексом
@@ -897,7 +921,7 @@ function ProfileMenu({
                 <button
                   className="social-auth google-auth"
                   onClick={() => void runAuth(onGoogleLogin)}
-                  disabled={!authConfigured || authBusy}
+                  disabled={!authConfigured || authBusy || !termsAccepted || !dataConsent}
                 >
                   <b aria-hidden="true">G</b>
                   Продолжить с Google
@@ -915,6 +939,67 @@ function ProfileMenu({
         </div>
       </section>
     </div>
+  );
+}
+
+function ConsentPrompt({
+  open,
+  saving,
+  onSave,
+  onLogout,
+}: {
+  open: boolean;
+  saving: boolean;
+  onSave: (distributionConsent: boolean) => Promise<void>;
+  onLogout: () => Promise<void>;
+}) {
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [dataConsent, setDataConsent] = useState(false);
+  const [distributionConsent, setDistributionConsent] = useState(false);
+  if (!open) return null;
+  return (
+    <div className="consent-backdrop">
+      <section className="consent-dialog" role="dialog" aria-modal="true" aria-labelledby="consent-title">
+        <p className="consent-eyebrow">Обновление документов</p>
+        <h2 id="consent-title">Подтвердите условия EGEGE</h2>
+        <p>Чтобы продолжить пользоваться аккаунтом, подтвердите актуальные документы. Публикация профиля в общем рейтинге остаётся добровольной.</p>
+        <div className="auth-consents is-dialog">
+          <label>
+            <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} />
+            <span>Принимаю <Link href="/terms" target="_blank" rel="noreferrer">пользовательское соглашение</Link></span>
+          </label>
+          <label>
+            <input type="checkbox" checked={dataConsent} onChange={(event) => setDataConsent(event.target.checked)} />
+            <span>Даю отдельное <Link href="/consent" target="_blank" rel="noreferrer">согласие на обработку данных</Link></span>
+          </label>
+          <label>
+            <input type="checkbox" checked={distributionConsent} onChange={(event) => setDistributionConsent(event.target.checked)} />
+            <span>Разрешаю участие в <Link href="/distribution-consent" target="_blank" rel="noreferrer">общем рейтинге</Link> <small>необязательно</small></span>
+          </label>
+        </div>
+        <div className="consent-actions">
+          <button className="is-primary" disabled={saving || !termsAccepted || !dataConsent} onClick={() => void onSave(distributionConsent)}>
+            {saving ? "Сохраняем…" : "Подтвердить и продолжить"}
+          </button>
+          <button disabled={saving} onClick={() => void onLogout()}>Выйти из аккаунта</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AnalyticsChoice({ onChoose }: { onChoose: (allowed: boolean) => void }) {
+  return (
+    <aside className="analytics-choice" aria-label="Настройка аналитики">
+      <div>
+        <strong>Помочь улучшать EGEGE?</strong>
+        <p>Можно разрешить обезличенную статистику посещений. Необходимые данные сайта работают в любом случае. <Link href="/privacy">Подробнее</Link></p>
+      </div>
+      <div>
+        <button className="is-primary" onClick={() => onChoose(true)}>Разрешить аналитику</button>
+        <button onClick={() => onChoose(false)}>Только необходимые</button>
+      </div>
+    </aside>
   );
 }
 
@@ -2058,6 +2143,9 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [authConfigured, setAuthConfigured] = useState<boolean | null>(null);
   const [authResolved, setAuthResolved] = useState(false);
+  const [consentPromptOpen, setConsentPromptOpen] = useState(false);
+  const [consentSaving, setConsentSaving] = useState(false);
+  const [analyticsConsent, setAnalyticsConsent] = useState<boolean | null>(null);
   const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
   const [examAttempts, setExamAttempts] = useState<ExamAttempt[]>(() => {
     if (typeof window === "undefined") return [];
@@ -2151,6 +2239,24 @@ export default function Home() {
       analyticsSession.current = `s_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(ANALYTICS_CONSENT_KEY);
+      queueMicrotask(() => setAnalyticsConsent(saved === "yes" ? true : saved === "no" ? false : null));
+    } catch {
+      queueMicrotask(() => setAnalyticsConsent(null));
+    }
+  }, []);
+
+  const chooseAnalytics = (allowed: boolean) => {
+    setAnalyticsConsent(allowed);
+    try {
+      window.localStorage.setItem(ANALYTICS_CONSENT_KEY, allowed ? "yes" : "no");
+    } catch {
+      // The current choice still applies until the page is closed.
+    }
+  };
 
   const notify = (message: string) => {
     setToast("");
@@ -2367,6 +2473,45 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!user || !authAccessToken) {
+      queueMicrotask(() => setConsentPromptOpen(false));
+      return;
+    }
+    let active = true;
+    const syncConsent = async () => {
+      let pending: { termsConsent?: boolean; dataConsent?: boolean; distributionConsent?: boolean } | null = null;
+      try {
+        pending = JSON.parse(window.sessionStorage.getItem(PENDING_CONSENT_KEY) ?? "null") as typeof pending;
+      } catch {
+        pending = null;
+      }
+      if (pending?.termsConsent && pending.dataConsent && typeof pending.distributionConsent === "boolean") {
+        await communityRequest("/api/consent", {
+          method: "POST",
+          body: JSON.stringify(pending),
+        });
+        try {
+          window.sessionStorage.removeItem(PENDING_CONSENT_KEY);
+        } catch {
+          // The server record is authoritative even if local cleanup fails.
+        }
+        if (active) setConsentPromptOpen(false);
+        return;
+      }
+      const current = await communityRequest<{
+        dataAccepted: boolean;
+        distributionAccepted: boolean;
+        termsAccepted: boolean;
+      }>("/api/consent");
+      if (active) setConsentPromptOpen(!current.dataAccepted || !current.termsAccepted);
+    };
+    void syncConsent().catch(() => {
+      if (active) setConsentPromptOpen(true);
+    });
+    return () => { active = false; };
+  }, [authAccessToken, user]);
+
+  useEffect(() => {
     if (!authResolved || user) return;
     setPreferences((current) => {
       const guestAccent = guestAccentOptions.some((accent) => accent.value === current.accent)
@@ -2396,7 +2541,7 @@ export default function Home() {
   }, [authResolved, section, user]);
 
   useEffect(() => {
-    if (!analyticsSession.current) return;
+    if (!analyticsSession.current || analyticsConsent !== true) return;
     let disposed = false;
     const send = async (eventType: "page_view" | "login" | "heartbeat", activeSeconds = 0) => {
       const client = await getSupabaseBrowserClient();
@@ -2424,7 +2569,7 @@ export default function Home() {
       disposed = true;
       window.clearInterval(timer);
     };
-  }, [section, user]);
+  }, [analyticsConsent, section, user]);
 
   useEffect(() => {
     if (!isRegistered) return;
@@ -2618,10 +2763,20 @@ export default function Home() {
     return result;
   };
 
-  const loginWithProvider = async (provider: Provider, label: string) => {
+  const loginWithProvider = async (provider: Provider, label: string, distributionConsent: boolean) => {
     const client = await getSupabaseBrowserClient();
     if (!client) return "Нужно подключить Supabase — инструкция уже подготовлена.";
     const redirectTo = await getSupabaseAuthRedirectUrl();
+
+    try {
+      window.sessionStorage.setItem(PENDING_CONSENT_KEY, JSON.stringify({
+        termsConsent: true,
+        dataConsent: true,
+        distributionConsent,
+      }));
+    } catch {
+      return "Не удалось сохранить подтверждение документов в этом браузере.";
+    }
 
     const { error } = await client.auth.signInWithOAuth({
       provider,
@@ -2632,9 +2787,26 @@ export default function Home() {
     return error ? `Не удалось войти: ${error.message}` : `Открываем ${label}…`;
   };
 
-  const loginWithGoogle = () => loginWithProvider("google", "Google");
-  const loginWithYandex = () =>
-    loginWithProvider("custom:yandex" as Provider, "Яндекс");
+  const loginWithGoogle = (distributionConsent: boolean) =>
+    loginWithProvider("google", "Google", distributionConsent);
+  const loginWithYandex = (distributionConsent: boolean) =>
+    loginWithProvider("custom:yandex" as Provider, "Яндекс", distributionConsent);
+
+  const saveCurrentConsent = async (distributionConsent: boolean) => {
+    setConsentSaving(true);
+    try {
+      await communityRequest("/api/consent", {
+        method: "POST",
+        body: JSON.stringify({ termsConsent: true, dataConsent: true, distributionConsent }),
+      });
+      setConsentPromptOpen(false);
+      notify("Согласия сохранены");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Не удалось сохранить согласия");
+    } finally {
+      setConsentSaving(false);
+    }
+  };
 
   const logout = async () => {
     const client = await getSupabaseBrowserClient();
@@ -2958,6 +3130,13 @@ export default function Home() {
             onContinue={continueFromGate}
           />
         )}
+        <ConsentPrompt
+          open={consentPromptOpen}
+          saving={consentSaving}
+          onSave={saveCurrentConsent}
+          onLogout={logout}
+        />
+        {analyticsConsent === null && <AnalyticsChoice onChoose={chooseAnalytics} />}
         <Toast message={toast} />
       </main>
     );
@@ -2977,6 +3156,13 @@ export default function Home() {
             <button onClick={() => navigate(user ? "profile" : "home")}>Вернуться на сайт</button>
           </div>
         )}
+        <ConsentPrompt
+          open={consentPromptOpen}
+          saving={consentSaving}
+          onSave={saveCurrentConsent}
+          onLogout={logout}
+        />
+        {analyticsConsent === null && <AnalyticsChoice onChoose={chooseAnalytics} />}
       </main>
     );
   }
@@ -3257,7 +3443,12 @@ export default function Home() {
         <button className="wordmark footer-wordmark" onClick={() => navigate("home")}>
           <span className="wordmark-name"><b>EGE</b>GE</span>
         </button>
-        <span>Открытая база заданий</span>
+        <div className="footer-legal-links">
+          <Link href="/privacy">Политика</Link>
+          <Link href="/consent">Согласие на данные</Link>
+          <Link href="/distribution-consent">Рейтинг</Link>
+          <Link href="/terms">Соглашение</Link>
+        </div>
       </footer>
 
       {gateSection && (
@@ -3268,6 +3459,13 @@ export default function Home() {
           onContinue={continueFromGate}
         />
       )}
+      <ConsentPrompt
+        open={consentPromptOpen}
+        saving={consentSaving}
+        onSave={saveCurrentConsent}
+        onLogout={logout}
+      />
+      {analyticsConsent === null && <AnalyticsChoice onChoose={chooseAnalytics} />}
       <Toast message={toast} />
       <button
         className={`scroll-to-top ${showScrollTop ? "is-visible" : ""}`}
