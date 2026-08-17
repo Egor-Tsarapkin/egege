@@ -3289,6 +3289,34 @@ function StringPlanetVideoChapter({ complete, onComplete }: { complete: boolean;
   {show&&result!==null&&<TheoryTestDialog score={result} total={6} onRestart={()=>{setAnswers({});setResult(null);setShow(false);document.getElementById("string-planet-test")?.scrollIntoView({behavior:"smooth",block:"start"});}} onReview={()=>setShow(false)}/>}</div>;
 }
 
+const sixthPlanetQuestions = [
+  { question: "Что перебирает переменная i?", code: `for i in [5, 6, 7]:\n    print(i)`, answers: ["Индексы 0, 1, 2", "Значения 5, 6, 7", "Только 7"], correct: 1 },
+  { question: "Что выведет range(4)?", answers: ["1 2 3 4", "0 1 2 3", "0 1 2 3 4"], correct: 1 },
+  { question: "Какие числа задаёт range(10, 20, 2)?", answers: ["10 12 14 16 18", "10 12 14 16 18 20", "20 18 16 14 12"], correct: 0 },
+  { question: "Сколько раз выполнится print?", code: `for i in range(3):\n    for j in range(4):\n        print(1)`, answers: ["7", "12", "3"], correct: 1 },
+  { question: "Что делает append?", code: `a = []\na.append(40)`, answers: ["Добавляет 40 в конец списка", "Удаляет 40", "Сортирует список"], correct: 0 },
+  { question: "Какие числа выведутся?", code: `for i in range(10):\n    if i % 2 == 0:\n        print(i)`, answers: ["0 2 4 6 8", "2 4 6 8 10", "1 3 5 7 9"], correct: 0 },
+] as const;
+
+function SixthPlanetVideoChapter({ complete, onComplete }: { complete: boolean; onComplete: () => void }) {
+  const [answers,setAnswers]=useState<Record<number,number>>({}); const [result,setResult]=useState<number|null>(complete?6:null); const [show,setShow]=useState(false); const passed=complete||(result!==null&&result>=5);
+  const check=()=>{const score=sixthPlanetQuestions.reduce((s,q,i)=>s+(answers[i]===q.correct?1:0),0);setResult(score);setShow(true);if(score>=5)onComplete();};
+  return <div className="theory-document theory-video-chapter"><div className="theory-document-title"><p className="eyebrow">Глава 6 · Перебор</p><h2>Цикл for</h2><p>Перебираем списки, строки и диапазоны, считаем повторы и разбираемся со вложенными циклами.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed?"Пройдено":"Не пройдено"}</span></div></div>
+  <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/Kzs7ASXH8oM?si=e0Ds-jB4lhDe3n74" title="Цикл for в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+  <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead"><code>for</code> берёт элементы коллекции по одному и выполняет блок для каждого из них.</p>
+  <h3>Перебор списка</h3><TheoryPythonCode code={`numbers = [1, 2, 3, 4]\nfor value in numbers:\n    print(value)`}/><p>На каждой итерации <code>value</code> получает очередной элемент. Имя переменной можно выбрать любое.</p>
+  <h3>Накопление результата</h3><TheoryPythonCode code={`numbers = [1, 2, 3]\ntotal = 0\nfor value in numbers:\n    total += value\nprint(total)  # 6`}/><p>Так вручную работает знакомая функция <code>sum()</code>.</p>
+  <h3>Перебор строки</h3><TheoryPythonCode code={`s = "Hello"\nfor symbol in s:\n    print(symbol)`}/><p>Строка тоже коллекция, поэтому цикл проходит по её символам, включая пробелы.</p>
+  <h3><code>range(начало, конец, шаг)</code></h3><div className="theory-branch-table"><div><code>range(4)</code><p><code>0, 1, 2, 3</code> — четыре повтора.</p></div><div><code>range(10, 20)</code><p>От 10 до 20 не включительно, шаг 1.</p></div><div><code>range(10, 20, 2)</code><p><code>10, 12, 14, 16, 18</code>.</p></div><div><code>range(20, 10, -1)</code><p>Движение назад; 20 включается, 10 — нет.</p></div></div><aside className="theory-notion-callout"><span>!</span><p><code>for</code> — самостоятельная конструкция. Она может перебирать список, строку или <code>range</code>; отдельной конструкции «for in range» нет.</p></aside>
+  <h3>Отступ определяет количество повторов</h3><TheoryPythonCode code={`for i in range(3):\n    print("no")\nprint("yes")`}/><p><code>no</code> появится три раза, <code>yes</code> — один раз после цикла. Если сделать у <code>yes</code> отступ, обе строки будут выводиться на каждой итерации.</p>
+  <h3>Вложенные циклы</h3><p>Внутренний цикл полностью выполняется для каждой итерации внешнего. Поэтому количество повторов перемножается.</p><div className="theory-type-grid"><div><code>range(3)</code><strong>3</strong><span>внешних повтора</span></div><div><code>range(4)</code><strong>4</strong><span>внутренних повтора</span></div><div><code>3 × 4</code><strong>12</strong><span>выполнений команды</span></div></div><TheoryPythonCode code={`for i in range(3):\n    for j in range(4):\n        print(1)`}/>
+  <h3><code>if</code> внутри <code>for</code></h3><TheoryPythonCode code={`for i in range(10):\n    if i % 2 == 0:\n        print(i)`}/><p>Цикл перебирает числа от 0 до 9, а условие оставляет только чётные.</p>
+  <h3>Метод списка <code>append</code></h3><p>Метод работает с конкретным списком и добавляет новый элемент в его конец.</p><TheoryPythonCode code={`a = []\nfor i in range(10):\n    a.append(i)\nprint(a)`}/>
+  <hr/><h2>Текстовая версия занятия</h2><div className="theory-transcript-steps"><section><span>01</span><div><h3>Выбираем коллекцию</h3><p><code>for</code> проходит по элементам списка или строки. Переменная цикла по очереди получает каждое значение.</p></div></section><section><span>02</span><div><h3>Задаём диапазон</h3><p><code>range</code> принимает конец либо начало, конец и шаг. Начало включается, конец — нет.</p></div></section><section><span>03</span><div><h3>Следим за отступами</h3><p>Команды с отступом повторяются. Команда без отступа выполняется после завершения цикла.</p></div></section><section><span>04</span><div><h3>Считаем вложенные повторы</h3><p>Если цикл на 4 повтора вложен в цикл на 3 повтора, команда внутри выполнится 12 раз.</p></div></section><section><span>05</span><div><h3>Собираем список</h3><p><code>append</code> добавляет очередное значение в конец списка на каждой итерации.</p></div></section></div></article>
+  <section className="theory-planet-test" id="sixth-planet-test"><div className="theory-section-heading"><span>05</span><div><h3>Тест</h3></div></div><div className="theory-test-list">{sixthPlanetQuestions.map((q,i)=><fieldset key={q.question}><legend><span>{i+1}</span><span className="theory-question-text">{q.question}</span></legend>{"code" in q&&q.code?<TheoryPythonCode code={q.code}/>:null}{q.answers.map((a,j)=>{const selected=answers[i]===j,correct=result!==null&&j===q.correct,wrong=result!==null&&selected&&j!==q.correct;return <label className={`${selected?"is-selected":""} ${correct?"is-correct":""} ${wrong?"is-wrong":""}`} key={a}><input type="radio" name={`sixth-${i}`} checked={selected} disabled={passed} onChange={()=>{setAnswers(v=>({...v,[i]:j}));setResult(null);}}/><span>{a}</span></label>})}</fieldset>)}</div><div className={`theory-test-result ${passed?"is-passed":""}`}>{passed?<span>Планета пройдена</span>:<button disabled={Object.keys(answers).length!==6} onClick={check}>Проверить ответы</button>}</div></section>
+  {show&&result!==null&&<TheoryTestDialog score={result} total={6} onRestart={()=>{setAnswers({});setResult(null);setShow(false);document.getElementById("sixth-planet-test")?.scrollIntoView({behavior:"smooth",block:"start"});}} onReview={()=>setShow(false)}/>}</div>;
+}
+
 function UnreleasedPlanetChapter({ planet }: { planet: Planet }) {
   return (
     <div className="theory-document theory-unreleased-chapter">
@@ -3870,6 +3898,12 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     }
   };
 
+  const completeForPlanetChapter = () => {
+    const updated = new Set<ForTheoryLessonId>(forTheoryLessonIds);
+    setCompletedForTheoryLessons(updated);
+    try { window.localStorage.setItem(forTheoryStorageKey, JSON.stringify(Array.from(updated))); } catch {}
+  };
+
   const replayForTheoryChapter = () => {
     setCompletedForTheoryLessons(new Set());
     try {
@@ -4336,12 +4370,9 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
               onComplete={completeStringPlanetChapter}
             />
           ) : activePlanet.id === 5 ? (
-            <ForTheoryChapter
-              completed={completedForTheoryLessons}
-              progress={forTheoryProgress}
-              onComplete={completeForTheoryLesson}
-              onGoTo={goToForTheoryLesson}
-              onReplay={replayForTheoryChapter}
+            <SixthPlanetVideoChapter
+              complete={forTheoryProgress === 100}
+              onComplete={completeForPlanetChapter}
             />
           ) : activePlanet.id === 2 ? (
             <div className="theory-document theory-chapter-one theory-chapter-while">
