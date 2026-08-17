@@ -1259,6 +1259,273 @@
   }
 }
 
+/* Calm, document-like layout for the first theory planet */
+.theory-space *,
+.theory-space *::before,
+.theory-space *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+.theory-video-chapter {
+  max-width: 780px;
+}
+
+.theory-video-chapter .theory-document-title h2 {
+  font-size: clamp(2.25rem, 5.2vw, 4rem);
+  line-height: 1.02;
+}
+
+.theory-video-chapter .theory-document-meta {
+  gap: 8px 18px;
+}
+
+.theory-video-chapter .theory-document-meta span {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+.theory-video-section,
+.theory-planet-test {
+  margin-top: clamp(46px, 7vw, 72px);
+  padding-top: clamp(30px, 4vw, 44px);
+}
+
+.theory-youtube-frame {
+  border-radius: 8px;
+  box-shadow: none;
+  margin-top: 22px;
+}
+
+.theory-notion-body {
+  color: var(--text-soft);
+  font-size: 15px;
+  line-height: 1.75;
+  margin-top: clamp(52px, 8vw, 86px);
+}
+
+.theory-notion-body h2 {
+  color: var(--text);
+  font-size: clamp(1.9rem, 4vw, 2.8rem);
+  letter-spacing: -.045em;
+  line-height: 1.08;
+  margin: 0 0 24px;
+}
+
+.theory-notion-body h3 {
+  color: var(--text);
+  font-size: 1.35rem;
+  letter-spacing: -.025em;
+  line-height: 1.25;
+  margin: 42px 0 12px;
+}
+
+.theory-notion-body p {
+  margin: 0 0 14px;
+}
+
+.theory-notion-body ul {
+  margin: 12px 0 18px;
+  padding-left: 24px;
+}
+
+.theory-notion-body li + li {
+  margin-top: 6px;
+}
+
+.theory-notion-body code,
+.theory-question-text {
+  overflow-wrap: anywhere;
+}
+
+.theory-notion-body pre {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 18px 0 24px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 16px 18px;
+}
+
+.theory-notion-body pre code {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.theory-notion-body blockquote {
+  border-left: 3px solid var(--accent);
+  color: var(--text-soft);
+  margin: 20px 0;
+  padding: 4px 0 4px 18px;
+}
+
+.theory-notion-body hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 42px 0;
+}
+
+.theory-notion-callout {
+  align-items: flex-start;
+  background: var(--surface-raised);
+  border-radius: 6px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  margin: 20px 0 26px;
+  padding: 16px 18px;
+}
+
+.theory-notion-callout > span {
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--accent);
+  display: inline-flex;
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  font-weight: 700;
+  height: 21px;
+  justify-content: center;
+  margin-top: 2px;
+  width: 21px;
+}
+
+.theory-notion-callout p {
+  margin: 0;
+}
+
+.theory-notion-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.theory-notion-body table {
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 520px;
+  width: 100%;
+}
+
+.theory-notion-body th,
+.theory-notion-body td {
+  border-bottom: 1px solid var(--line);
+  padding: 11px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.theory-notion-body th {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.theory-test-list {
+  gap: 0;
+  margin-top: 22px;
+}
+
+.theory-test-list fieldset,
+.theory-test-list .theory-match-question {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  margin: 0;
+  padding: 28px 0;
+}
+
+.theory-test-list legend {
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.5;
+  padding: 0;
+  white-space: pre-line;
+  width: 100%;
+}
+
+.theory-test-list legend > span:first-child {
+  flex: 0 0 20px;
+}
+
+.theory-question-text {
+  color: var(--text);
+  min-width: 0;
+  white-space: pre-line;
+}
+
+.theory-test-list label {
+  border-color: var(--line);
+  border-radius: 6px;
+  margin-left: 32px;
+}
+
+.theory-match-instruction {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 10px 0 0 32px;
+}
+
+.theory-match-question .theory-match-bank,
+.theory-match-question .theory-match-targets {
+  margin-left: 32px;
+}
+
+.theory-match-targets > button {
+  border-radius: 6px;
+}
+
+.theory-match-footer {
+  margin-left: 32px;
+}
+
+.theory-match-footer > button {
+  border-radius: 7px;
+}
+
+.theory-match-footer > button.is-secondary {
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.theory-match-footer > button.is-secondary:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .theory-video-chapter .theory-document-title h2 {
+    font-size: clamp(2rem, 10vw, 3rem);
+  }
+
+  .theory-notion-body {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .theory-notion-body h3 {
+    margin-top: 34px;
+  }
+
+  .theory-notion-callout {
+    padding: 14px;
+  }
+
+  .theory-test-list label,
+  .theory-match-instruction,
+  .theory-match-question .theory-match-bank,
+  .theory-match-question .theory-match-targets,
+  .theory-match-footer {
+    margin-left: 0;
+  }
+}
+
 /* EGE marathon */
 .tasks-shell.is-marathon-shell {
   max-width: 1080px;
