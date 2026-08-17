@@ -283,7 +283,7 @@ function AnimatedIndexLine({ items }: { items: readonly string[] }) {
   return <div className="theory-index-runner" aria-label="Индексы элементов">{items.map((item,index)=><span style={{ "--index-delay": `${index * 1.1}s` } as React.CSSProperties} key={`${item}-${index}`}><b>{index}</b><strong>{item}</strong><em>{index-items.length}</em></span>)}</div>;
 }
 
-function TheoryTestDialog({ score, total, onRestart, onReview }: { score: number; total: number; onRestart: () => void; onReview: () => void }) {
+function TheoryTestDialog({ score, total, onRestart, onReview, onNext }: { score: number; total: number; onRestart: () => void; onReview: () => void; onNext?: () => void }) {
   if (typeof document === "undefined") return null;
 
   return createPortal(
@@ -291,9 +291,15 @@ function TheoryTestDialog({ score, total, onRestart, onReview }: { score: number
       <section className="marathon-resume-dialog" role="dialog" aria-modal="true" aria-labelledby="theory-test-result-title">
         <span>Результат теста</span>
         <h2 id="theory-test-result-title">Верных заданий: {score} из {total}</h2>
-        <p>{score === total ? "Все ответы правильные." : "Хотите пройти тест ещё раз или посмотреть ответы?"}</p>
-        <button type="button" className="is-primary" onClick={onRestart}>Начать тест заново</button>
-        <button type="button" onClick={onReview}>Посмотреть ответы</button>
+        {score === total && onNext ? (
+          <button type="button" className="is-primary" onClick={onNext}>Перейти на следующую планету</button>
+        ) : (
+          <>
+            <p>Хотите пройти тест ещё раз или посмотреть ответы?</p>
+            <button type="button" className="is-primary" onClick={onRestart}>Начать тест заново</button>
+            <button type="button" onClick={onReview}>Посмотреть ответы</button>
+          </>
+        )}
       </section>
     </div>,
     document.body,
@@ -3312,7 +3318,7 @@ const sixthPlanetQuestions = [
   { question: "Какие числа выведутся?", code: `for i in range(10):\n    if i % 2 == 0:\n        print(i)`, answers: ["0 2 4 6 8", "2 4 6 8 10", "1 3 5 7 9"], correct: 0 },
 ] as const;
 
-function SixthPlanetVideoChapter({ complete, onComplete }: { complete: boolean; onComplete: () => void }) {
+function SixthPlanetVideoChapter({ complete, onComplete, onNext }: { complete: boolean; onComplete: () => void; onNext: () => void }) {
   const [answers,setAnswers]=useState<Record<number,number>>({}); const [result,setResult]=useState<number|null>(complete?6:null); const [show,setShow]=useState(false); const passed=complete||(result!==null&&result>=5);
   const check=()=>{const score=sixthPlanetQuestions.reduce((s,q,i)=>s+(answers[i]===q.correct?1:0),0);setResult(score);setShow(true);if(score>=5)onComplete();};
   return <div className="theory-document theory-video-chapter"><div className="theory-document-title"><p className="eyebrow">Глава 6 · Перебор</p><h2>Цикл for</h2><p>Перебираем списки, строки и диапазоны, считаем повторы и разбираемся со вложенными циклами.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed?"Пройдено":"Не пройдено"}</span></div></div>
@@ -3328,7 +3334,41 @@ function SixthPlanetVideoChapter({ complete, onComplete }: { complete: boolean; 
   <h3>Метод списка <code>append</code></h3><p>Метод работает с конкретным списком и добавляет новый элемент в его конец.</p><TheoryPythonCode code={`a = []\nfor i in range(10):\n    a.append(i)\nprint(a)`}/>
   <hr/><h2>Текстовая версия занятия</h2><div className="theory-transcript-steps"><section><span>01</span><div><h3>Выбираем коллекцию</h3><p><code>for</code> проходит по элементам списка или строки. Переменная цикла по очереди получает каждое значение.</p></div></section><section><span>02</span><div><h3>Задаём диапазон</h3><p><code>range</code> принимает конец либо начало, конец и шаг. Начало включается, конец — нет.</p></div></section><section><span>03</span><div><h3>Следим за отступами</h3><p>Команды с отступом повторяются. Команда без отступа выполняется после завершения цикла.</p></div></section><section><span>04</span><div><h3>Считаем вложенные повторы</h3><p>Если цикл на 4 повтора вложен в цикл на 3 повтора, команда внутри выполнится 12 раз.</p></div></section><section><span>05</span><div><h3>Собираем список</h3><p><code>append</code> добавляет очередное значение в конец списка на каждой итерации.</p></div></section></div></article>
   <section className="theory-planet-test" id="sixth-planet-test"><div className="theory-section-heading"><span>05</span><div><h3>Тест</h3></div></div><div className="theory-test-list">{sixthPlanetQuestions.map((q,i)=><fieldset key={q.question}><legend><span>{i+1}</span><span className="theory-question-text">{q.question}</span></legend>{"code" in q&&q.code?<TheoryPythonCode code={q.code}/>:null}{q.answers.map((a,j)=>{const selected=answers[i]===j,correct=result!==null&&j===q.correct,wrong=result!==null&&selected&&j!==q.correct;return <label className={`${selected?"is-selected":""} ${correct?"is-correct":""} ${wrong?"is-wrong":""}`} key={a}><input type="radio" name={`sixth-${i}`} checked={selected} disabled={passed} onChange={()=>{setAnswers(v=>({...v,[i]:j}));setResult(null);}}/><span>{a}</span></label>})}</fieldset>)}</div><div className={`theory-test-result ${passed?"is-passed":""}`}>{passed?<span>Планета пройдена</span>:<button disabled={Object.keys(answers).length!==6} onClick={check}>Проверить ответы</button>}</div></section>
-  {show&&result!==null&&<TheoryTestDialog score={result} total={6} onRestart={()=>{setAnswers({});setResult(null);setShow(false);document.getElementById("sixth-planet-test")?.scrollIntoView({behavior:"smooth",block:"start"});}} onReview={()=>setShow(false)}/>}</div>;
+  {show&&result!==null&&<TheoryTestDialog score={result} total={6} onRestart={()=>{setAnswers({});setResult(null);setShow(false);document.getElementById("sixth-planet-test")?.scrollIntoView({behavior:"smooth",block:"start"});}} onReview={()=>setShow(false)} onNext={()=>{setShow(false);onNext();}}/>}</div>;
+}
+
+const seventhPlanetQuestions = [
+  { question: "Какое слово начинает определение функции?", answers: ["func", "def", "return"], correct: 1 },
+  { question: "Что произойдёт после запуска этого кода?", code: `def hello():\n    print("Привет")`, answers: ["Выведется «Привет»", "Ничего не выведется", "Функция вызовется дважды"], correct: 1 },
+  { question: "Что попадёт в параметр x?", code: `def show(x):\n    print(x)\n\nshow(10)`, answers: ["Число 10", "Строка x", "Ничего"], correct: 0 },
+  { question: "Какое значение получит y?", code: `def f(x):\n    x = x + 10\n    return x\n\ny = f(7)`, answers: ["7", "10", "17"], correct: 2 },
+  { question: "Почему произведение начинают с единицы?", code: `result = 1\nfor value in numbers:\n    result *= value`, answers: ["Чтобы не умножить всё на ноль", "Чтобы цикл выполнился один раз", "Чтобы удалить первый элемент"], correct: 0 },
+  { question: "Где доступна переменная total?", code: `def my_sum(numbers):\n    total = 0\n    return total`, answers: ["Только внутри функции", "Везде в программе", "Только внутри цикла"], correct: 0 },
+] as const;
+
+function SeventhPlanetVideoChapter({ complete, onComplete, onNext }: { complete: boolean; onComplete: () => void; onNext: () => void }) {
+  const [answers,setAnswers]=useState<Record<number,number>>({});
+  const [result,setResult]=useState<number|null>(complete?6:null);
+  const [show,setShow]=useState(false);
+  const passed=complete||(result!==null&&result>=5);
+  const check=()=>{const score=seventhPlanetQuestions.reduce((sum,q,index)=>sum+(answers[index]===q.correct?1:0),0);setResult(score);setShow(true);if(score>=5)onComplete();};
+  return <div className="theory-document theory-video-chapter">
+    <div className="theory-document-title"><p className="eyebrow">Глава 7 · Свои команды</p><h2>Функции</h2><p>Убираем повторяющийся код, передаём значения внутрь функции и возвращаем результат.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed?"Пройдено":"Не пройдено"}</span></div></div>
+    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/Z9NEl7Us4nk?si=lG28rKNTJBxljhK1" title="Собственные функции в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+    <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead">Функция — именованный блок кода. Её пишут один раз, а вызывают столько раз, сколько нужно.</p>
+      <h3>Зачем нужны функции</h3><p>Если одинаковые команды встречаются в нескольких местах, их можно вынести в функцию. Код становится короче и его легче читать.</p><div className="theory-branch-table"><div><strong>Без функции</strong><p>Один и тот же блок приходится копировать.</p></div><div><strong>С функцией</strong><p>Блок получает имя и вызывается одной строкой.</p></div></div>
+      <h3>Определение и вызов</h3><TheoryPythonCode code={`def status():\n    print("Всё хорошо")\n    print(200)\n\nstatus()\nstatus()`}/><aside className="theory-notion-callout"><span>!</span><p><code>def</code> только создаёт инструкцию. Пока функцию не вызвали с помощью <code>status()</code>, её команды не выполняются.</p></aside>
+      <h3>Параметр принимает значение</h3><TheoryPythonCode code={`def status(number):\n    print("Число делится на", number)\n    print(200)\n\nstatus(2)\nstatus(5)`}/><p><code>number</code> — параметр функции. При вызове <code>status(2)</code> он получает значение <code>2</code>, а при следующем вызове — <code>5</code>.</p>
+      <h3><code>print</code> и <code>return</code> — не одно и то же</h3><div className="theory-branch-table"><div><code>print(value)</code><p>Показывает значение в консоли.</p></div><div><code>return value</code><p>Отдаёт значение из функции, чтобы программа могла использовать его дальше.</p></div></div><TheoryPythonCode code={`def add_ten(x):\n    x = x + 10\n    return x\n\ny = add_ten(10)\nprint(y)  # 20`}/>
+      <h3>Несколько параметров</h3><TheoryPythonCode code={`def add(x, y):\n    return x + y\n\nresult = add(4, 6)\nprint(result)  # 10`}/><p>Количество переданных значений должно совпадать с количеством обязательных параметров.</p>
+      <h3>Своя сумма списка</h3><TheoryPythonCode code={`def my_sum(numbers):\n    total = 0\n    for value in numbers:\n        total += value\n    return total\n\na = [2, 4, 6]\nprint(my_sum(a))  # 12`}/><p>Список попадает в параметр <code>numbers</code>. Цикл перебирает элементы, сумма накапливается в <code>total</code>, затем <code>return</code> отдаёт готовый ответ.</p>
+      <h3>Произведение элементов</h3><TheoryPythonCode code={`def product(numbers):\n    result = 1\n    for value in numbers:\n        result *= value\n    return result`}/><p>Начинаем с <code>1</code>: если начать с нуля, любое умножение так и останется нулём.</p>
+      <h3>Локальные переменные</h3><p>Параметры и переменные, созданные внутри функции, относятся к её локальной области. Например, <code>total</code> из <code>my_sum</code> нельзя использовать снаружи напрямую — наружу отправляется только значение после <code>return</code>.</p>
+      <hr/><h2>Текстовая версия занятия</h2><div className="theory-transcript-steps"><section><span>01</span><div><h3>Находим повтор</h3><p>Повторяющийся блок кода выносим в отдельную функцию.</p></div></section><section><span>02</span><div><h3>Создаём инструкцию</h3><p>Пишем <code>def</code>, имя, круглые скобки и двоеточие. Тело функции размещаем с отступом.</p></div></section><section><span>03</span><div><h3>Вызываем функцию</h3><p>Одного определения недостаточно: для выполнения пишем имя функции со скобками.</p></div></section><section><span>04</span><div><h3>Передаём значения</h3><p>Параметры принимают данные, указанные при вызове функции.</p></div></section><section><span>05</span><div><h3>Возвращаем результат</h3><p><code>return</code> позволяет сохранить результат функции в переменной и продолжить вычисления.</p></div></section></div>
+    </article>
+    <section className="theory-planet-test" id="seventh-planet-test"><div className="theory-section-heading"><span>05</span><div><h3>Тест</h3></div></div><div className="theory-test-list">{seventhPlanetQuestions.map((q,i)=><fieldset key={q.question}><legend><span>{i+1}</span><span className="theory-question-text">{q.question}</span></legend>{"code" in q&&q.code?<TheoryPythonCode code={q.code}/>:null}{q.answers.map((answer,j)=>{const selected=answers[i]===j,correct=result!==null&&j===q.correct,wrong=result!==null&&selected&&j!==q.correct;return <label className={`${selected?"is-selected":""} ${correct?"is-correct":""} ${wrong?"is-wrong":""}`} key={answer}><input type="radio" name={`seventh-${i}`} checked={selected} disabled={passed} onChange={()=>{setAnswers(value=>({...value,[i]:j}));setResult(null);}}/><span>{answer}</span></label>})}</fieldset>)}</div><div className={`theory-test-result ${passed?"is-passed":""}`}>{passed?<span>Планета пройдена</span>:<button disabled={Object.keys(answers).length!==6} onClick={check}>Проверить ответы</button>}</div></section>
+    {show&&result!==null&&<TheoryTestDialog score={result} total={6} onRestart={()=>{setAnswers({});setResult(null);setShow(false);document.getElementById("seventh-planet-test")?.scrollIntoView({behavior:"smooth",block:"start"});}} onReview={()=>setShow(false)} onNext={()=>{setShow(false);onNext();}}/>}
+  </div>;
 }
 
 function UnreleasedPlanetChapter({ planet }: { planet: Planet }) {
@@ -3357,6 +3397,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const whileTheoryStorageKey = `egege-theory-while-v1:${userId}`;
   const listPlanetStorageKey = `egege-theory-list-planet-v1:${userId}`;
   const forTheoryStorageKey = `egege-theory-for-v1:${userId}`;
+  const functionsPlanetStorageKey = `egege-theory-functions-planet-v1:${userId}`;
   const splitStorageKey = `egege-theory-split-v1:${userId}`;
   const theorySpaceRef = useRef<HTMLElement | null>(null);
   const theoryMapRef = useRef<HTMLDivElement | null>(null);
@@ -3372,9 +3413,9 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const [futureInterestWaiting, setFutureInterestWaiting] = useState(false);
   const [futureInterestLoading, setFutureInterestLoading] = useState(false);
   const [futureInterestError, setFutureInterestError] = useState("");
-  const [pendingPlanetId, setPendingPlanetId] = useState<number | null>(null);
   const [firstPlanetComplete, setFirstPlanetComplete] = useState(false);
   const [listPlanetComplete, setListPlanetComplete] = useState(false);
+  const [functionsPlanetComplete, setFunctionsPlanetComplete] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
   const [completedArithmeticLessons, setCompletedArithmeticLessons] = useState<
     Set<ArithmeticLessonId>
@@ -3408,6 +3449,13 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
       catch { setListPlanetComplete(false); }
     });
   }, [listPlanetStorageKey]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try { setFunctionsPlanetComplete(window.localStorage.getItem(functionsPlanetStorageKey) === "complete"); }
+      catch { setFunctionsPlanetComplete(false); }
+    });
+  }, [functionsPlanetStorageKey]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -3547,20 +3595,6 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   }, [futurePreviewOpen]);
 
   useEffect(() => {
-    if (pendingPlanetId === null) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPendingPlanetId(null);
-    };
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [pendingPlanetId]);
-
-  useEffect(() => {
     return () => {
       if (closeChapterTimerRef.current) window.clearTimeout(closeChapterTimerRef.current);
     };
@@ -3591,6 +3625,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     if (planetId === 3) return listPlanetComplete ? 100 : 0;
     if (planetId === 4) return stringTheoryProgress;
     if (planetId === 5) return forTheoryProgress;
+    if (planetId === 6) return functionsPlanetComplete ? 100 : 0;
     return 0;
   };
   const overallProgress = Math.round(
@@ -3918,6 +3953,11 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     try { window.localStorage.setItem(forTheoryStorageKey, JSON.stringify(Array.from(updated))); } catch {}
   };
 
+  const completeFunctionsPlanetChapter = () => {
+    setFunctionsPlanetComplete(true);
+    try { window.localStorage.setItem(functionsPlanetStorageKey, "complete"); } catch {}
+  };
+
   const replayForTheoryChapter = () => {
     setCompletedForTheoryLessons(new Set());
     try {
@@ -4057,13 +4097,6 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   };
 
   const openPlanet = (planetId: number) => {
-    const requiredPlanetId = planets.find(
-      (planet) => getPlanetProgress(planet.id) < 100,
-    )?.id;
-    if (requiredPlanetId !== undefined && planetId > requiredPlanetId) {
-      setPendingPlanetId(planetId);
-      return;
-    }
     openPlanetNow(planetId);
   };
 
@@ -4253,55 +4286,6 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
         </div>
       )}
 
-      {pendingPlanetId !== null && (() => {
-        const requiredPlanet = planets.find(
-          (planet) => getPlanetProgress(planet.id) < 100,
-        ) ?? planets[0];
-        const requestedPlanet = planets[pendingPlanetId];
-        return (
-          <div
-            className="theory-order-backdrop"
-            role="presentation"
-            onMouseDown={(event) => {
-              if (event.currentTarget === event.target) setPendingPlanetId(null);
-            }}
-          >
-            <section
-              className="theory-order-modal"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="theory-order-title"
-            >
-              <p className="eyebrow">Похоже, ты перепрыгиваешь тему</p>
-              <h2 id="theory-order-title">Сначала стоит пройти предыдущую планету</h2>
-              <p>
-                Ты ещё не завершил тему <strong>«{requiredPlanet.title}»</strong>. Она нужна,
-                чтобы материал планеты <strong>«{requestedPlanet.title}»</strong> был понятнее.
-              </p>
-              <button
-                className="theory-order-primary"
-                onClick={() => {
-                  setPendingPlanetId(null);
-                  openPlanetNow(requiredPlanet.id);
-                }}
-              >
-                Сначала пройти нужную тему
-              </button>
-              <button
-                className="theory-order-secondary"
-                onClick={() => {
-                  const requestedId = pendingPlanetId;
-                  setPendingPlanetId(null);
-                  openPlanetNow(requestedId);
-                }}
-              >
-                Всё равно открыть эту планету
-              </button>
-            </section>
-          </div>
-        );
-      })()}
-
       {activePlanet && (
         <>
           <div
@@ -4387,6 +4371,13 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
             <SixthPlanetVideoChapter
               complete={forTheoryProgress === 100}
               onComplete={completeForPlanetChapter}
+              onNext={() => openPlanetNow(6)}
+            />
+          ) : activePlanet.id === 6 ? (
+            <SeventhPlanetVideoChapter
+              complete={functionsPlanetComplete}
+              onComplete={completeFunctionsPlanetChapter}
+              onNext={() => openPlanetNow(7)}
             />
           ) : activePlanet.id === 2 ? (
             <div className="theory-document theory-chapter-one theory-chapter-while">
