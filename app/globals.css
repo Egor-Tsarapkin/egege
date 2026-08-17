@@ -1357,7 +1357,7 @@
 .theory-download-grid {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 22px 0;
 }
 
@@ -1379,6 +1379,18 @@
 .theory-download-grid span { color: var(--accent); font-family: var(--font-geist-mono); font-size: 11px; }
 .theory-download-grid strong { font-size: 15px; }
 .theory-download-grid small { color: var(--muted); line-height: 1.45; }
+
+.theory-guide-image {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  margin: 22px 0 26px;
+  overflow: hidden;
+}
+
+.theory-guide-image img { display: block; height: auto; width: 100%; }
+.theory-guide-image figcaption { color: var(--muted); font-size: 13px; line-height: 1.6; padding: 15px 18px 17px; }
+.theory-guide-image figcaption strong { color: var(--text); }
 
 .theory-zero-finish {
   align-items: center;
