@@ -2691,7 +2691,7 @@ function CodeDragExercise({
   };
 
   return (
-    <fieldset className="theory-match-question theory-code-drag">
+    <fieldset className="theory-match-question theory-code-drag" data-passed={targets.every((target) => placements[target.id] === target.answer)}>
       <legend><span>↕</span><span className="theory-question-text">{title}</span></legend>
       <p className="theory-match-instruction">{description}</p>
       <div className="theory-match-bank">
@@ -3002,6 +3002,16 @@ function SecondPlanetVideoChapter({
     );
     setResult(score);
     if (score >= requiredScore && logicDragPassed && blockDragPassed) onComplete();
+    window.requestAnimationFrame(() => {
+      const firstWrongDrag = !logicDragPassed || !blockDragPassed
+        ? document.querySelector("#second-planet-test .theory-code-drag:not([data-passed='true'])")
+        : null;
+      const firstWrongAnswer = secondPlanetQuestions.findIndex((question, index) => answers[index] !== question.correct);
+      const target = firstWrongDrag ?? (firstWrongAnswer >= 0
+        ? document.querySelector(`#second-planet-test [data-question-index='${firstWrongAnswer}']`)
+        : null);
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   };
 
   return (
@@ -3139,7 +3149,7 @@ function SecondPlanetVideoChapter({
             onPassedChange={(value) => { setBlockDragPassed(value); if (value && logicDragPassed && result !== null && result >= requiredScore) onComplete(); }}
           />
           {secondPlanetQuestions.map((item, questionIndex) => (
-            <fieldset key={item.question}>
+            <fieldset data-question-index={questionIndex} key={item.question}>
               <legend><span>{questionIndex + 1}</span><span className="theory-question-text">{item.question}</span></legend>
               {"code" in item && item.code ? <TheoryPythonCode code={item.code} /> : null}
               {item.answers.map((answer, answerIndex) => {
@@ -3220,6 +3230,37 @@ function ThirdPlanetVideoChapter({ complete, onComplete }: { complete: boolean; 
   );
 }
 
+const listPlanetQuestions = [
+  { question: "Какой индекс у первого элемента списка?", answers: ["0", "1", "-1"], correct: 0 },
+  { question: "Что выведет код?", code: `workers = [50_000, 60_000, 100_000]\nprint(workers[-1])`, answers: ["50 000", "60 000", "100 000"], correct: 2 },
+  { question: "Как изменить второй элемент списка?", answers: ["workers[2] = 65_000", "workers[1] = 65_000", "workers[-1] = 65_000"], correct: 1 },
+  { question: "Почему возникнет IndexError?", code: `a = [10, 20, 30, 40]\nprint(a[4])`, answers: ["В списке нет индекса 4", "Нельзя выводить числа", "Нужен цикл while"], correct: 0 },
+  { question: "Что вернёт len(workers) для четырёх зарплат?", answers: ["3", "4", "Сумму зарплат"], correct: 1 },
+  { question: "Как найти среднюю зарплату?", answers: ["sum(workers) / len(workers)", "max(workers) / min(workers)", "len(workers) / sum(workers)"], correct: 0 },
+] as const;
+
+function ListPlanetVideoChapter({ complete, onComplete }: { complete: boolean; onComplete: () => void }) {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [result, setResult] = useState<number | null>(complete ? 6 : null);
+  const passed = complete || (result !== null && result >= 5);
+  const check = () => { const score = listPlanetQuestions.reduce((sum, item, index) => sum + (answers[index] === item.correct ? 1 : 0), 0); setResult(score); if (score >= 5) onComplete(); window.requestAnimationFrame(() => { const wrong = listPlanetQuestions.findIndex((item, index) => answers[index] !== item.correct); if (wrong >= 0) document.querySelector(`#list-planet-test [data-question-index='${wrong}']`)?.scrollIntoView({ behavior: "smooth", block: "center" }); }); };
+  return <div className="theory-document theory-video-chapter">
+    <div className="theory-document-title"><p className="eyebrow">Глава 4 · Коллекции</p><h2>Списки</h2><p>Собираем много значений в одной переменной, обращаемся к элементам по индексам и соединяем списки с уже знакомым циклом <code>while</code>.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed ? "Пройдено" : "Не пройдено"}</span></div></div>
+    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/07CdcaxY8HM?si=z3lqJsjhNpILrWe5" title="Списки в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div></section>
+    <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead">Список хранит несколько значений под одним именем. Он записывается в квадратных скобках, а элементы разделяются запятыми.</p>
+      <TheoryPythonCode code={`workers = [50_000, 60_000, 100_000, 500_000]\nprint(workers)`} />
+      <aside className="theory-notion-callout"><span>i</span><p>Нижние подчёркивания в больших числах нужны только для чтения: <code>50_000</code> — то же число, что <code>50000</code>.</p></aside>
+      <h3>Что может лежать в списке</h3><p>Список способен хранить числа, строки и дробные значения. Обычно удобнее собирать значения одного типа: тогда понятно, какие действия с ними выполнять.</p><TheoryPythonCode code={`data = [56, "try", 2.5]\nsalaries = [50_000, 60_000, 100_000]`} />
+      <h3>Индексы</h3><div className="theory-index-strip"><span><b>0</b>50 000<em>-4</em></span><span><b>1</b>60 000<em>-3</em></span><span><b>2</b>100 000<em>-2</em></span><span><b>3</b>500 000<em>-1</em></span></div><p>Первый элемент имеет индекс <code>0</code>. Последний удобно брать по индексу <code>-1</code>, предпоследний — <code>-2</code>.</p>
+      <h3>Чтение и изменение элемента</h3><TheoryPythonCode code={`workers = [50_000, 60_000, 100_000]\nprint(workers[0])   # 50 000\nworkers[1] = 65_000\nworkers[-1] += 10_000`} />
+      <h3>Список и while</h3><p>Индекс можно хранить в переменной и увеличивать на каждой итерации. Условие <code>x &lt; len(workers)</code> не даст выйти за границы.</p><TheoryPythonCode code={`x = 0\nwhile x < len(workers):\n    print(workers[x])\n    x += 1`} /><blockquote><code>IndexError: list index out of range</code> означает, что программа запросила индекс, которого в списке нет.</blockquote>
+      <h3>Полезные функции из занятия</h3><div className="theory-branch-table"><div><code>len</code><p>Количество элементов: <code>len(workers)</code>.</p></div><div><code>sum</code><p>Сумма всех чисел: <code>sum(workers)</code>.</p></div><div><code>max</code><p>Самое большое значение: <code>max(workers)</code>.</p></div><div><code>min</code><p>Самое маленькое значение: <code>min(workers)</code>.</p></div></div><p>Среднее значение получаем уже знакомыми действиями: <code>sum(workers) / len(workers)</code>.</p>
+      <hr/><h2>Текстовая версия занятия</h2><div className="theory-transcript-steps"><section><span>01</span><div><h3>Создаём список</h3><p>Записываем значения в квадратных скобках через запятую. Вместо множества переменных для работников используем один список зарплат.</p></div></section><section><span>02</span><div><h3>Работаем с индексами</h3><p>Счёт слева начинается с нуля, справа — с минус одного. Через индекс можно получить элемент, заменить его или увеличить с помощью <code>+=</code>.</p></div></section><section><span>03</span><div><h3>Перебираем через while</h3><p>Переменная x становится индексом. Пока <code>x &lt; len(список)</code>, выводим элемент и увеличиваем x.</p></div></section><section><span>04</span><div><h3>Считаем данные</h3><p><code>len</code>, <code>sum</code>, <code>max</code> и <code>min</code> дают количество, сумму, максимум и минимум. Сумма, делённая на количество, даёт среднее.</p></div></section></div>
+    </article>
+    <section className="theory-planet-test" id="list-planet-test"><div className="theory-section-heading"><span>05</span><div><h3>Тест</h3></div></div><div className="theory-test-list">{listPlanetQuestions.map((item,index)=><fieldset data-question-index={index} key={item.question}><legend><span>{index+1}</span><span className="theory-question-text">{item.question}</span></legend>{"code" in item && item.code ? <TheoryPythonCode code={item.code}/> : null}{item.answers.map((answer,answerIndex)=>{const selected=answers[index]===answerIndex;const correct=result!==null&&answerIndex===item.correct;const wrong=result!==null&&selected&&answerIndex!==item.correct;return <label className={`${selected?"is-selected":""} ${correct?"is-correct":""} ${wrong?"is-wrong":""}`} key={answer}><input type="radio" name={`list-${index}`} checked={selected} disabled={passed} onChange={()=>{setAnswers(current=>({...current,[index]:answerIndex}));setResult(null);}}/><span>{answer}</span></label>})}</fieldset>)}</div><div className={`theory-test-result ${passed?"is-passed":""}`}>{result!==null&&<p>{passed?`Готово: ${result} из 6.`:`Пока ${result} из 6. Нужно минимум 5.`}</p>}{passed?<span>Планета пройдена</span>:<button disabled={Object.keys(answers).length!==6} onClick={check}>Проверить ответы</button>}</div></section>
+  </div>;
+}
+
 function UnreleasedPlanetChapter({ planet }: { planet: Planet }) {
   return (
     <div className="theory-document theory-unreleased-chapter">
@@ -3244,6 +3285,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const conditionStorageKey = `egege-theory-conditions-v1:${userId}`;
   const stringTheoryStorageKey = `egege-theory-strings-v1:${userId}`;
   const whileTheoryStorageKey = `egege-theory-while-v1:${userId}`;
+  const listPlanetStorageKey = `egege-theory-list-planet-v1:${userId}`;
   const forTheoryStorageKey = `egege-theory-for-v1:${userId}`;
   const splitStorageKey = `egege-theory-split-v1:${userId}`;
   const theorySpaceRef = useRef<HTMLElement | null>(null);
@@ -3262,6 +3304,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
   const [futureInterestError, setFutureInterestError] = useState("");
   const [pendingPlanetId, setPendingPlanetId] = useState<number | null>(null);
   const [firstPlanetComplete, setFirstPlanetComplete] = useState(false);
+  const [listPlanetComplete, setListPlanetComplete] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<LessonId>>(() => new Set());
   const [completedArithmeticLessons, setCompletedArithmeticLessons] = useState<
     Set<ArithmeticLessonId>
@@ -3288,6 +3331,13 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
       }
     });
   }, [firstPlanetStorageKey]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try { setListPlanetComplete(window.localStorage.getItem(listPlanetStorageKey) === "complete"); }
+      catch { setListPlanetComplete(false); }
+    });
+  }, [listPlanetStorageKey]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -3468,6 +3518,7 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     if (planetId === 0) return progress;
     if (planetId === 1) return conditionProgress;
     if (planetId === 2) return whileTheoryProgress;
+    if (planetId === 3) return listPlanetComplete ? 100 : 0;
     if (planetId === 4) return stringTheoryProgress;
     if (planetId === 5) return forTheoryProgress;
     return 0;
@@ -3672,6 +3723,11 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     }
   };
 
+  const completeListPlanetChapter = () => {
+    setListPlanetComplete(true);
+    try { window.localStorage.setItem(listPlanetStorageKey, "complete"); } catch {}
+  };
+
   const replayStringTheoryChapter = () => {
     setCompletedStringTheoryLessons(new Set());
     try {
@@ -3858,6 +3914,11 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
     }
     if (selectedPlanet === null) setChapterReady(false);
     setSelectedPlanet(planetId);
+    window.requestAnimationFrame(() => {
+      const chapter = document.querySelector<HTMLElement>(".theory-chapter");
+      if (chapter) chapter.scrollTop = 0;
+      document.querySelector(".theory-document-title")?.scrollIntoView({ block: "start" });
+    });
     if (planetId === 0 && completedLessons.size > 0 && completedLessons.size < lessonIds.length) {
       scrollToFirstIncomplete();
     }
@@ -4229,6 +4290,11 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
             <ThirdPlanetVideoChapter
               complete={whileTheoryProgress === 100}
               onComplete={completeWhileTheoryChapter}
+            />
+          ) : activePlanet.id === 3 ? (
+            <ListPlanetVideoChapter
+              complete={listPlanetComplete}
+              onComplete={completeListPlanetChapter}
             />
           ) : activePlanet.id === 5 ? (
             <ForTheoryChapter

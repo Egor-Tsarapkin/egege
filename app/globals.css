@@ -1134,13 +1134,17 @@
 }
 
 .theory-test-list label.is-correct {
-  background: color-mix(in srgb, #30a46c 10%, var(--surface-raised));
-  border-color: color-mix(in srgb, #30a46c 50%, var(--line));
+  background: color-mix(in srgb, #30a46c 28%, var(--surface-raised));
+  border-color: #30a46c;
+  box-shadow: inset 4px 0 0 #30a46c;
+  color: color-mix(in srgb, #30a46c 30%, var(--text));
 }
 
 .theory-test-list label.is-wrong {
-  background: color-mix(in srgb, #e5484d 8%, var(--surface-raised));
-  border-color: color-mix(in srgb, #e5484d 45%, var(--line));
+  background: color-mix(in srgb, #e5484d 28%, var(--surface-raised));
+  border-color: #e5484d;
+  box-shadow: inset 4px 0 0 #e5484d;
+  color: color-mix(in srgb, #e5484d 26%, var(--text));
 }
 
 .theory-test-code {
@@ -1412,6 +1416,11 @@
 
 .theory-loop-steps b { color: var(--accent); font-size: 16px; }
 
+.theory-index-strip { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 20px 0; }
+.theory-index-strip span { background: var(--surface-raised); border: 1px solid var(--line); border-radius: 10px; color: var(--text); display: grid; gap: 4px; padding: 12px; text-align: center; }
+.theory-index-strip b { color: var(--accent); font-family: var(--font-geist-mono); }
+.theory-index-strip em { color: var(--muted); font-family: var(--font-geist-mono); font-size: 11px; font-style: normal; }
+
 .theory-notion-body ul {
   margin: 12px 0 18px;
   padding-left: 24px;
@@ -1643,6 +1652,7 @@
 
   .theory-loop-steps { grid-template-columns: 1fr; }
   .theory-loop-steps b { text-align: center; transform: rotate(90deg); }
+  .theory-index-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .theory-test-list label,
   .theory-match-instruction,
