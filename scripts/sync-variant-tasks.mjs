@@ -5,11 +5,18 @@ const root = process.cwd();
 const tasksDirectory = path.join(root, "public/data/tasks");
 const variantsDirectory = path.join(root, "public/data/variants");
 const taskMap = new Map();
+const subTaskMap = new Map();
 
 for (const name of await readdir(tasksDirectory)) {
   if (!name.endsWith(".json")) continue;
   const tasks = JSON.parse(await readFile(path.join(tasksDirectory, name), "utf8"));
-  for (const task of tasks) taskMap.set(String(task.id), task);
+  for (const task of tasks) {
+    if (task.parentId && (task.number === 20 || task.number === 21)) {
+      subTaskMap.set(`${task.parentId}:${task.number}`, task);
+    } else {
+      taskMap.set(String(task.id), task);
+    }
+  }
 }
 
 let variants = 0;
@@ -21,15 +28,14 @@ for (const name of await readdir(variantsDirectory)) {
   const variant = JSON.parse(await readFile(file, "utf8"));
 
   variant.tasks = variant.tasks.map((task) => {
-    const compositeId =
-      task.number === 20 || task.number === 21
-        ? `${task.id}${task.number}`
-        : String(task.id);
-    const canonical = taskMap.get(compositeId) ?? taskMap.get(String(task.id));
+    const canonical = task.number === 20 || task.number === 21
+      ? subTaskMap.get(`${task.id}:${task.number}`)
+      : taskMap.get(String(task.id));
     if (!canonical) return task;
     replaced += 1;
     return {
       ...task,
+      number: canonical.number,
       html: canonical.html,
       answer: canonical.answer,
       table: canonical.table,

@@ -4,8 +4,11 @@
 dist
 node_modules
 data
+backups
+codex-backups
 .env
 site-release.tar.gz
+*.tar.gz
 gifs
 qr-egege-black.png
 qr-egege-custom.png

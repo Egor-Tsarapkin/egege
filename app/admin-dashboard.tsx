@@ -1,15 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { User } from "@supabase/supabase-js";
+import type { AppUser } from "@/lib/app-user";
 import {
   Activity,
   BarChart3,
   BookOpen,
   CheckCircle2,
   Clock3,
-  Crown,
   FileText,
+  Files,
   LayoutDashboard,
   LogIn,
   Search,
@@ -18,7 +18,6 @@ import {
   UserRound,
   UsersRound,
 } from "lucide-react";
-import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 type AdminUser = {
   user_id: string;
@@ -26,7 +25,8 @@ type AdminUser = {
   display_name: string;
   avatar_emoji: string;
   email: string;
-  premium: number;
+  board_limit: number;
+  board_count: number;
   last_seen_at: number;
   variants: number;
   average_score: number;
@@ -43,16 +43,13 @@ type AdminPayload = {
   teacherVariants: Array<{ id: number; kim: string; title: string; description_html: string; task_count: number; approved: number; complete: boolean; author: string }>;
 };
 
-type AdminTab = "overview" | "users" | "premium" | "content" | "events";
+type AdminTab = "overview" | "users" | "limits" | "content" | "events";
 
 async function adminRequest<T>(init?: RequestInit) {
-  const client = await getSupabaseBrowserClient();
-  const { data } = client ? await client.auth.getSession() : { data: { session: null } };
   const response = await fetch("/api/admin", {
     ...init,
     headers: {
       "content-type": "application/json",
-      ...(data.session?.access_token ? { authorization: `Bearer ${data.session.access_token}` } : {}),
       ...(init?.headers ?? {}),
     },
   });
@@ -124,13 +121,12 @@ function ActivityChart({ data }: { data: AdminPayload["activity"] }) {
   );
 }
 
-export default function AdminDashboard({ user, onExit }: { user: User; onExit: () => void }) {
+export default function AdminDashboard({ user, onExit }: { user: AppUser; onExit: () => void }) {
   const [data, setData] = useState<AdminPayload | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<AdminTab>("overview");
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "premium" | "regular">("all");
   const [savingUser, setSavingUser] = useState("");
   const [savingContent, setSavingContent] = useState("");
 
@@ -152,37 +148,31 @@ export default function AdminDashboard({ user, onExit }: { user: User; onExit: (
     return () => window.clearInterval(timer);
   }, [load]);
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      if (tab === "premium") setFilter("premium");
-      if (tab === "users") setFilter("all");
-    });
-  }, [tab]);
-
   const filteredUsers = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return (data?.users ?? []).filter((entry) => {
       const matchesQuery = !normalized || [entry.display_name, entry.username, entry.email]
         .some((value) => String(value ?? "").toLowerCase().includes(normalized));
-      const matchesFilter = filter === "all" || (filter === "premium" ? entry.premium : !entry.premium);
-      return matchesQuery && matchesFilter;
+      return matchesQuery;
     });
-  }, [data?.users, filter, query]);
+  }, [data?.users, query]);
 
-  const setPremium = async (entry: AdminUser, premium: boolean) => {
+  const setBoardLimit = async (entry: AdminUser, boardLimit: number) => {
+    const normalized = Math.max(0, Math.min(100, Math.round(boardLimit)));
+    if (normalized === entry.board_limit) return;
     setSavingUser(entry.user_id);
     setData((current) => current ? {
       ...current,
-      users: current.users.map((item) => item.user_id === entry.user_id ? { ...item, premium: premium ? 1 : 0 } : item),
+      users: current.users.map((item) => item.user_id === entry.user_id ? { ...item, board_limit: normalized } : item),
     } : current);
     try {
       await adminRequest({
         method: "POST",
-        body: JSON.stringify({ action: "set_premium", userId: entry.user_id, premium }),
+        body: JSON.stringify({ action: "set_board_limit", userId: entry.user_id, boardLimit: normalized }),
       });
       await load(true);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Не удалось изменить премиум");
+      setError(nextError instanceof Error ? nextError.message : "Не удалось изменить лимит досок");
       await load(true);
     } finally {
       setSavingUser("");
@@ -202,7 +192,7 @@ export default function AdminDashboard({ user, onExit }: { user: User; onExit: (
   const nav: Array<{ id: AdminTab; label: string; icon: typeof LayoutDashboard }> = [
     { id: "overview", label: "Обзор", icon: LayoutDashboard },
     { id: "users", label: "Пользователи", icon: UsersRound },
-    { id: "premium", label: "Премиум", icon: Crown },
+    { id: "limits", label: "Лимиты досок", icon: Files },
     { id: "content", label: "Контент", icon: FileText },
     { id: "events", label: "События", icon: Activity },
   ];
@@ -254,7 +244,7 @@ export default function AdminDashboard({ user, onExit }: { user: User; onExit: (
           {error && <p>{error}</p>}
         </header>
 
-        {(tab === "overview" || tab === "users" || tab === "premium") && (
+        {(tab === "overview" || tab === "users" || tab === "limits") && (
           <section className="admin-metrics" aria-label="Основные показатели">
             {metrics.map((metric) => {
               const Icon = metric.icon;
@@ -283,40 +273,34 @@ export default function AdminDashboard({ user, onExit }: { user: User; onExit: (
               <header><div><h2>Модерация</h2><p>Только одобренный контент виден всем посетителям.</p></div></header>
               <h3>Задания</h3>
               <div className="admin-moderation-list">{data.teacherTasks.map((task) => (
-                <article key={task.id}><div className="admin-moderation-copy"><strong>ID {task.public_id} · {task.exam_number === 19 ? "№19–21" : `№${task.exam_number}`}</strong><small>{task.author} · {task.note || "Без примечания"}</small><div dangerouslySetInnerHTML={{ __html: task.statement_html }} /></div><select value={task.difficulty} onChange={(event) => void moderate("task", task.id, Boolean(task.approved), event.target.value)}><option>Базовый</option><option>Средний</option><option>Сложный</option></select><button className={`admin-premium-toggle ${task.approved ? "is-active" : ""}`} role="switch" aria-checked={Boolean(task.approved)} disabled={savingContent === `task-${task.id}`} onClick={() => void moderate("task", task.id, !task.approved, task.difficulty)}><span /></button></article>
+                <article key={task.id}><div className="admin-moderation-copy"><strong>ID {task.public_id} · {task.exam_number === 19 ? "№19–21" : `№${task.exam_number}`}</strong><small>{task.author} · {task.note || "Без примечания"}</small><div dangerouslySetInnerHTML={{ __html: task.statement_html }} /></div><select value={task.difficulty} onChange={(event) => void moderate("task", task.id, Boolean(task.approved), event.target.value)}><option>Базовый</option><option>Средний</option><option>Сложный</option></select><button className={`admin-switch ${task.approved ? "is-active" : ""}`} role="switch" aria-checked={Boolean(task.approved)} disabled={savingContent === `task-${task.id}`} onClick={() => void moderate("task", task.id, !task.approved, task.difficulty)}><span /></button></article>
               ))}</div>
               <h3>Варианты</h3>
               <div className="admin-moderation-list">{data.teacherVariants.map((variant) => (
-                <article key={variant.id}><div className="admin-moderation-copy"><strong>КИМ {variant.kim} · {variant.title}</strong><small>{variant.author} · {variant.task_count} записей · {variant.complete ? "Полный 1–27" : "Неполный"}</small></div><button className={`admin-premium-toggle ${variant.approved ? "is-active" : ""}`} role="switch" aria-checked={Boolean(variant.approved)} disabled={!variant.complete || savingContent === `variant-${variant.id}`} title={variant.complete ? "" : "Нужен полный порядок 1–27"} onClick={() => void moderate("variant", variant.id, !variant.approved)}><span /></button></article>
+                <article key={variant.id}><div className="admin-moderation-copy"><strong>КИМ {variant.kim} · {variant.title}</strong><small>{variant.author} · {variant.task_count} записей · {variant.complete ? "Полный 1–27" : "Неполный"}</small></div><button className={`admin-switch ${variant.approved ? "is-active" : ""}`} role="switch" aria-checked={Boolean(variant.approved)} disabled={!variant.complete || savingContent === `variant-${variant.id}`} title={variant.complete ? "" : "Нужен полный порядок 1–27"} onClick={() => void moderate("variant", variant.id, !variant.approved)}><span /></button></article>
               ))}</div>
             </article>
           )}
-          {(tab === "overview" || tab === "users" || tab === "premium") && (
+          {(tab === "overview" || tab === "users" || tab === "limits") && (
             <article className="admin-panel admin-users">
               <header>
                 <h2>Ученики</h2>
                 <label><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Имя, email или username" /></label>
-                <div className="admin-filters">
-                  <button className={filter === "all" ? "is-active" : ""} onClick={() => setFilter("all")}>Все</button>
-                  <button className={filter === "premium" ? "is-active" : ""} onClick={() => setFilter("premium")}>С премиумом</button>
-                  <button className={filter === "regular" ? "is-active" : ""} onClick={() => setFilter("regular")}>Без премиума</button>
-                </div>
               </header>
               <div className="admin-user-table">
-                <div className="admin-user-head"><span>Ученик</span><span>Последний вход</span><span>Варианты</span><span>Средний балл</span><span>Премиум</span></div>
+                <div className="admin-user-head"><span>Ученик</span><span>Последний вход</span><span>Варианты</span><span>Средний балл</span><span>Доски</span><span>Лимит</span></div>
                 {filteredUsers.map((entry) => (
                   <div className="admin-user-row" key={entry.user_id}>
                     <div className="admin-user-name"><span>{entry.avatar_emoji || "🙂"}</span><div><strong>{entry.display_name}</strong><small>@{entry.username}{entry.email ? ` · ${entry.email}` : ""}</small></div></div>
                     <span data-label="Последний вход">{timeAgo(Number(entry.last_seen_at))}</span>
                     <span data-label="Варианты">{Number(entry.variants)}</span>
                     <span data-label="Средний балл">{Number(entry.average_score) || "—"}</span>
-                    <button
-                      className={`admin-premium-toggle ${entry.premium ? "is-active" : ""}`}
-                      role="switch"
-                      aria-checked={Boolean(entry.premium)}
-                      disabled={savingUser === entry.user_id}
-                      onClick={() => void setPremium(entry, !entry.premium)}
-                    ><span>{entry.premium ? <Crown /> : null}</span></button>
+                    <span data-label="Доски">{Number(entry.board_count)}</span>
+                    <div className="admin-board-limit" data-label="Лимит">
+                      <button disabled={savingUser === entry.user_id || entry.board_limit <= 0} onClick={() => void setBoardLimit(entry, entry.board_limit - 1)} aria-label={`Уменьшить лимит для ${entry.display_name}`}>−</button>
+                      <input key={`${entry.user_id}-${entry.board_limit}`} type="number" min="0" max="100" defaultValue={entry.board_limit} disabled={savingUser === entry.user_id} onBlur={(event) => void setBoardLimit(entry, Number(event.target.value))} aria-label={`Лимит досок для ${entry.display_name}`} />
+                      <button disabled={savingUser === entry.user_id || entry.board_limit >= 100} onClick={() => void setBoardLimit(entry, entry.board_limit + 1)} aria-label={`Увеличить лимит для ${entry.display_name}`}>+</button>
+                    </div>
                   </div>
                 ))}
                 {!filteredUsers.length && <p className="admin-empty">По этому фильтру учеников пока нет.</p>}
@@ -327,7 +311,7 @@ export default function AdminDashboard({ user, onExit }: { user: User; onExit: (
           {(tab === "overview" || tab === "events") && (
             <aside className="admin-side-panels">
               {tab === "overview" && <article className="admin-panel admin-content"><h2>Что смотрят</h2>{data.content.slice(0, 4).map((item, index) => <div key={item.label}><span>{index + 1}</span><strong>{item.label}</strong><b>{compactNumber(Number(item.value))}</b><em>{Math.round((Number(item.value) / totalViews) * 100)}%</em></div>)}</article>}
-              {(tab === "overview" || tab === "events") && <article className="admin-panel admin-actions"><h2>Последние действия</h2>{data.actions.length ? data.actions.map((action) => <div key={`${action.created_at}-${action.username}`}><span><Crown /></span><p><strong>{action.action === "premium_granted" ? "Премиум выдан" : "Премиум отключён"}</strong><small>{action.display_name || `@${action.username}`} · {timeAgo(Number(action.created_at))}</small></p></div>) : <p className="admin-empty">Действий пока нет.</p>}</article>}
+              {(tab === "overview" || tab === "events") && <article className="admin-panel admin-actions"><h2>Последние действия</h2>{data.actions.length ? data.actions.map((action) => <div key={`${action.created_at}-${action.username}`}><span><Files /></span><p><strong>Лимит досок изменён</strong><small>{action.display_name || `@${action.username}`} · {timeAgo(Number(action.created_at))}</small></p></div>) : <p className="admin-empty">Действий пока нет.</p>}</article>}
             </aside>
           )}
         </section>

@@ -1,4 +1,4 @@
-import type { User } from "@supabase/supabase-js";
+import type { AppUser } from "@/lib/app-user";
 import { communityDb, ensureCommunityProfile } from "@/lib/community-server";
 
 let schemaReady: Promise<void> | null = null;
@@ -11,6 +11,7 @@ export function ensureAdminSchema() {
       user_id TEXT PRIMARY KEY,
       email TEXT NOT NULL DEFAULT '',
       premium INTEGER NOT NULL DEFAULT 0,
+      board_limit INTEGER NOT NULL DEFAULT 3,
       first_seen_at INTEGER NOT NULL,
       last_seen_at INTEGER NOT NULL,
       last_login_at INTEGER NOT NULL
@@ -64,7 +65,12 @@ export function ensureAdminSchema() {
     db.prepare("CREATE INDEX IF NOT EXISTS analytics_events_type_created_idx ON analytics_events(event_type, created_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS exam_attempts_user_idx ON exam_attempts(user_id, created_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS admin_actions_created_idx ON admin_actions(created_at)"),
-  ]).then(() => undefined).catch((error: unknown) => {
+  ]).then(async () => {
+    const columns = await db.prepare("PRAGMA table_info(user_access)").all<{ name: string }>();
+    if (!columns.results.some((column) => column.name === "board_limit")) {
+      await db.prepare("ALTER TABLE user_access ADD COLUMN board_limit INTEGER NOT NULL DEFAULT 3").run();
+    }
+  }).catch((error: unknown) => {
     schemaReady = null;
     throw error;
   });
@@ -78,13 +84,13 @@ function configuredAdminEmails() {
     .filter(Boolean);
 }
 
-export async function isAdminUser(user: User) {
+export async function isAdminUser(user: AppUser) {
   const emails = configuredAdminEmails();
   const email = user.email?.toLowerCase() ?? "";
   return emails.length > 0 && Boolean(email) && emails.includes(email);
 }
 
-export async function ensureUserAccess(user: User) {
+export async function ensureUserAccess(user: AppUser) {
   await ensureCommunityProfile(user);
   await ensureAdminSchema();
   const now = Math.floor(Date.now() / 1000);
@@ -99,9 +105,9 @@ export async function ensureUserAccess(user: User) {
     .bind(user.id, user.email ?? "", now, now, now)
     .run();
   return communityDb()
-    .prepare("SELECT premium FROM user_access WHERE user_id = ?")
+    .prepare("SELECT premium, board_limit FROM user_access WHERE user_id = ?")
     .bind(user.id)
-    .first<{ premium: number }>();
+    .first<{ premium: number; board_limit: number }>();
 }
 
 export function safeSessionId(value: unknown) {

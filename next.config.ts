@@ -3,7 +3,11 @@ import path from "node:path";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  allowedDevOrigins: ["127.0.0.1"],
   async headers() {
+    const scriptSources = process.env.NODE_ENV === "development"
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      : "script-src 'self' 'unsafe-inline'";
     const contentSecurityPolicy = [
       "default-src 'self'",
       "base-uri 'self'",
@@ -11,9 +15,11 @@ const nextConfig: NextConfig = {
       "frame-ancestors 'none'",
       "img-src 'self' data: blob: https:",
       "media-src 'self' blob:",
-      "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-      "script-src 'self' 'unsafe-inline'",
+      "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://vkvideo.ru",
+      process.env.NODE_ENV === "development"
+        ? "connect-src 'self' ws://localhost:3001 ws://127.0.0.1:3001"
+        : "connect-src 'self'",
+      scriptSources,
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self' data:",
       "form-action 'self'",

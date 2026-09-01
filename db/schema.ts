@@ -1,4 +1,43 @@
-import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { blob, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+
+export const authUsers = sqliteTable("auth_users", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull().default(""),
+  name: text("name").notNull().default(""),
+  avatarUrl: text("avatar_url").notNull().default(""),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+export const authIdentities = sqliteTable(
+  "auth_identities",
+  {
+    provider: text("provider").notNull(),
+    providerUserId: text("provider_user_id").notNull(),
+    userId: text("user_id").notNull(),
+    providerEmail: text("provider_email").notNull().default(""),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.provider, table.providerUserId] }),
+    index("auth_identities_user_idx").on(table.userId),
+  ],
+);
+
+export const authSessions = sqliteTable(
+  "auth_sessions",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: text("user_id").notNull(),
+    expiresAt: integer("expires_at").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (table) => [
+    index("auth_sessions_user_idx").on(table.userId),
+    index("auth_sessions_expiry_idx").on(table.expiresAt),
+  ],
+);
 
 export const profiles = sqliteTable(
   "profiles",
@@ -176,5 +215,134 @@ export const teacherVariantAttempts = sqliteTable(
   (table) => [
     index("teacher_variant_attempts_variant_created_idx").on(table.variantId, table.createdAt),
     index("teacher_variant_attempts_variant_user_idx").on(table.variantId, table.userId),
+  ],
+);
+
+export const boards = sqliteTable(
+  "boards",
+  {
+    id: text("id").primaryKey(),
+    ownerUserId: text("owner_user_id").notNull(),
+    title: text("title").notNull(),
+    backgroundType: text("background_type", { enum: ["plain", "dots", "grid", "ruled"] }).notNull().default("plain"),
+    backgroundColor: text("background_color").notNull().default("#f8f5ed"),
+    latestSequence: integer("latest_sequence").notNull().default(0),
+    storageBytes: integer("storage_bytes").notNull().default(0),
+    objectCount: integer("object_count").notNull().default(0),
+    strokeCount: integer("stroke_count").notNull().default(0),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+    deletedAt: integer("deleted_at"),
+  },
+  (table) => [
+    index("boards_owner_updated_idx").on(table.ownerUserId, table.updatedAt),
+  ],
+);
+
+export const boardShareLinks = sqliteTable(
+  "board_share_links",
+  {
+    id: text("id").primaryKey(),
+    boardId: text("board_id").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    permission: text("permission", { enum: ["view", "edit"] }).notNull(),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+    revokedAt: integer("revoked_at"),
+  },
+  (table) => [
+    uniqueIndex("board_share_links_token_unique").on(table.tokenHash),
+    index("board_share_links_board_active_idx").on(table.boardId, table.revokedAt),
+  ],
+);
+
+export const boardObjects = sqliteTable(
+  "board_objects",
+  {
+    boardId: text("board_id").notNull(),
+    objectId: text("object_id").notNull(),
+    kind: text("kind", {
+      enum: ["stroke", "text", "line", "arrow", "rectangle", "ellipse", "image", "code"],
+    }).notNull(),
+    version: integer("version").notNull().default(1),
+    zIndex: integer("z_index").notNull().default(0),
+    minX: integer("min_x").notNull(),
+    minY: integer("min_y").notNull(),
+    maxX: integer("max_x").notNull(),
+    maxY: integer("max_y").notNull(),
+    payloadJson: text("payload_json").notNull(),
+    strokeData: blob("stroke_data", { mode: "buffer" }),
+    createdBy: text("created_by").notNull(),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+    deletedAt: integer("deleted_at"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.boardId, table.objectId] }),
+    index("board_objects_board_z_idx").on(table.boardId, table.zIndex),
+    index("board_objects_board_bounds_idx").on(table.boardId, table.minX, table.maxX, table.minY, table.maxY),
+  ],
+);
+
+export const boardOperations = sqliteTable(
+  "board_operations",
+  {
+    boardId: text("board_id").notNull(),
+    sequence: integer("sequence").notNull(),
+    operationId: text("operation_id").notNull(),
+    actorId: text("actor_id").notNull(),
+    actorKind: text("actor_kind", { enum: ["user", "guest", "system"] }).notNull(),
+    operationType: text("operation_type").notNull(),
+    targetObjectId: text("target_object_id"),
+    payload: blob("payload", { mode: "buffer" }).notNull(),
+    inversePayload: blob("inverse_payload", { mode: "buffer" }),
+    createdAt: integer("created_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.boardId, table.sequence] }),
+    uniqueIndex("board_operations_board_operation_unique").on(table.boardId, table.operationId),
+    index("board_operations_board_created_idx").on(table.boardId, table.createdAt),
+  ],
+);
+
+export const boardSnapshots = sqliteTable(
+  "board_snapshots",
+  {
+    id: text("id").primaryKey(),
+    boardId: text("board_id").notNull(),
+    sequence: integer("sequence").notNull(),
+    payload: blob("payload", { mode: "buffer" }).notNull(),
+    objectCount: integer("object_count").notNull().default(0),
+    strokeCount: integer("stroke_count").notNull().default(0),
+    reason: text("reason", { enum: ["periodic", "before_restore", "manual_restore"] }).notNull(),
+    createdAt: integer("created_at").notNull(),
+    expiresAt: integer("expires_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("board_snapshots_board_sequence_unique").on(table.boardId, table.sequence),
+    index("board_snapshots_expiry_idx").on(table.expiresAt),
+  ],
+);
+
+export const boardAssets = sqliteTable(
+  "board_assets",
+  {
+    boardId: text("board_id").notNull(),
+    id: text("id").notNull(),
+    storageKey: text("storage_key").notNull(),
+    thumbnailKey: text("thumbnail_key").notNull().default(""),
+    contentType: text("content_type").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    size: integer("size").notNull(),
+    sha256: text("sha256").notNull(),
+    uploadedBy: text("uploaded_by").notNull(),
+    createdAt: integer("created_at").notNull(),
+    deletedAt: integer("deleted_at"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.boardId, table.id] }),
+    index("board_assets_board_created_idx").on(table.boardId, table.createdAt),
+    index("board_assets_storage_key_idx").on(table.storageKey),
   ],
 );

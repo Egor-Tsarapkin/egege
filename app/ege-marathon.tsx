@@ -630,9 +630,7 @@ export default function EgeMarathon({
 
       <section className="marathon-hero">
         <div className="marathon-title-block">
-          <span>Тренировка</span>
           <h1>ЕГЭ-марафон</h1>
-          <p>Вопросы ЕГЭ и Python в одном спокойном режиме.</p>
         </div>
         <div className="marathon-progress-grid">
           <button onClick={() => answeredCount ? start(savedMarathonOrder, resumeIndex) : startNewMarathon()}>

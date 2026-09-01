@@ -1121,9 +1121,7 @@ export default function TypingTrainer({
     <div className={`typing-trainer ${focused ? "is-focused" : ""} ${completed ? "is-complete" : ""}`}>
       <section className="trainer-hero">
         <div className="trainer-heading">
-          <p className="eyebrow">Тренажёр</p>
           <h1>Печатаем код</h1>
-          <p>Тренируйте скорость, точность и привычные сочетания клавиш.</p>
           <div className="trainer-controls-row">
             <div className="trainer-modes" aria-label="Режим тренировки">
               {MODE_OPTIONS.map((option) => (

@@ -453,8 +453,10 @@ export default function ExamStation({
     hasCurrentDraft &&
     JSON.stringify(currentDraft) === JSON.stringify(currentSavedAnswer);
 
-  const visibleTaskNumbers = Array.from({ length: 8 }, (_, index) => navWindowStart + index + 1)
-    .filter((number) => number <= taskCount);
+  const visibleTaskSlots = examTasks.slice(navWindowStart, navWindowStart + 8).map((task) => ({
+    slot: task.slot ?? 0,
+    number: task.number,
+  }));
 
   if (finished) {
     return (
@@ -602,15 +604,15 @@ export default function ExamStation({
           <Info aria-hidden="true" />
         </button>
         <div className="exam-task-numbers">
-          {visibleTaskNumbers.map((number) => (
+          {visibleTaskSlots.map(({ slot, number }) => (
             <button
-              className={`${currentNumber === number ? "is-current" : ""} ${
-                isAnswerFilled(answers[number]) ? "is-answered" : ""
+              className={`${currentNumber === slot ? "is-current" : ""} ${
+                isAnswerFilled(answers[slot]) ? "is-answered" : ""
               }`}
-              onClick={() => changeTask(number)}
-              aria-current={currentNumber === number ? "page" : undefined}
-              aria-label={`Задание ${number}${isAnswerFilled(answers[number]) ? ", ответ дан" : ""}`}
-              key={number}
+              onClick={() => changeTask(slot)}
+              aria-current={currentNumber === slot ? "page" : undefined}
+              aria-label={`Задание ${number}${isAnswerFilled(answers[slot]) ? ", ответ дан" : ""}`}
+              key={slot}
             >
               {number}
             </button>

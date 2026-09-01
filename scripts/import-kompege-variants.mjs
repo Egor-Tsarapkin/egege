@@ -8,6 +8,12 @@ const outputRoot = new URL("../public/data/variants/", import.meta.url);
 const manifestUrl = new URL("../public/data/variant-manifest.json", import.meta.url);
 const concurrency = 3;
 
+const officialVariantTitlePattern = /демоверси|егкр|апробац|досроч|основн(?:ая|ой) волн|резервн(?:ая волн|ый день)|пересдач/i;
+
+function isOfficialVariant(title) {
+  return officialVariantTitlePattern.test(title);
+}
+
 function wait(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
@@ -94,51 +100,67 @@ function prepareTaskHtml(rawHtml) {
 
 async function discoverCatalog() {
   const homeHtml = await (await fetchWithRetry(`${SITE_ROOT}/archive`)).text();
-  const appPath = homeHtml.match(/src="(\/js\/app\.[^"]+\.js)"/)?.[1];
+  const appPath = homeHtml.match(/<script[^>]+type="module"[^>]+src="([^"]+\.js)"/)?.[1]
+    ?? homeHtml.match(/src="(\/js\/app\.[^"]+\.js)"/)?.[1];
   if (!appPath) throw new Error("Не найден основной JavaScript КЕГЭ");
 
   const appSource = await (await fetchWithRetry(new URL(appPath, SITE_ROOT))).text();
-  const archiveHash = appSource.match(/704:"([^"]+)"/)?.[1];
-  if (!archiveHash) throw new Error("Не найден модуль архива КЕГЭ");
+  const viteArchivePath = appSource.match(/["'](\.\/assets\/ArchivePage-[^"']+\.js)["']/)?.[1]
+    ?? appSource.match(/["'](assets\/ArchivePage-[^"']+\.js)["']/)?.[1];
+  const webpackArchiveHash = appSource.match(/704:"([^"]+)"/)?.[1];
+  const archiveUrl = viteArchivePath
+    ? new URL(viteArchivePath.replace(/^\.\//, "/"), SITE_ROOT)
+    : webpackArchiveHash
+      ? new URL(`/js/704.${webpackArchiveHash}.js`, SITE_ROOT)
+      : null;
+  if (!archiveUrl) throw new Error("Не найден модуль архива КЕГЭ");
 
-  const archiveSource = await (
-    await fetchWithRetry(`${SITE_ROOT}/js/704.${archiveHash}.js`)
-  ).text();
-  const matches = archiveSource.matchAll(
-    /<a href="\/variant\?kim=(\d+)"[^>]*>([^<]+)<\/a>/g,
-  );
+  const archiveSource = await (await fetchWithRetry(archiveUrl)).text();
+  const tokenPattern = /Варианты за (\d{4}\/\d{2}) учебный год|<a href="\/variant\?kim=(\d+)"[^>]*>([^<]+)<\/a>/g;
   const catalog = [];
   const seen = new Set();
+  let academicYear;
 
-  for (const match of matches) {
-    const kim = match[1];
+  for (const match of archiveSource.matchAll(tokenPattern)) {
+    if (match[1]) {
+      academicYear = match[1];
+      continue;
+    }
+    const kim = match[2];
     if (seen.has(kim)) continue;
     seen.add(kim);
     catalog.push({
       kim,
-      title: match[2]
+      title: match[3]
         .replace(/&nbsp;/g, " ")
         .replace(/&amp;/g, "&")
         .replace(/\s+/g, " ")
         .trim(),
+      academicYear,
     });
   }
 
-  return catalog;
+  return catalog.filter((entry) => isOfficialVariant(entry.title));
 }
 
-async function importVariant(entry, index, total) {
+async function importVariant(entry, index, total, currentAcademicYear) {
   const outputUrl = new URL(`${entry.kim}.json`, outputRoot);
-  try {
-    const existing = JSON.parse(await readFile(outputUrl, "utf8"));
-    return {
-      kim: entry.kim,
-      title: entry.title || existing.title,
-      taskCount: existing.tasks?.length ?? 0,
-      sourceUrl: existing.sourceUrl ?? `${SITE_ROOT}/variant?kim=${entry.kim}`,
-    };
-  } catch {
-    // Missing or invalid cache entries are imported below.
+  const refreshAll = process.env.REFRESH_VARIANTS === "1";
+  const refreshCurrentYear = process.env.REFRESH_CURRENT_YEAR === "1" && entry.academicYear === currentAcademicYear;
+  const refreshKims = new Set((process.env.REFRESH_VARIANT_KIMS ?? "").split(",").filter(Boolean));
+  if (!refreshAll && !refreshCurrentYear && !refreshKims.has(entry.kim)) {
+    try {
+      const existing = JSON.parse(await readFile(outputUrl, "utf8"));
+      return {
+        kim: entry.kim,
+        title: entry.title || existing.title,
+        taskCount: existing.tasks?.length ?? 0,
+        sourceUrl: existing.sourceUrl ?? `${SITE_ROOT}/variant?kim=${entry.kim}`,
+        academicYear: entry.academicYear,
+      };
+    } catch {
+      // Missing or invalid cache entries are imported below.
+    }
   }
 
   await wait(110);
@@ -150,6 +172,7 @@ async function importVariant(entry, index, total) {
       title: entry.title,
       taskCount: 0,
       sourceUrl: `${SITE_ROOT}/variant?kim=${entry.kim}`,
+      academicYear: entry.academicYear,
     };
   }
   const source = await response.json();
@@ -188,14 +211,16 @@ async function importVariant(entry, index, total) {
     title: payload.title,
     taskCount: payload.tasks.length,
     sourceUrl: payload.sourceUrl,
+    academicYear: entry.academicYear,
   };
 }
 
 export async function importKompegeVariants() {
   await mkdir(outputRoot, { recursive: true });
   const catalog = await discoverCatalog();
+  const currentAcademicYear = catalog[0]?.academicYear;
   const imported = await mapLimit(catalog, concurrency, (entry, index) =>
-    importVariant(entry, index, catalog.length),
+    importVariant(entry, index, catalog.length, currentAcademicYear),
   );
   const valid = imported.filter((entry) => entry.taskCount > 0);
 

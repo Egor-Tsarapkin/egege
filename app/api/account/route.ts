@@ -4,9 +4,8 @@ import { ensureUserAccess, isAdminUser } from "@/lib/admin-server";
 export async function GET(request: Request) {
   const user = await authenticatedUser(request);
   if (!user) return Response.json({ error: "Нужно войти в аккаунт" }, { status: 401 });
-  const access = await ensureUserAccess(user);
+  await ensureUserAccess(user);
   return Response.json({
-    premium: Boolean(access?.premium),
     isAdmin: await isAdminUser(user),
   });
 }

@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
-import { createClient, type User } from "@supabase/supabase-js";
+import type { AppUser } from "@/lib/app-user";
+export { authenticatedUser } from "@/lib/local-auth-server";
 
 export type CommunityProfileRow = {
   user_id: string;
@@ -18,33 +19,7 @@ export function communityDb() {
   return env.DB;
 }
 
-function supabaseConfig() {
-  const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.SUPABASE_ANON_KEY;
-  return url && key ? { url, key } : null;
-}
-
-export async function authenticatedUser(request: Request): Promise<User | null> {
-  const header = request.headers.get("authorization");
-  const token = header?.match(/^Bearer\s+(.+)$/i)?.[1];
-  const config = supabaseConfig();
-  if (!token || !config) return null;
-
-  const supabase = createClient(config.url, config.key, {
-    auth: {
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-      persistSession: false,
-    },
-  });
-  const { data, error } = await supabase.auth.getUser(token);
-  return error ? null : data.user;
-}
-
-function usernameBase(user: User) {
+function usernameBase(user: AppUser) {
   const metadataName =
     user.user_metadata?.preferred_username ??
     user.user_metadata?.user_name ??
@@ -59,7 +34,7 @@ function usernameBase(user: User) {
   return normalized.length >= 3 ? normalized : `student_${user.id.replace(/-/g, "").slice(0, 5)}`;
 }
 
-function displayName(user: User) {
+function displayName(user: AppUser) {
   const value =
     user.user_metadata?.full_name ??
     user.user_metadata?.name ??
@@ -68,7 +43,7 @@ function displayName(user: User) {
   return String(value).trim().slice(0, 48) || "Ученик EGEGE";
 }
 
-export async function ensureCommunityProfile(user: User) {
+export async function ensureCommunityProfile(user: AppUser) {
   const db = communityDb();
   const existing = await db
     .prepare(

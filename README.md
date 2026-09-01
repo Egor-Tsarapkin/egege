@@ -19,7 +19,7 @@ Copy the project to the VPS, then:
 cp .env.example .env
 ```
 
-Fill in the real domain and the existing Supabase public settings in `.env`.
+Fill in the real domain and Yandex ID OAuth settings in `.env`.
 Keep `ADMIN_EMAILS=egortsarapkinpersona@gmail.com` unless the administrator
 account changes.
 
@@ -45,16 +45,18 @@ Create a consistent SQLite backup while the site is running:
 docker compose exec egege node -e "const D=require('better-sqlite3');new D('/app/data/egege.sqlite').backup('/app/data/egege-backup.sqlite').then(()=>console.log('backup ready'))"
 ```
 
-## Authentication after changing the domain
+## Yandex ID authentication
 
-Add the new URL to the allowed redirect URLs in Supabase:
+Create an application for user authentication in Yandex OAuth and add this
+redirect URL:
 
 ```text
-https://YOUR-DOMAIN/auth/callback
+https://YOUR-DOMAIN/auth/yandex/callback
 ```
 
-The Google and Yandex providers continue to use Supabase. Their provider
-callback remains the Supabase callback shown in the provider settings.
+Request only `login:info` and `login:email`. Put the issued client ID and client
+secret in `.env`; never commit the client secret. User accounts, provider
+identities, and sessions are stored in the local SQLite database.
 
 ## Local verification
 
@@ -65,3 +67,19 @@ npm start
 ```
 
 The previous Sites/Cloudflare build remains available as `npm run build:sites`.
+
+## Daily КЕГЭ synchronization
+
+Run an update manually without rebuilding the website:
+
+```bash
+docker compose --profile tools run --rm kege-sync
+```
+
+The updater refreshes the task bank, discovers new archive variants, removes
+duplicate task numbers inside a variant, and synchronizes every cached variant
+with the canonical task database. A lock prevents overlapping runs.
+
+For a daily VPS update, install `deploy/egege-kege-sync.service` and
+`deploy/egege-kege-sync.timer` into `/etc/systemd/system/`, then enable the
+timer. It runs every day around 04:20 Moscow time and catches up after downtime.

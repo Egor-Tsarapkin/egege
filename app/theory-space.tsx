@@ -78,6 +78,20 @@ const planets: Planet[] = [
   },
 ];
 
+type LessonVideoProps = { title: string; youtubeSrc: string; vkSrc: string };
+
+function LessonVideo({ title, youtubeSrc, vkSrc }: LessonVideoProps) {
+  const [source, setSource] = useState<"youtube" | "vk">("youtube");
+  const src = source === "youtube" ? youtubeSrc : vkSrc;
+  return <div className="theory-video-player">
+    <div className="theory-video-source" aria-label="Источник видео"><span>Смотреть на</span><div role="group" aria-label="Выберите видеосервис">
+      <button type="button" className={source === "youtube" ? "is-active" : ""} aria-pressed={source === "youtube"} onClick={() => setSource("youtube")}>YouTube</button>
+      <button type="button" className={source === "vk" ? "is-active" : ""} aria-pressed={source === "vk"} onClick={() => setSource("vk")}>VK Видео</button>
+    </div></div>
+    <div className="theory-youtube-frame"><iframe key={source} src={src} title={`${title} — ${source === "youtube" ? "YouTube" : "VK Видео"}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; screen-wake-lock; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>
+  </div>;
+}
+
 const lessonIds = ["program", "variables"] as const;
 type LessonId = (typeof lessonIds)[number];
 
@@ -2857,15 +2871,7 @@ function FirstPlanetVideoChapter({
             <h3 id="first-planet-video-title">Сначала посмотри занятие</h3>
           </div>
         </div>
-        <div className="theory-youtube-frame">
-          <iframe
-            src="https://www.youtube.com/embed/OSL3TmvP54Y?si=4jcacgp4gGKoMhWE"
-            title="Переменные, типы данных и арифметические операции"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerPolicy="strict-origin-when-cross-origin"
-            allowFullScreen
-          />
-        </div>
+        <LessonVideo title="Переменные, типы данных и арифметические операции" youtubeSrc="https://www.youtube.com/embed/OSL3TmvP54Y?si=4jcacgp4gGKoMhWE" vkSrc="https://vkvideo.ru/video_ext.php?oid=-235359167&id=456239102&hash=3611c7ecf3c17558&hd=3" />
       </section>
 
       <article className="theory-notion-body">
@@ -3064,15 +3070,7 @@ function SecondPlanetVideoChapter({
           <span>01</span>
           <div><p className="eyebrow">Видеоразбор</p><h3 id="second-planet-video-title">Сначала посмотри занятие</h3></div>
         </div>
-        <div className="theory-youtube-frame">
-          <iframe
-            src="https://www.youtube.com/embed/ZbUNqBxVB_c?si=5xf5LwY1G2EJZe0q"
-            title="Условия в Python"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerPolicy="strict-origin-when-cross-origin"
-            allowFullScreen
-          />
-        </div>
+        <LessonVideo title="Условия в Python" youtubeSrc="https://www.youtube.com/embed/ZbUNqBxVB_c?si=5xf5LwY1G2EJZe0q" vkSrc="https://vkvideo.ru/video_ext.php?oid=-235359167&id=456239103&hash=6569e428ed4aeae2&hd=3" />
       </section>
 
       <article className="theory-notion-body">
@@ -3233,7 +3231,7 @@ function ThirdPlanetVideoChapter({ complete, onComplete, onNext }: { complete: b
       </div>
       <section className="theory-video-section">
         <div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div>
-        <div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/jpaB6sDtLv8?si=4vLM5p1plkBFDUqx" title="Цикл while в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>
+        <LessonVideo title="Цикл while в Python" youtubeSrc="https://www.youtube.com/embed/jpaB6sDtLv8?si=4vLM5p1plkBFDUqx" vkSrc="https://vkvideo.ru/video_ext.php?oid=-235359167&id=456239104&hash=366514af57470f09&hd=3" />
       </section>
       <article className="theory-notion-body">
         <h2>Конспект урока</h2>
@@ -3278,7 +3276,7 @@ function ListPlanetVideoChapter({ complete, onComplete, onNext }: { complete: bo
   const check = () => { const score = listPlanetQuestions.reduce((sum, item, index) => sum + (answers[index] === item.correct ? 1 : 0), 0); setResult(score); setShowResultDialog(true); if (score >= 5) onComplete(); };
   return <div className="theory-document theory-video-chapter">
     <div className="theory-document-title"><p className="eyebrow">Глава 4 · Коллекции</p><h2>Списки</h2><p>Собираем много значений в одной переменной, обращаемся к элементам по индексам и соединяем списки с уже знакомым циклом <code>while</code>.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed ? "Пройдено" : "Не пройдено"}</span></div></div>
-    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/07CdcaxY8HM?si=z3lqJsjhNpILrWe5" title="Списки в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div></section>
+    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><LessonVideo title="Списки в Python" youtubeSrc="https://www.youtube.com/embed/07CdcaxY8HM?si=z3lqJsjhNpILrWe5" vkSrc="https://vkvideo.ru/video_ext.php?oid=-235359167&id=456239105&hash=82477c836e4a9542&hd=3" /></section>
     <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead">Список хранит несколько значений под одним именем. Он записывается в квадратных скобках, а элементы разделяются запятыми.</p>
       <TheoryPythonCode code={`workers = [50_000, 60_000, 100_000, 500_000]\nprint(workers)`} />
       <aside className="theory-notion-callout"><span>i</span><p>Нижние подчёркивания в больших числах нужны только для чтения: <code>50_000</code> — то же число, что <code>50000</code>.</p></aside>
@@ -3307,7 +3305,7 @@ function StringPlanetVideoChapter({ complete, onComplete, onNext }: { complete: 
   const [answers,setAnswers]=useState<Record<number,number>>({}); const [result,setResult]=useState<number|null>(complete?6:null); const [show,setShow]=useState(false); const passed=complete||(result!==null&&result>=5);
   const check=()=>{const score=fifthPlanetQuestions.reduce((s,q,i)=>s+(answers[i]===q.correct?1:0),0);setResult(score);setShow(true);if(score>=5)onComplete();};
   return <div className="theory-document theory-video-chapter"><div className="theory-document-title"><p className="eyebrow">Глава 5 · Текст</p><h2>Строки</h2><p>Разберём индексы, неизменяемость строк, сложение, повторение, срезы с шагом и оператор <code>in</code>.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed?"Пройдено":"Не пройдено"}</span></div></div>
-  <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/VW18JxGTJvw?si=5Aevb-B-UVm3yfbI" title="Строки в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+  <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><LessonVideo title="Строки в Python" youtubeSrc="https://www.youtube.com/embed/VW18JxGTJvw?si=5Aevb-B-UVm3yfbI" vkSrc="https://vkvideo.ru/video_ext.php?oid=-235359167&id=456239106&hash=12ae9af3f30128e1&hd=3" /></section>
   <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead">У каждого символа есть положительный и отрицательный индекс.</p><AnimatedIndexLine items={["H","e","l","l","o"]}/>
   <h3>Строка похожа на список, но не изменяется</h3><p><code>s[0]</code> читает символ, однако присвоить новое значение в позицию нельзя — возникнет <code>TypeError</code>.</p><TheoryPythonCode code={`s = "Hello"\nprint(s[0])   # H\n# s[0] = "T"  — ошибка`} />
   <h3>Сложение и повторение</h3><TheoryPythonCode code={`s = "Hello"\nprint(s + " " + "World")\nprint("1" * 20)`}/><blockquote>Складывать можно строку со строкой. Строка плюс число вызывает ошибку.</blockquote>
@@ -3332,7 +3330,7 @@ function SixthPlanetVideoChapter({ complete, onComplete, onNext }: { complete: b
   const [answers,setAnswers]=useState<Record<number,number>>({}); const [result,setResult]=useState<number|null>(complete?6:null); const [show,setShow]=useState(false); const passed=complete||(result!==null&&result>=5);
   const check=()=>{const score=sixthPlanetQuestions.reduce((s,q,i)=>s+(answers[i]===q.correct?1:0),0);setResult(score);setShow(true);if(score>=5)onComplete();};
   return <div className="theory-document theory-video-chapter"><div className="theory-document-title"><p className="eyebrow">Глава 6 · Перебор</p><h2>Цикл for</h2><p>Перебираем списки, строки и диапазоны, считаем повторы и разбираемся со вложенными циклами.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed?"Пройдено":"Не пройдено"}</span></div></div>
-  <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/Kzs7ASXH8oM?si=e0Ds-jB4lhDe3n74" title="Цикл for в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+  <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><LessonVideo title="Цикл for в Python" youtubeSrc="https://www.youtube.com/embed/Kzs7ASXH8oM?si=e0Ds-jB4lhDe3n74" vkSrc="https://vkvideo.ru/video_ext.php?oid=-235359167&id=456239107&hash=d989f55fb3ef2200&hd=3" /></section>
   <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead"><code>for</code> берёт элементы коллекции по одному и выполняет блок для каждого из них.</p>
   <h3>Перебор списка</h3><TheoryPythonCode code={`numbers = [1, 2, 3, 4]\nfor value in numbers:\n    print(value)`}/><p>На каждой итерации <code>value</code> получает очередной элемент. Имя переменной можно выбрать любое.</p>
   <h3>Накопление результата</h3><TheoryPythonCode code={`numbers = [1, 2, 3]\ntotal = 0\nfor value in numbers:\n    total += value\nprint(total)  # 6`}/><p>Так вручную работает знакомая функция <code>sum()</code>.</p>
@@ -3364,7 +3362,7 @@ function SeventhPlanetVideoChapter({ complete, onComplete, onNext }: { complete:
   const check=()=>{const score=seventhPlanetQuestions.reduce((sum,q,index)=>sum+(answers[index]===q.correct?1:0),0);setResult(score);setShow(true);if(score>=5)onComplete();};
   return <div className="theory-document theory-video-chapter">
     <div className="theory-document-title"><p className="eyebrow">Глава 7 · Свои команды</p><h2>Функции</h2><p>Убираем повторяющийся код, передаём значения внутрь функции и возвращаем результат.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed?"Пройдено":"Не пройдено"}</span></div></div>
-    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/Z9NEl7Us4nk?si=lG28rKNTJBxljhK1" title="Собственные функции в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><LessonVideo title="Собственные функции в Python" youtubeSrc="https://www.youtube.com/embed/Z9NEl7Us4nk?si=lG28rKNTJBxljhK1" vkSrc="https://vkvideo.ru/video_ext.php?oid=-235359167&id=456239108&hash=b1ff012abc5224d8&hd=3" /></section>
     <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead">Функция — именованный блок кода. Её пишут один раз, а вызывают столько раз, сколько нужно.</p>
       <h3>Зачем нужны функции</h3><p>Если одинаковые команды встречаются в нескольких местах, их можно вынести в функцию. Код становится короче и его легче читать.</p><div className="theory-branch-table"><div><strong>Без функции</strong><p>Один и тот же блок приходится копировать.</p></div><div><strong>С функцией</strong><p>Блок получает имя и вызывается одной строкой.</p></div></div>
       <h3>Определение и вызов</h3><TheoryPythonCode code={`def status():\n    print("Всё хорошо")\n    print(200)\n\nstatus()\nstatus()`}/><aside className="theory-notion-callout"><span>!</span><p><code>def</code> только создаёт инструкцию. Пока функцию не вызвали с помощью <code>status()</code>, её команды не выполняются.</p></aside>
@@ -3398,7 +3396,7 @@ function EighthPlanetVideoChapter({ complete, onComplete, onNext }: { complete: 
   const check=()=>{const score=eighthPlanetQuestions.reduce((sum,q,index)=>sum+(answers[index]===q.correct?1:0),0);setResult(score);setShow(true);if(score>=5)onComplete();};
   return <div className="theory-document theory-video-chapter">
     <div className="theory-document-title"><p className="eyebrow">Глава 8 · Короткая запись</p><h2>Генераторы списков</h2><p>Создаём и фильтруем списки одной строкой, используя уже знакомые <code>for</code> и <code>if</code>.</p><div className="theory-document-meta"><span>Видео · практика</span><span>Текстовая версия</span><span>6 вопросов</span><span>{passed?"Пройдено":"Не пройдено"}</span></div></div>
-    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/WLJJnV2gPXs?si=qIahwkqS0g6XNWHl" title="Генераторы списков в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоразбор</p><h3>Сначала посмотри занятие</h3></div></div><LessonVideo title="Генераторы списков в Python" youtubeSrc="https://www.youtube.com/embed/WLJJnV2gPXs?si=qIahwkqS0g6XNWHl" vkSrc="https://vkvideo.ru/video_ext.php?oid=-235359167&id=456239109&hash=68ac803299569eb4&hd=3" /></section>
     <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead">Генератор списка заменяет создание пустого списка, цикл <code>for</code>, условие <code>if</code> и <code>append</code> одной короткой записью.</p>
       <h3>Обычный цикл и генератор</h3><div className="theory-indent-compare"><section><span className="theory-case-label">Четыре строки</span><TheoryPythonCode code={`result = []\nfor i in range(10):\n    if i % 2 == 0:\n        result.append(i)`}/></section><section><span className="theory-case-label">Одна строка</span><TheoryPythonCode code={`result = [i for i in range(10) if i % 2 == 0]`}/></section></div><p>Обе записи создадут одинаковый список: <code>[0, 2, 4, 6, 8]</code>.</p>
       <h3>Как читать запись</h3><div className="theory-loop-steps"><span><strong>i</strong><br/>что кладём</span><b>←</b><span><strong>for i in range(10)</strong><br/>откуда берём</span><b>←</b><span><strong>if i % 2 == 0</strong><br/>при каком условии</span><b>✓</b></div><aside className="theory-notion-callout"><span>!</span><p>Читай генератор по смыслу: «положи <code>i</code> для каждого <code>i</code> из диапазона, если число чётное».</p></aside>
@@ -3432,7 +3430,7 @@ function NinthPlanetVideoChapter({ complete, onComplete, onFinish }: { complete:
   const check=()=>{const score=ninthPlanetQuestions.reduce((sum,q,index)=>sum+(answers[index]===q.correct?1:0),0);setResult(score);setShow(true);if(score>=5)onComplete();};
   return <div className="theory-document theory-video-chapter">
     <div className="theory-document-title"><p className="eyebrow">Глава 9 · Финал курса</p><h2>Импорты и файлы</h2><p>Подключаем нужные инструменты и считываем данные из текстовых файлов в формате задач ЕГЭ.</p><div className="theory-document-meta"><span>Видео · конспект</span><span>Шаблоны ЕГЭ</span><span>6 вопросов</span><span>{passed?"Пройдено":"Не пройдено"}</span></div></div>
-    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Новое видео</p><h3>Сначала посмотри заключительный урок</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/8leWAUizSFI?si=HhHOH95RrRN8oKGN" title="Импорты и работа с файлами в Python" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Новое видео</p><h3>Сначала посмотри заключительный урок</h3></div></div><LessonVideo title="Импорты и работа с файлами в Python" youtubeSrc="https://www.youtube.com/embed/8leWAUizSFI?si=HhHOH95RrRN8oKGN" vkSrc="https://vkvideo.ru/video_ext.php?oid=-235359167&id=456239110&hash=e04ca55a36b97369&hd=3" /></section>
     <article className="theory-notion-body"><h2>Конспект урока</h2><p className="theory-lead"><code>import</code> подключает дополнительные инструменты, а <code>open</code> открывает файл с данными для программы.</p>
       <h3>Подключаем библиотеку целиком</h3><TheoryPythonCode code={`import math\n\nprint(math.log2(16))\nprint(math.ceil(2.3))`}/><p>После <code>import math</code> инструмент вызывается через название библиотеки и точку: <code>math.log2</code>, <code>math.ceil</code>.</p>
       <h3>Берём только нужные инструменты</h3><TheoryPythonCode code={`from math import log2, ceil\n\nprint(log2(16))\nprint(ceil(2.3))`}/><p>Теперь писать <code>math.</code> не нужно. В программе доступны только перечисленные функции.</p><div className="theory-branch-table"><div><code>import math</code><p>Подключить библиотеку и обращаться через <code>math.</code>.</p></div><div><code>from math import log2</code><p>Подключить один конкретный инструмент.</p></div><div><code>from math import *</code><p>Подключить все инструменты библиотеки.</p></div></div><aside className="theory-notion-callout"><span>!</span><p>Звёздочка означает «всё», но точечный импорт понятнее показывает, какие инструменты нужны программе.</p></aside>
@@ -3454,7 +3452,7 @@ function ZeroPlanetVideoChapter({ complete, onComplete, onNext }: { complete: bo
   const finish = () => { onComplete(); onNext(); };
   return <div className="theory-document theory-video-chapter">
     <div className="theory-document-title"><p className="eyebrow">Глава 0 · Подготовка</p><h2>Установка Python</h2><p>Установим Python, выберем редактор и запустим первую программу.</p><div className="theory-document-meta"><span>Видео · инструкция</span><span>Windows · macOS</span><span>Без теста</span><span>{complete?"Готово":"Не пройдено"}</span></div></div>
-    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоинструкция</p><h3>Подготовь компьютер к занятиям</h3></div></div><div className="theory-youtube-frame"><iframe src="https://www.youtube.com/embed/ErRi9Gxj98c?si=awFE1F_P-EktCvzz" title="Как установить Python и редактор кода" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div></section>
+    <section className="theory-video-section"><div className="theory-section-heading"><span>01</span><div><p className="eyebrow">Видеоинструкция</p><h3>Подготовь компьютер к занятиям</h3></div></div><LessonVideo title="Как установить Python и редактор кода" youtubeSrc="https://www.youtube.com/embed/ErRi9Gxj98c?si=awFE1F_P-EktCvzz" vkSrc="https://vkvideo.ru/video_ext.php?oid=-235359167&id=456239101&hash=09d99a0585d13420&hd=3" /></section>
     <article className="theory-notion-body"><h2>Что нужно установить</h2><p className="theory-lead">Для занятий нужны сам <code>Python</code> и один редактор кода: простой <code>VS Code</code> или используемый в курсе <code>PyCharm</code>.</p>
       <div className="theory-download-grid"><a href="https://www.python.org/downloads/" target="_blank" rel="noreferrer"><span>1</span><strong>Скачать Python</strong><small>Официальный сайт · Windows и macOS</small></a><a href="https://code.visualstudio.com/Download" target="_blank" rel="noreferrer"><span>2A</span><strong>Скачать VS Code</strong><small>Официальный сайт Microsoft</small></a><a href="https://www.jetbrains.com/pycharm/download/" target="_blank" rel="noreferrer"><span>2B</span><strong>PyCharm · официальный сайт</strong><small>Страница загрузки JetBrains</small></a><a href="https://disk.360.yandex.ru/d/Q5SNoKj89KMOlA" target="_blank" rel="noreferrer"><span>RU</span><strong>PyCharm с Яндекс Диска</strong><small>Версии для Windows и macOS</small></a></div>
       <aside className="theory-notion-callout"><span>!</span><p>Официальная загрузка PyCharm из России может быть недоступна. В таком случае используй подготовленную ссылку на Яндекс Диск и выбери установщик для своей системы.</p></aside>
@@ -4317,7 +4315,6 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
         <div className="theory-stars" aria-hidden="true" />
         <header className="theory-map-header">
           <div>
-            <p className="eyebrow">Учебная система</p>
             <h1>Космос знаний</h1>
           </div>
           <div className="theory-overall-progress">

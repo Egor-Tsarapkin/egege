@@ -9,7 +9,45 @@ const outputRoot = new URL("../public/data/", import.meta.url);
 const taskOutputRoot = new URL("../public/data/tasks/", import.meta.url);
 const imageOutputRoot = new URL("../public/materials/kege/imported/", import.meta.url);
 const fileOutputRoot = new URL("../public/materials/kege/files/", import.meta.url);
-const sourceNumbers = [...Array.from({ length: 19 }, (_, index) => index + 1), 22, 23, 24, 25, 26, 27];
+const archiveNumbers = [103, 106, 109, 110, 112, 113, 117, 122, 127];
+const sourceNumbers = [...Array.from({ length: 19 }, (_, index) => index + 1), 22, 23, 24, 25, 26, 27, ...archiveNumbers];
+const outputNumbers = [...Array.from({ length: 27 }, (_, index) => index + 1), ...archiveNumbers];
+const taskTitles = {
+  1: "Анализ информационных моделей",
+  2: "Таблицы истинности логических выражений",
+  3: "Поиск и сортировка в базах данных",
+  4: "Кодирование и декодирование данных. Условие Фано",
+  5: "Анализ алгоритмов для исполнителей",
+  6: "Циклические алгоритмы для Исполнителя",
+  7: "Кодирование графической и звуковой информации",
+  8: "Комбинаторика",
+  9: "Обработка числовой информации в электронных таблицах",
+  10: "IP адреса и сети",
+  11: "Вычисление количества информации",
+  12: "Машина Тьюринга",
+  13: "Динамическое программирование (количество программ)",
+  14: "Позиционные системы счисления",
+  15: "Истинность логического выражения",
+  16: "Вычисление значения рекурсивной функции",
+  17: "Обработка целочисленных данных. Проверка делимости",
+  18: "Динамическое программирование в электронных таблицах",
+  19: "Теория игр",
+  22: "Многопоточные вычисления",
+  23: "Алгоритмы обхода графа",
+  24: "Обработка символьных строк",
+  25: "Обработка целочисленных данных. Поиск делителей",
+  26: "Обработка данных с помощью сортировки",
+  27: "Анализ данных",
+  103: "Поиск и сортировка в базах данных (Архив)",
+  106: "Анализ программ с циклами (Архив)",
+  109: "Обработка числовой информации в электронных таблицах (Архив)",
+  110: "Поиск слова в текстовом документе",
+  112: "Алгоритмы для исполнителей с циклами и ветвлениями",
+  113: "Количество путей в ориентированном графе (Архив)",
+  117: "Обработка целочисленных данных. Проверка делимости (Архив)",
+  122: "Анализ программ с циклами и ветвлениями (Архив)",
+  127: "Обработка потока данных (Архив)",
+};
 const difficultyNames = ["Базовый", "Средний", "Высокий", "Высокий"];
 const concurrency = 2;
 const downloadFiles = process.env.DOWNLOAD_TASK_FILES === "1";
@@ -184,14 +222,15 @@ async function downloadTaskFiles(files, taskId, number) {
   });
 }
 
-async function makeTask(source, number, id, text, answer, table = source.table) {
+async function makeTask(source, number, id, text, answer, table = source.table, parentId) {
   const htmlWithImages = await extractInlineImages(text ?? "", id);
   return {
     id: String(id),
+    ...(parentId ? { parentId: String(parentId) } : {}),
     number,
     difficulty: difficultyNames[Number(source.difficulty)] ?? "Средний",
     source: "КЕГЭ",
-    title: `Задание №${number}`,
+    title: taskTitles[number] ?? `Задание №${number}`,
     note: source.comment || undefined,
     html: prepareMarkup(htmlWithImages),
     answer: String(answer ?? ""),
@@ -227,6 +266,7 @@ async function importNumber(number) {
             `${source.text ?? ""}${subTask.text ?? ""}`,
             subTask.key,
             subTask.table,
+            source.taskId,
           ),
         );
       }
@@ -251,8 +291,7 @@ export async function importKompegeTasks() {
   });
 
   await Promise.all(
-    Array.from({ length: 27 }, async (_, index) => {
-      const number = index + 1;
+    outputNumbers.map(async (number) => {
       const tasksForNumber = tasks.filter((task) => task.number === number);
       await writeFile(
         new URL(`${number}.json`, taskOutputRoot),
@@ -263,8 +302,7 @@ export async function importKompegeTasks() {
 
   const taskIndex = Object.fromEntries(tasks.map((task) => [task.id, task.number]));
   const taskCounts = Object.fromEntries(
-    Array.from({ length: 27 }, (_, index) => {
-      const number = index + 1;
+    outputNumbers.map((number) => {
       return [number, tasks.filter((task) => task.number === number).length];
     }),
   );

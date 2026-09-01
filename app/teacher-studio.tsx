@@ -28,7 +28,6 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
-import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import RichHtml from "@/app/rich-html";
 
 type StudioSection = "variants" | "tasks";
@@ -147,15 +146,10 @@ async function uploadEmbeddedImages(html: string) {
 }
 
 async function studioRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const client = await getSupabaseBrowserClient();
-  const { data } = client ? await client.auth.getSession() : { data: { session: null } };
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Нужно войти в аккаунт");
   const response = await fetch(path, {
     ...init,
     headers: {
       ...(init?.body instanceof FormData ? {} : { "content-type": "application/json" }),
-      authorization: `Bearer ${token}`,
       ...init?.headers,
     },
   });

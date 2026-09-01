@@ -1,12 +1,10 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Home from "../page";
+import { AUTH_SESSION_COOKIE } from "@/lib/local-auth-server";
 
 export default async function ProfilePage() {
   const cookieStore = await cookies();
-  const hasSupabaseSession = cookieStore.getAll().some(({ name }) =>
-    /^sb-.+-auth-token(?:\.\d+)?$/.test(name),
-  );
-  if (!hasSupabaseSession) redirect("/?login=1");
+  if (!cookieStore.has(AUTH_SESSION_COOKIE)) redirect("/?login=1");
   return <Home />;
 }

@@ -1,4 +1,9 @@
 {$DOMAIN} {
   encode zstd gzip
-  reverse_proxy egege:3000
+  handle_path /boards/realtime* {
+    reverse_proxy realtime:3001
+  }
+  handle {
+    reverse_proxy egege:3000
+  }
 }

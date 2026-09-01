@@ -1,5 +1,6 @@
 import { authenticatedUser, communityDb } from "@/lib/community-server";
 import { ensureAdminSchema, ensureUserAccess, isAdminUser } from "@/lib/admin-server";
+import { ensureBoardSchema } from "@/lib/boards/server";
 import taskIndex from "@/public/data/task-index.json";
 import { ensureTeacherSchema, isTeacherTaskId, taskExamNumbers } from "@/lib/teacher-studio-server";
 
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
   const auth = await requireAdmin(request);
   if ("error" in auth) return auth.error;
   await ensureAdminSchema();
+  await ensureBoardSchema();
   await ensureTeacherSchema();
   const db = communityDb();
   const now = Math.floor(Date.now() / 1000);
@@ -44,7 +46,8 @@ export async function GET(request: Request) {
     db.prepare("SELECT COUNT(*) AS value FROM profiles WHERE created_at >= ?").bind(since7).first<{ value: number }>(),
     db.prepare("SELECT COALESCE(AVG(active_seconds), 0) AS value FROM analytics_sessions").first<{ value: number }>(),
     db.prepare(`SELECT p.user_id, p.username, p.display_name, p.avatar_emoji, p.created_at,
-      COALESCE(a.email, '') AS email, COALESCE(a.premium, 0) AS premium,
+      COALESCE(a.email, '') AS email, COALESCE(a.board_limit, 3) AS board_limit,
+      (SELECT COUNT(*) FROM boards b WHERE b.owner_user_id = p.user_id AND b.deleted_at IS NULL) AS board_count,
       COALESCE(a.last_seen_at, p.updated_at) AS last_seen_at,
       COUNT(e.id) AS variants, COALESCE(ROUND(AVG(e.test_score)), 0) AS average_score
       FROM profiles p
@@ -70,7 +73,7 @@ export async function GET(request: Request) {
       GROUP BY label ORDER BY value DESC`).bind(since30).all(),
     db.prepare(`SELECT aa.action, aa.created_at, p.display_name, p.username
       FROM admin_actions aa LEFT JOIN profiles p ON p.user_id = aa.target_user_id
-      ORDER BY aa.created_at DESC LIMIT 8`).all(),
+      WHERE aa.action = 'board_limit_changed' ORDER BY aa.created_at DESC LIMIT 8`).all(),
     db.prepare(`SELECT t.id, t.public_id, t.exam_number, t.note, t.statement_html, t.difficulty,
       t.approved, t.updated_at, COALESCE(p.display_name, 'Автор EGEGE') AS author
       FROM teacher_tasks t LEFT JOIN profiles p ON p.user_id = t.owner_id
@@ -108,7 +111,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as null | {
     action?: string;
     userId?: string;
-    premium?: boolean;
+    boardLimit?: number;
     id?: number;
     approved?: boolean;
     difficulty?: string;
@@ -130,17 +133,17 @@ export async function POST(request: Request) {
     await db.prepare("UPDATE teacher_variants SET approved = ? WHERE id = ?").bind(body.approved ? 1 : 0, body.id).run();
     return Response.json({ ok: true });
   }
-  if (body?.action !== "set_premium" || !body.userId || typeof body.premium !== "boolean") {
+  if (body?.action !== "set_board_limit" || !body.userId || !Number.isInteger(body.boardLimit) || body.boardLimit! < 0 || body.boardLimit! > 100) {
     return Response.json({ error: "Некорректное действие" }, { status: 400 });
   }
   await db.prepare(`INSERT INTO user_access
-    (user_id, email, premium, first_seen_at, last_seen_at, last_login_at)
-    VALUES (?, '', ?, ?, ?, ?)
-    ON CONFLICT(user_id) DO UPDATE SET premium = excluded.premium`)
-    .bind(body.userId, body.premium ? 1 : 0, now, now, now).run();
+    (user_id, email, premium, board_limit, first_seen_at, last_seen_at, last_login_at)
+    VALUES (?, '', 0, ?, ?, ?, ?)
+    ON CONFLICT(user_id) DO UPDATE SET board_limit = excluded.board_limit`)
+    .bind(body.userId, body.boardLimit, now, now, now).run();
   await db.prepare(`INSERT INTO admin_actions
     (admin_user_id, target_user_id, action, created_at) VALUES (?, ?, ?, ?)`)
-    .bind(auth.user.id, body.userId, body.premium ? "premium_granted" : "premium_revoked", now)
+    .bind(auth.user.id, body.userId, "board_limit_changed", now)
     .run();
   return Response.json({ ok: true });
 }

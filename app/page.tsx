@@ -1,12 +1,8 @@
 "use client";
 
-import type { Provider, User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import {
-  getSupabaseAuthRedirectUrl,
-  getSupabaseBrowserClient,
-} from "@/lib/supabase-browser";
+import type { AppUser } from "@/lib/app-user";
 import { taskDownloadHref, taskDownloadName } from "@/lib/task-download";
 import { AVATAR_EMOJIS } from "@/lib/avatar-emojis";
 import type { ExamAttempt } from "./exam-station";
@@ -18,9 +14,13 @@ const ExamStation = lazy(() => import("./exam-station"));
 const AdminDashboard = lazy(() => import("./admin-dashboard"));
 const EgeMarathon = lazy(() => import("./ege-marathon"));
 const TeacherStudio = lazy(() => import("./teacher-studio"));
+const BoardList = lazy(() => import("./boards/board-list"));
+const MaterialsCenter = lazy(() => import("./materials-center"));
 
-type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "dashboard" | "profile" | "admin";
-type GateSection = Extract<Section, "theory" | "game" | "trainer" | "dashboard">;
+const SITE_VERSION = "1.0.24";
+
+type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard" | "profile" | "admin";
+type GateSection = Extract<Section, "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard">;
 type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
 type Theme = "dark" | "light";
@@ -54,6 +54,7 @@ type Preferences = {
 
 type Task = {
   id: string;
+  parentId?: string;
   number: number;
   difficulty: Difficulty;
   source: string;
@@ -73,6 +74,7 @@ type Variant = {
   title: string;
   taskCount: number;
   sourceUrl: string;
+  academicYear?: string;
 };
 
 type VariantYearGroup = {
@@ -81,9 +83,55 @@ type VariantYearGroup = {
   teachers: Variant[];
 };
 
+const taskCatalog = [
+  [1, "Анализ информационных моделей"],
+  [2, "Таблицы истинности логических выражений"],
+  [3, "Поиск и сортировка в базах данных"],
+  [4, "Кодирование и декодирование данных. Условие Фано"],
+  [5, "Анализ алгоритмов для исполнителей"],
+  [6, "Циклические алгоритмы для Исполнителя"],
+  [7, "Кодирование графической и звуковой информации"],
+  [8, "Комбинаторика"],
+  [9, "Обработка числовой информации в электронных таблицах"],
+  [10, "IP адреса и сети"],
+  [11, "Вычисление количества информации"],
+  [12, "Машина Тьюринга"],
+  [13, "Динамическое программирование (количество программ)"],
+  [14, "Позиционные системы счисления"],
+  [15, "Истинность логического выражения"],
+  [16, "Вычисление значения рекурсивной функции"],
+  [17, "Обработка целочисленных данных. Проверка делимости"],
+  [18, "Динамическое программирование в электронных таблицах"],
+  [19, "Теория игр"],
+  [22, "Многопоточные вычисления"],
+  [23, "Алгоритмы обхода графа"],
+  [24, "Обработка символьных строк"],
+  [25, "Обработка целочисленных данных. Поиск делителей"],
+  [26, "Обработка данных с помощью сортировки"],
+  [27, "Анализ данных"],
+  [103, "Поиск и сортировка в базах данных (Архив)"],
+  [106, "Анализ программ с циклами (Архив)"],
+  [109, "Обработка числовой информации в электронных таблицах (Архив)"],
+  [110, "Поиск слова в текстовом документе"],
+  [112, "Алгоритмы для исполнителей с циклами и ветвлениями"],
+  [113, "Количество путей в ориентированном графе (Архив)"],
+  [117, "Обработка целочисленных данных. Проверка делимости (Архив)"],
+  [122, "Анализ программ с циклами и ветвлениями (Архив)"],
+  [127, "Обработка потока данных (Архив)"],
+] as const;
+
 function groupVariants(variants: Variant[]): VariantYearGroup[] {
   const imported = variants.filter((variant) => !variant.kim.startsWith("0"));
-  const teachers = variants.filter((variant) => variant.kim.startsWith("0"));
+  const metadataGroups = new Map<string, Variant[]>();
+  for (const variant of imported) {
+    if (!variant.academicYear) continue;
+    const group = metadataGroups.get(variant.academicYear) ?? [];
+    group.push(variant);
+    metadataGroups.set(variant.academicYear, group);
+  }
+  if (metadataGroups.size > 0 && imported.every((variant) => variant.academicYear)) {
+    return [...metadataGroups].map(([year, official]) => ({ year, official, teachers: [] }));
+  }
   const boundaries = [
     { year: "2025/26", start: 0, end: 77, officialEnd: 12 },
     { year: "2024/25", start: 77, end: 135, officialEnd: 91 },
@@ -95,9 +143,7 @@ function groupVariants(variants: Variant[]): VariantYearGroup[] {
     official: imported.slice(start, Math.min(officialEnd, imported.length)),
     teachers: [],
   })).filter((group) => group.official.length);
-  return teachers.length
-    ? [{ year: "Авторские", official: [], teachers }, ...archive]
-    : archive;
+  return archive;
 }
 
 type ExamVariantData = {
@@ -200,6 +246,8 @@ const sectionPaths: Record<Section, string> = {
   theory: "/theory",
   game: "/game",
   trainer: "/trainer",
+  materials: "/materials",
+  boards: "/boards",
   dashboard: "/dashboard",
   profile: "/profile",
   admin: "/admin",
@@ -407,17 +455,10 @@ function formatTimecode(seconds: number) {
 }
 
 async function communityRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const client = await getSupabaseBrowserClient();
-  if (!client) throw new Error("Авторизация не подключена.");
-  const { data } = await client.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Нужно войти в аккаунт.");
-
   const response = await fetch(path, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
       ...init?.headers,
     },
   });
@@ -483,16 +524,35 @@ function TrainerIcon() {
   );
 }
 
-function AccessBadge({
-  premium = false,
-  compact = false,
-}: {
-  premium?: boolean;
-  compact?: boolean;
-}) {
+function BoardsIcon() {
+  return (
+    <span className="dock-icon boards-icon" aria-hidden="true">
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
+
+function MaterialsIcon() {
+  return <span className="dock-icon materials-icon" aria-hidden="true"><i /><i /><i /></span>;
+}
+
+function StreakFlame({ active }: { active: boolean }) {
+  return (
+    <span className={`streak-flame ${active ? "is-active" : ""}`} aria-hidden="true">
+      <svg viewBox="0 0 32 40" focusable="false">
+        <path className="streak-flame-outer" d="M17.4 2.7c1.1 6.1-2.7 8.2-5.4 12.1-2.1 3.1-1.7 6.1.2 7.9-1.1-4.7-4.3-5.6-4.3-5.6C4.6 20.3 3 23.8 3 27.3 3 34.3 8.8 39 16 39s13-4.8 13-11.9c0-6.1-3.5-11.8-11.6-24.4Z" />
+        <path className="streak-flame-inner" d="M17.1 19.1c.4 3.7-2.8 5.1-2.8 8.1 0 1.7 1.1 3 2.7 3 2.2 0 3.7-1.8 3.7-4.1 0-2.1-1.2-4.3-3.6-7Z" />
+      </svg>
+    </span>
+  );
+}
+
+function AccessBadge({ compact = false }: { compact?: boolean }) {
   return (
     <span
-      className={`access-lock ${premium ? "is-premium" : ""} ${compact ? "is-compact" : ""}`}
+      className={`access-lock ${compact ? "is-compact" : ""}`}
       aria-hidden="true"
     >
       <svg className="access-chain-art" viewBox="0 0 120 72" focusable="false">
@@ -514,13 +574,61 @@ function AccessBadge({
   );
 }
 
+function AuthorContact() {
+  return (
+    <div className="author-contact">
+      <p>
+        Нашёл ошибку на сайте? — Напиши{" "}
+        <button type="button" className="author-contact-trigger" aria-haspopup="dialog">
+          автору
+        </button>
+      </p>
+      <div className="author-contact-popover" role="dialog" aria-label="Связаться с автором">
+        <p>
+          Если ты нашёл баг или хочешь предложить, как улучшить сайт, напиши мне.
+        </p>
+        <div className="author-contact-links">
+          <a href="https://t.me/Egorkatdvd" target="_blank" rel="noreferrer">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21.4 4.1 18.6 19c-.2 1.1-.8 1.4-1.7.9l-4.3-3.2-2.1 2c-.2.2-.4.4-.9.4l.3-4.4 8-7.2c.4-.3-.1-.5-.5-.2l-9.9 6.2-4.3-1.3c-1-.3-1-1 .2-1.5l16.8-6.5c.8-.3 1.5.2 1.2 1.9Z" />
+            </svg>
+            <span>@Egorkatdvd</span>
+          </a>
+          <a href="https://vk.ru/egor_tsarapkin" target="_blank" rel="noreferrer">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3.2 5.8h3.2c.3 0 .5.2.6.5.7 2 1.8 3.8 3.1 5.3.2.2.4.1.4-.2V7.6c-.1-1-.6-1.2-.6-1.5 0-.2.2-.3.5-.3h5c.4 0 .6.2.6.5v5.4c0 .4.2.5.4.3 1.3-1.4 2.3-3.3 3-5.4.1-.4.3-.7.8-.7h3.2c.6 0 .8.3.6.8-.7 2.3-2.2 4.3-3.5 5.8-.3.4-.3.6.1 1 1.3 1.2 2.7 2.7 3.4 4.2.3.5 0 .8-.5.8h-3.6c-.4 0-.7-.2-1-.5-.8-.9-1.6-2-2.4-2.7-.3-.3-.5-.2-.5.2v2.3c0 .5-.2.7-.7.7-4.5.2-8.4-2.5-10.8-7.6a21 21 0 0 1-1.8-4.2c-.2-.5.1-.8.5-.8Z" />
+            </svg>
+            <span>ВКонтакте</span>
+          </a>
+          <a href="mailto:egortsarapkinpersona@gmail.com">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3.8 5h16.4A1.8 1.8 0 0 1 22 6.8v10.4a1.8 1.8 0 0 1-1.8 1.8H3.8A1.8 1.8 0 0 1 2 17.2V6.8A1.8 1.8 0 0 1 3.8 5Zm8.2 7.1 7.1-4.7H4.9l7.1 4.7Zm0 2.2L4 9v8h16V9l-8 5.3Z" />
+            </svg>
+            <span>Почта</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeReleaseBadge() {
+  return (
+    <div className="home-release-badge" aria-label={`Текущая версия сайта ${SITE_VERSION}`}>
+      v{SITE_VERSION}
+    </div>
+  );
+}
+
 function Dock({
   navigate,
   isRegistered,
+  authResolved,
   rattlingSection,
 }: {
   navigate: (section: Section) => void;
   isRegistered: boolean;
+  authResolved: boolean;
   rattlingSection: GateSection | null;
 }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -529,7 +637,6 @@ function Dock({
     label: string;
     icon: React.ReactNode;
     locked?: boolean;
-    premium?: boolean;
   }> = [
     { section: "tasks", label: "База заданий", icon: <DatabaseIcon /> },
     { section: "variants", label: "Варианты", icon: <VariantsIcon /> },
@@ -537,25 +644,27 @@ function Dock({
       section: "theory",
       label: "Теория",
       icon: <TheoryIcon />,
-      locked: !isRegistered,
+      locked: authResolved && !isRegistered,
     },
     {
       section: "game",
       label: "EGE-марафон",
       icon: <GameIcon />,
-      locked: !isRegistered,
+      locked: authResolved && !isRegistered,
     },
     {
       section: "trainer",
       label: "Тренажёр",
       icon: <TrainerIcon />,
-      locked: !isRegistered,
+      locked: authResolved && !isRegistered,
     },
+    { section: "materials", label: "Материалы", icon: <MaterialsIcon />, locked: authResolved && !isRegistered },
+    { section: "boards", label: "Онлайн-доска", icon: <BoardsIcon />, locked: authResolved && !isRegistered },
     {
       section: "dashboard",
       label: "Дашборд",
       icon: <DashboardIcon />,
-      locked: !isRegistered,
+      locked: authResolved && !isRegistered,
     },
   ];
 
@@ -579,14 +688,14 @@ function Dock({
           onClick={() => navigate(item.section)}
           aria-label={
             item.locked
-              ? `${item.label}: ${item.premium ? "нужны регистрация и премиум" : "нужна регистрация"}`
+              ? `${item.label}: нужна регистрация`
               : item.label
           }
           key={item.section}
         >
           {item.icon}
           <span>{item.label}</span>
-          {item.locked && <AccessBadge premium={item.premium} compact />}
+          {item.locked && <AccessBadge compact />}
         </button>
       ))}
     </div>
@@ -597,12 +706,14 @@ function AppHeader({
   section,
   navigate,
   isRegistered,
+  authResolved,
   rattlingSection,
   profile,
 }: {
   section: Section;
   navigate: (section: Section) => void;
   isRegistered: boolean;
+  authResolved: boolean;
   rattlingSection: GateSection | null;
   profile: React.ReactNode;
 }) {
@@ -614,18 +725,19 @@ function AppHeader({
     section: Exclude<Section, "home">;
     label: string;
     locked?: boolean;
-    premium?: boolean;
   }> = [
     { section: "tasks", label: "База" },
     { section: "variants", label: "Варианты" },
     {
       section: "theory",
       label: "Теория",
-      locked: !isRegistered,
+      locked: authResolved && !isRegistered,
     },
-    { section: "game", label: "EGE-марафон", locked: !isRegistered },
-    { section: "trainer", label: "Тренажёр", locked: !isRegistered },
-    { section: "dashboard", label: "Дашборд", locked: !isRegistered },
+    { section: "game", label: "EGE-марафон", locked: authResolved && !isRegistered },
+    { section: "trainer", label: "Тренажёр", locked: authResolved && !isRegistered },
+    { section: "materials", label: "Материалы", locked: authResolved && !isRegistered },
+    { section: "boards", label: "Онлайн-доска", locked: authResolved && !isRegistered },
+    { section: "dashboard", label: "Дашборд", locked: authResolved && !isRegistered },
   ];
 
   useEffect(() => {
@@ -689,13 +801,13 @@ function AppHeader({
               onClick={() => navigate(item.section)}
               aria-label={
                 item.locked
-                  ? `${item.label}: ${item.premium ? "нужны регистрация и премиум" : "нужна регистрация"}`
+                  ? `${item.label}: нужна регистрация`
                   : item.label
               }
               key={item.section}
             >
               {item.label}
-              {item.locked && <AccessBadge premium={item.premium} compact />}
+              {item.locked && <AccessBadge compact />}
             </button>
           ))}
         </nav>
@@ -709,26 +821,26 @@ function ProfileMenu({
   open,
   user,
   authConfigured,
+  authProviders,
   preferences,
-  isPremium,
   avatarEmoji,
   onToggle,
   onPreference,
-  onGoogleLogin,
   onYandexLogin,
+  onGoogleLogin,
   onLogout,
   home = false,
 }: {
   open: boolean;
-  user: User | null;
+  user: AppUser | null;
   authConfigured: boolean | null;
+  authProviders: { yandex: boolean; google: boolean };
   preferences: Preferences;
-  isPremium: boolean;
   avatarEmoji?: string;
   onToggle: () => void;
   onPreference: (next: Partial<Preferences>) => void;
-  onGoogleLogin: (distributionConsent: boolean) => Promise<string>;
   onYandexLogin: (distributionConsent: boolean) => Promise<string>;
+  onGoogleLogin: (distributionConsent: boolean) => Promise<string>;
   onLogout: () => Promise<void>;
   home?: boolean;
 }) {
@@ -744,14 +856,6 @@ function ProfileMenu({
     user?.user_metadata?.name ??
     "Ученик EGEGE";
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "Е";
-  const reactions: Array<{ value: Reaction; label: string; icon: string }> = [
-    { value: "xp", label: "XP", icon: "+10" },
-    { value: "hearts", label: "Сердца", icon: "♥" },
-    { value: "letters", label: "Буквы", icon: "ЯA" },
-    { value: "fire", label: "Огоньки", icon: "🔥" },
-    { value: "fireworks", label: "Салют", icon: "✦" },
-    { value: "random", label: "Случайно", icon: "?" },
-  ];
   const runAuth = async (action: (distributionConsent: boolean) => Promise<string>) => {
     if (!termsAccepted || !dataConsent) {
       setAuthMessage("Подтвердите соглашение и согласие на обработку данных.");
@@ -768,11 +872,10 @@ function ProfileMenu({
     return (
       <div className={`profile ${home ? "profile-home" : ""}`}>
         <button
-          className={`profile-trigger is-user ${isPremium ? "is-premium" : ""}`}
+          className="profile-trigger is-user"
           onClick={onToggle}
           aria-label="Открыть личный кабинет"
         >
-          {isPremium && <i className="premium-crown" aria-hidden="true" />}
           <span className={avatarEmoji ? "avatar-emoji" : ""}>{avatarEmoji || userInitial}</span>
         </button>
       </div>
@@ -782,16 +885,13 @@ function ProfileMenu({
   return (
     <div className={`profile ${home ? "profile-home" : ""}`}>
       <button
-        className={`profile-trigger ${isRegistered ? "is-user" : "is-guest"} ${
-          isPremium ? "is-premium" : ""
-        }`}
+        className={`profile-trigger ${isRegistered ? "is-user" : "is-guest"}`}
         onClick={onToggle}
         aria-expanded={open}
         aria-label={isRegistered ? "Открыть профиль" : "Войти"}
       >
         {isRegistered ? (
           <>
-            {isPremium && <i className="premium-crown" aria-hidden="true" />}
             <span className={avatarEmoji ? "avatar-emoji" : ""}>{avatarEmoji || userInitial}</span>
           </>
         ) : "Войти"}
@@ -845,47 +945,14 @@ function ProfileMenu({
           </div>
         </fieldset>
 
-        <fieldset className="settings-block">
-          <legend>Анимация ответа</legend>
-          <div className="reaction-options">
-            {reactions.map((reaction) => (
-              <button
-                className={preferences.reaction === reaction.value ? "is-selected" : ""}
-                onClick={() => onPreference({ reaction: reaction.value })}
-                key={reaction.value}
-              >
-                <i>{reaction.icon}</i>
-                <span>{reaction.label}</span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
         <div className="profile-auth">
           {isRegistered ? (
             <>
-              <div className={`premium-demo is-readonly ${isPremium ? "is-active" : ""}`}>
-                <div>
-                  <span className="premium-label">
-                    <i className="premium-crown is-inline" aria-hidden="true" />
-                    {isPremium ? "Премиум активен" : "Обычный аккаунт"}
-                  </span>
-                  <small>
-                    {isPremium
-                      ? "Теория открыта"
-                      : "Премиум выдаётся преподавателем"}
-                  </small>
-                </div>
-                <span className={`premium-status-dot ${isPremium ? "is-active" : ""}`} />
-              </div>
               <div className="profile-person">
-                <span className={isPremium ? "has-premium" : ""}>
-                  {isPremium && <i className="premium-crown" aria-hidden="true" />}
-                  {userInitial}
-                </span>
+                <span>{userInitial}</span>
                 <div>
                   <strong>{userLabel}</strong>
-                  <small>{isPremium ? "Премиум-профиль" : "Обычный профиль"}</small>
+                  <small>Профиль EGEGE</small>
                 </div>
               </div>
               <button className="secondary-auth" onClick={() => void onLogout()}>
@@ -894,8 +961,21 @@ function ProfileMenu({
             </>
           ) : (
             <>
-              <p>Войдите через Яндекс или Google — пароль создавать не нужно.</p>
+              <p>Войдите через Google или Яндекс — пароль создавать не нужно.</p>
               <div className="auth-consents">
+                <label className="auth-consents-all">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted && dataConsent && distributionConsent}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      setTermsAccepted(checked);
+                      setDataConsent(checked);
+                      setDistributionConsent(checked);
+                    }}
+                  />
+                  <span>Выбрать всё</span>
+                </label>
                 <label>
                   <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} />
                   <span>Принимаю <Link href="/terms" target="_blank" rel="noreferrer">пользовательское соглашение</Link></span>
@@ -913,7 +993,7 @@ function ProfileMenu({
                 <button
                   className="social-auth yandex-auth"
                   onClick={() => void runAuth(onYandexLogin)}
-                  disabled={!authConfigured || authBusy || !termsAccepted || !dataConsent}
+                  disabled={!authProviders.yandex || authBusy || !termsAccepted || !dataConsent}
                 >
                   <b aria-hidden="true">Я</b>
                   Продолжить с Яндексом
@@ -921,7 +1001,7 @@ function ProfileMenu({
                 <button
                   className="social-auth google-auth"
                   onClick={() => void runAuth(onGoogleLogin)}
-                  disabled={!authConfigured || authBusy || !termsAccepted || !dataConsent}
+                  disabled={!authProviders.google || authBusy || !termsAccepted || !dataConsent}
                 >
                   <b aria-hidden="true">G</b>
                   Продолжить с Google
@@ -930,7 +1010,7 @@ function ProfileMenu({
               {authConfigured === null && <p className="auth-status">Проверяем подключение…</p>}
               {authConfigured === false && (
                 <p className="auth-status is-warning">
-                  Авторизация подготовлена. Осталось подключить проект Supabase.
+                  Авторизация подготовлена. Осталось указать ключи OAuth-провайдера.
                 </p>
               )}
               {authMessage && <p className="auth-status">{authMessage}</p>}
@@ -1082,7 +1162,7 @@ function TaskItem({
         <div>
           <div className="answer-inner">
             <p className="answer-label">Ответ</p>
-            <p className="answer-value">{task.answer}</p>
+            <p className="answer-value">{task.answer.replace(/\\n/g, "\n")}</p>
             <div className="match-row">
               <span>{completed ? "Ответ уже отмечен" : "Ваш ответ совпал?"}</span>
               <button
@@ -1147,7 +1227,7 @@ function mergeGameTasks(groups: Task[][]): Task[] {
   for (const group of groups) {
     for (const task of group) {
       const part = task.number as 19 | 20 | 21;
-      const parentId = part === 19 ? task.id : task.id.replace(/(?:20|21)$/, "");
+      const parentId = task.parentId ?? (part === 19 ? task.id : task.id.replace(/(?:20|21)$/, ""));
       const entry = byId.get(parentId) ?? {};
       entry[part] = task;
       byId.set(parentId, entry);
@@ -1177,63 +1257,41 @@ function PageHeading({
   title,
   description,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description: string;
 }) {
   return (
     <section className="tasks-heading">
-      <p className="eyebrow">{eyebrow}</p>
+      {eyebrow && <p className="eyebrow">{eyebrow}</p>}
       <h1>{title}</h1>
       <p>{description}</p>
     </section>
   );
 }
 
-function PremiumPlaceholder({ section }: { section: "theory" | "game" }) {
-  const isTheory = section === "theory";
-
-  return (
-    <>
-      <PageHeading
-        eyebrow={isTheory ? "Премиум-раздел" : "Для учеников EGEGE"}
-        title={isTheory ? "Теория" : "Игра"}
-        description={
-          isTheory
-            ? "Здесь появится удобный учебник по программированию и темам ЕГЭ."
-            : "Здесь появятся короткие игровые уровни, которые удобно проходить с телефона."
-        }
-      />
-      <section className={`premium-placeholder placeholder-${section}`}>
-        <div className="placeholder-visual" aria-hidden="true">
-          {isTheory ? (
-            <span className="placeholder-book">
-              <i />
-              <i />
-            </span>
-          ) : (
-            <span className="placeholder-path">
-              <i />
-              <i />
-              <i />
-            </span>
-          )}
-        </div>
-        <div className="placeholder-copy">
-          <span className="soon-badge"><i /> Скоро</span>
-          <h2>{isTheory ? "Собираем знания по главам" : "Готовим первую вселенную"}</h2>
-          <p>
-            {isTheory
-              ? "Перенесём и переработаем материалы из Notion, добавим понятную навигацию и связи с практикой."
-              : "Первый прототип будет состоять из коротких уровней с кодом, блоками и упражнениями на отступы."}
-          </p>
-        </div>
-      </section>
-    </>
-  );
-}
-
 function GatePreview({ section }: { section: GateSection }) {
+  if (section === "materials") {
+    const cells = ["def", "A → B", "¬¬A", "f'{}'", "10 → 2", "IP", "and", "2ᵏ - 2"];
+    return <div className="gate-preview preview-materials" aria-hidden="true">{cells.map((cell, index) => <span style={{ "--material-index": index } as React.CSSProperties} key={cell}>{cell}</span>)}</div>;
+  }
+  if (section === "boards") {
+    return (
+      <div className="gate-preview preview-boards" aria-hidden="true">
+        <div className="preview-board-top"><i /><i /><i /><span /></div>
+        <div className="preview-board-canvas">
+          <span className="preview-board-note">Разбор №14</span>
+          <span className="preview-board-line" />
+          <span className="preview-board-shape" />
+          <span className="preview-board-code"><i /><i /><i /></span>
+          <span className="preview-board-selection"><i /><i /><i /><i /></span>
+          <span className="preview-board-cursor">User</span>
+        </div>
+        <div className="preview-board-zoom">− <b>125%</b> +</div>
+      </div>
+    );
+  }
+
   if (section === "dashboard") {
     return (
       <div className="gate-preview preview-dashboard" aria-hidden="true">
@@ -1272,7 +1330,7 @@ function GatePreview({ section }: { section: GateSection }) {
             <i />
           </div>
         ))}
-        <div className="preview-premium-lock">
+        <div className="preview-theory-lock">
           <AccessBadge compact />
         </div>
       </div>
@@ -1361,6 +1419,19 @@ function AccessGateModal({
       description:
         "Тренажёр показывает следующую клавишу и правильный палец, а прогресс остаётся в вашем профиле.",
       features: ["Python, русский и символы", "На компьютере и телефоне"],
+    },
+    boards: {
+      eyebrow: "Бесплатно после регистрации",
+      title: "Объясняйте прямо на доске",
+      description:
+        "Рисуйте, добавляйте текст и фигуры, приглашайте ученика по ссылке и продолжайте с того же места.",
+      features: ["Бесконечное полотно", "Совместная работа в реальном времени"],
+    },
+    materials: {
+      eyebrow: "Бесплатно после регистрации",
+      title: "Держите важное под рукой",
+      description: "Таблицы, формулы и конспекты по Python и заданиям ЕГЭ в одном справочнике.",
+      features: ["Быстрые ссылки по разделам", "Удобно на компьютере и телефоне"],
     },
     theory: {
       eyebrow: "Бесплатно после регистрации",
@@ -1546,7 +1617,7 @@ function Dashboard({
         </article>
         <article>
           <span>Серия</span>
-          <strong>{streak}<small> дн.</small></strong>
+          <strong className="streak-value"><StreakFlame active={streak > 0} />{streak}<small> дн.</small></strong>
         </article>
       </section>
 
@@ -1832,7 +1903,6 @@ function StudentCabinet({
   user,
   attempts,
   preferences,
-  isPremium,
   isAdmin,
   avatarEmoji,
   onPreference,
@@ -1841,10 +1911,9 @@ function StudentCabinet({
   onAvatarChange,
   onLogout,
 }: {
-  user: User;
+  user: AppUser;
   attempts: ExamAttempt[];
   preferences: Preferences;
-  isPremium: boolean;
   isAdmin: boolean;
   avatarEmoji: string;
   onPreference: (next: Partial<Preferences>) => void;
@@ -1866,7 +1935,6 @@ function StudentCabinet({
   const formatDuration = (seconds: number) =>
     `${Math.floor(seconds / 3600)} ч ${Math.floor((seconds % 3600) / 60)} мин`;
   const name = user.user_metadata?.name ?? user.email ?? "Ученик EGEGE";
-  const userInitial = name.trim().charAt(0).toUpperCase() || "Е";
   const reactions: Array<{ value: Reaction; label: string; icon: string }> = [
     { value: "xp", label: "XP", icon: "+10" },
     { value: "hearts", label: "Сердца", icon: "♥" },
@@ -2080,26 +2148,13 @@ function StudentCabinet({
           </fieldset>
 
           <div className="cabinet-account">
-            <div className={`premium-demo is-readonly ${isPremium ? "is-active" : ""}`}>
-              <div>
-                <span className="premium-label">
-                  <i className="premium-crown is-inline" aria-hidden="true" />
-                  {isPremium ? "Премиум активен" : "Обычный аккаунт"}
-                </span>
-                <small>
-                  {isPremium ? "Премиум-возможности доступны" : "Премиум выдаётся преподавателем"}
-                </small>
-              </div>
-              <span className={`premium-status-dot ${isPremium ? "is-active" : ""}`} />
-            </div>
             <div className="profile-person">
-              <span className={isPremium ? "has-premium" : ""}>
-                {isPremium && <i className="premium-crown" aria-hidden="true" />}
+              <span>
                 <span className="avatar-emoji">{avatarEmoji}</span>
               </span>
               <div>
                 <strong>{name}</strong>
-                <small>{isPremium ? "Премиум-профиль" : "Обычный профиль"}</small>
+                <small>Профиль EGEGE</small>
               </div>
             </div>
             <button className="secondary-auth" onClick={() => void onLogout()}>
@@ -2137,15 +2192,16 @@ export default function Home() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [gateSection, setGateSection] = useState<GateSection | null>(null);
   const [rattlingSection, setRattlingSection] = useState<GateSection | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [authAccessToken, setAuthAccessToken] = useState("");
-  const [isPremium, setIsPremium] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authConfigured, setAuthConfigured] = useState<boolean | null>(null);
+  const [authProviders, setAuthProviders] = useState({ yandex: false, google: false });
   const [authResolved, setAuthResolved] = useState(false);
   const [consentPromptOpen, setConsentPromptOpen] = useState(false);
   const [consentSaving, setConsentSaving] = useState(false);
   const [analyticsConsent, setAnalyticsConsent] = useState<boolean | null>(null);
+  const [analyticsConsentResolved, setAnalyticsConsentResolved] = useState(false);
   const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
   const [examAttempts, setExamAttempts] = useState<ExamAttempt[]>(() => {
     if (typeof window === "undefined") return [];
@@ -2241,12 +2297,15 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    let savedConsent: boolean | null = null;
     try {
       const saved = window.localStorage.getItem(ANALYTICS_CONSENT_KEY);
-      queueMicrotask(() => setAnalyticsConsent(saved === "yes" ? true : saved === "no" ? false : null));
-    } catch {
-      queueMicrotask(() => setAnalyticsConsent(null));
-    }
+      savedConsent = saved === "yes" ? true : saved === "no" ? false : null;
+    } catch {}
+    queueMicrotask(() => {
+      setAnalyticsConsent(savedConsent);
+      setAnalyticsConsentResolved(true);
+    });
   }, []);
 
   const chooseAnalytics = (allowed: boolean) => {
@@ -2280,21 +2339,18 @@ export default function Home() {
   useEffect(() => {
     if (!user) {
       queueMicrotask(() => {
-        setIsPremium(false);
         setIsAdmin(false);
       });
       return;
     }
     let active = true;
-    void communityRequest<{ premium: boolean; isAdmin: boolean }>("/api/account")
+    void communityRequest<{ isAdmin: boolean }>("/api/account")
       .then((access) => {
         if (!active) return;
-        setIsPremium(access.premium);
         setIsAdmin(access.isAdmin);
       })
       .catch(() => {
         if (!active) return;
-        setIsPremium(false);
         setIsAdmin(false);
       });
     return () => { active = false; };
@@ -2315,35 +2371,15 @@ export default function Home() {
     if (section !== "variants" || variants.length > 0 || variantsLoading) return;
 
     queueMicrotask(() => setVariantsLoading(true));
-    void Promise.all([
-      fetch("/data/variant-manifest.json").then((response) => {
+    void fetch("/data/variant-manifest.json")
+      .then((response) => {
         if (!response.ok) throw new Error("Не удалось загрузить каталог вариантов");
         return response.json() as Promise<{ variants: Variant[] }>;
-      }),
-      fetch("/api/teacher-variants").then(async (response) =>
-        response.ok ? response.json() as Promise<{ variants: Variant[] }> : { variants: [] as Variant[] },
-      ),
-    ])
-      .then(([imported, authored]) => setVariants([...(imported.variants ?? []), ...(authored.variants ?? [])]))
+      })
+      .then((imported) => setVariants(imported.variants ?? []))
       .catch(() => notify("Не удалось загрузить каталог вариантов"))
       .finally(() => setVariantsLoading(false));
   }, [section, variants.length, variantsLoading]);
-
-  useEffect(() => {
-    if (section !== "variants") return;
-    let active = true;
-    void fetch("/api/teacher-variants")
-      .then((response) => response.ok ? response.json() as Promise<{ variants: Variant[] }> : { variants: [] as Variant[] })
-      .then((payload) => {
-        if (!active) return;
-        setVariants((current) => [
-          ...current.filter((variant) => !variant.kim.startsWith("0")),
-          ...(payload.variants ?? []),
-        ]);
-      })
-      .catch(() => undefined);
-    return () => { active = false; };
-  }, [section]);
 
   useEffect(() => {
     if (!type) {
@@ -2434,46 +2470,33 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
-    let unsubscribe: (() => void) | undefined;
-
-    void getSupabaseBrowserClient().then(async (client) => {
-      if (!active) return;
-      if (!client) {
-        setAuthConfigured(false);
-        setAuthResolved(true);
-        return;
-      }
-
-      setAuthConfigured(true);
-      const { data } = await client.auth.getSession();
-      if (active) {
-        setUser(data.session?.user ?? null);
-        setAuthAccessToken(data.session?.access_token ?? "");
-        setAuthResolved(true);
-      }
-
-      const listener = client.auth.onAuthStateChange((_event, session) => {
+    void fetch("/api/auth/session", { cache: "no-store" })
+      .then(async (response) => response.json() as Promise<{
+        configured: boolean;
+        providers?: { yandex: boolean; google: boolean };
+        user: AppUser | null;
+      }>)
+      .then((session) => {
         if (!active) return;
-        setUser(session?.user ?? null);
-        setAuthAccessToken(session?.access_token ?? "");
-        if (!session?.user) {
-          setCommunity(null);
-          setActivity({});
-          setCompletedTaskIds(new Set());
-          setCommunityLoading(false);
-        }
+        setAuthConfigured(session.configured);
+        setAuthProviders(session.providers ?? { yandex: session.configured, google: false });
+        setUser(session.user);
+        setAuthAccessToken(session.user ? "local-session" : "");
+      })
+      .catch(() => {
+        if (active) setAuthConfigured(false);
+      })
+      .finally(() => {
+        if (active) setAuthResolved(true);
       });
-      unsubscribe = () => listener.data.subscription.unsubscribe();
-    });
 
     return () => {
       active = false;
-      unsubscribe?.();
     };
   }, []);
 
   useEffect(() => {
-    if (!user || !authAccessToken) {
+    if (!user) {
       queueMicrotask(() => setConsentPromptOpen(false));
       return;
     }
@@ -2510,7 +2533,7 @@ export default function Home() {
       if (active) setConsentPromptOpen(true);
     });
     return () => { active = false; };
-  }, [authAccessToken, user]);
+  }, [user]);
 
   useEffect(() => {
     if (!authResolved || user) return;
@@ -2533,7 +2556,7 @@ export default function Home() {
   }, [authResolved, user]);
 
   useEffect(() => {
-    if (!authResolved || user || !["theory", "game", "trainer", "dashboard"].includes(section)) return;
+    if (!authResolved || user || !["theory", "game", "trainer", "materials", "boards", "dashboard"].includes(section)) return;
     const requestedSection = section as GateSection;
     queueMicrotask(() => {
       setGateSection(requestedSection);
@@ -2557,15 +2580,12 @@ export default function Home() {
     if (!analyticsSession.current || analyticsConsent !== true) return;
     let disposed = false;
     const send = async (eventType: "page_view" | "login" | "heartbeat", activeSeconds = 0) => {
-      const client = await getSupabaseBrowserClient();
-      const { data } = client ? await client.auth.getSession() : { data: { session: null } };
       if (disposed) return;
       void fetch("/api/analytics", {
         method: "POST",
         keepalive: true,
         headers: {
           "content-type": "application/json",
-          ...(data.session?.access_token ? { authorization: `Bearer ${data.session.access_token}` } : {}),
         },
         body: JSON.stringify({
           sessionId: analyticsSession.current,
@@ -2625,7 +2645,7 @@ export default function Home() {
       return;
     }
     if (
-      (nextSection === "dashboard" || nextSection === "game" || nextSection === "trainer") &&
+      (nextSection === "dashboard" || nextSection === "game" || nextSection === "trainer" || nextSection === "materials" || nextSection === "boards") &&
       !isRegistered
     ) {
       showAccessGate(nextSection);
@@ -2663,9 +2683,11 @@ export default function Home() {
       setToast(
         authResult === "confirmed"
           ? "Почта подтверждена — профиль открыт"
-          : "Ссылка не сработала или уже была использована",
+          : authResult === "success"
+            ? "Вы вошли в профиль"
+            : "Ссылка не сработала или уже была использована",
       );
-      if (authResult !== "confirmed") setProfileOpen(true);
+      if (authResult !== "confirmed" && authResult !== "success") setProfileOpen(true);
       timer = window.setTimeout(() => setToast(""), 3600);
     });
     return () => {
@@ -2782,11 +2804,7 @@ export default function Home() {
     return result;
   };
 
-  const loginWithProvider = async (provider: Provider, label: string, distributionConsent: boolean) => {
-    const client = await getSupabaseBrowserClient();
-    if (!client) return "Нужно подключить Supabase — инструкция уже подготовлена.";
-    const redirectTo = await getSupabaseAuthRedirectUrl();
-
+  const loginWithYandex = async (distributionConsent: boolean) => {
     try {
       window.sessionStorage.setItem(PENDING_CONSENT_KEY, JSON.stringify({
         termsConsent: true,
@@ -2796,20 +2814,23 @@ export default function Home() {
     } catch {
       return "Не удалось сохранить подтверждение документов в этом браузере.";
     }
-
-    const { error } = await client.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo,
-      },
-    });
-    return error ? `Не удалось войти: ${error.message}` : `Открываем ${label}…`;
+    window.location.assign("/api/auth/yandex/start");
+    return "Открываем Яндекс…";
   };
 
-  const loginWithGoogle = (distributionConsent: boolean) =>
-    loginWithProvider("google", "Google", distributionConsent);
-  const loginWithYandex = (distributionConsent: boolean) =>
-    loginWithProvider("custom:yandex" as Provider, "Яндекс", distributionConsent);
+  const loginWithGoogle = async (distributionConsent: boolean) => {
+    try {
+      window.sessionStorage.setItem(PENDING_CONSENT_KEY, JSON.stringify({
+        termsConsent: true,
+        dataConsent: true,
+        distributionConsent,
+      }));
+    } catch {
+      return "Не удалось сохранить подтверждение документов в этом браузере.";
+    }
+    window.location.assign("/api/auth/google/start");
+    return "Открываем Google…";
+  };
 
   const saveCurrentConsent = async (distributionConsent: boolean) => {
     setConsentSaving(true);
@@ -2828,8 +2849,7 @@ export default function Home() {
   };
 
   const logout = async () => {
-    const client = await getSupabaseBrowserClient();
-    if (client) await client.auth.signOut();
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
     setPreferences((current) => {
       const guestAccent = guestAccentOptions.some((accent) => accent.value === current.accent)
         ? current.accent
@@ -2856,13 +2876,13 @@ export default function Home() {
       open={profileOpen}
       user={user}
       authConfigured={authConfigured}
+      authProviders={authProviders}
       preferences={preferences}
-      isPremium={isPremium}
       avatarEmoji={community?.profile.avatarEmoji}
       onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
       onPreference={updatePreferences}
-      onGoogleLogin={loginWithGoogle}
       onYandexLogin={loginWithYandex}
+      onGoogleLogin={loginWithGoogle}
       onLogout={logout}
     />
   );
@@ -2874,7 +2894,7 @@ export default function Home() {
         const sourceKind = getTaskSourceKind(task);
         return (
           (!normalizedSearch || task.id.includes(normalizedSearch)) &&
-          task.number === Number(type) &&
+        (Number(type) === 19 ? task.number >= 19 && task.number <= 21 : task.number === Number(type)) &&
           (difficulty === "all" || task.difficulty === difficulty) &&
           (source === "all" || source === "kege" || source === sourceKind)
         );
@@ -2911,11 +2931,8 @@ export default function Home() {
     setOpeningVariantKim(kim);
     try {
       const isTeacherVariant = kim.startsWith("0");
-      const client = isTeacherVariant ? await getSupabaseBrowserClient() : null;
-      const { data } = client ? await client.auth.getSession() : { data: { session: null } };
       const response = await fetch(
         isTeacherVariant ? `/api/teacher-variants/${kim}` : `/data/variants/${kim}.json`,
-        { headers: data.session?.access_token ? { authorization: `Bearer ${data.session.access_token}` } : undefined },
       );
       const payload = await response.json().catch(() => null) as (ExamVariantData & { error?: string; code?: string }) | null;
       if (!response.ok || !payload) {
@@ -2938,7 +2955,7 @@ export default function Home() {
       if (analyticsSession.current) {
         void fetch("/api/analytics", {
           method: "POST",
-          headers: { "content-type": "application/json", ...(data.session?.access_token ? { authorization: `Bearer ${data.session.access_token}` } : {}) },
+          headers: { "content-type": "application/json" },
           body: JSON.stringify({ sessionId: analyticsSession.current, eventType: "exam_start", path: "/variants" }),
         }).catch(() => undefined);
       }
@@ -2983,17 +3000,11 @@ export default function Home() {
       return next;
     });
     if (attempt.kim.startsWith("0")) {
-      void getSupabaseBrowserClient().then(async (client) => {
-        const { data } = client ? await client.auth.getSession() : { data: { session: null } };
-        await fetch(`/api/teacher-variants/${attempt.kim}`, {
+      void fetch(`/api/teacher-variants/${attempt.kim}`, {
           method: "POST",
-          headers: {
-            "content-type": "application/json",
-            ...(data.session?.access_token ? { authorization: `Bearer ${data.session.access_token}` } : {}),
-          },
+          headers: { "content-type": "application/json" },
           body: JSON.stringify({ ...attempt, anonymousId: analyticsSession.current }),
-        });
-      }).catch(() => notify("Результат остался на этом устройстве, но не попал в статистику"));
+        }).catch(() => notify("Результат остался на этом устройстве, но не попал в статистику"));
     } else if (user) {
       void communityRequest("/api/exam-attempts", {
         method: "POST",
@@ -3120,13 +3131,13 @@ export default function Home() {
           open={profileOpen}
           user={user}
           authConfigured={authConfigured}
+          authProviders={authProviders}
           preferences={preferences}
-          isPremium={isPremium}
           avatarEmoji={community?.profile.avatarEmoji}
           onToggle={() => isRegistered ? navigate("profile") : setProfileOpen((current) => !current)}
           onPreference={updatePreferences}
-          onGoogleLogin={loginWithGoogle}
           onYandexLogin={loginWithYandex}
+          onGoogleLogin={loginWithGoogle}
           onLogout={logout}
           home
         />
@@ -3138,8 +3149,11 @@ export default function Home() {
           <Dock
             navigate={navigate}
             isRegistered={isRegistered}
+            authResolved={authResolved}
             rattlingSection={rattlingSection}
           />
+          <AuthorContact />
+          <HomeReleaseBadge />
         </div>
         {gateSection && (
           <AccessGateModal
@@ -3155,7 +3169,7 @@ export default function Home() {
           onSave={saveCurrentConsent}
           onLogout={logout}
         />
-        {analyticsConsent === null && <AnalyticsChoice onChoose={chooseAnalytics} />}
+        {analyticsConsentResolved && analyticsConsent === null && <AnalyticsChoice onChoose={chooseAnalytics} />}
         <Toast message={toast} />
       </main>
     );
@@ -3181,7 +3195,7 @@ export default function Home() {
           onSave={saveCurrentConsent}
           onLogout={logout}
         />
-        {analyticsConsent === null && <AnalyticsChoice onChoose={chooseAnalytics} />}
+        {analyticsConsentResolved && analyticsConsent === null && <AnalyticsChoice onChoose={chooseAnalytics} />}
       </main>
     );
   }
@@ -3192,6 +3206,7 @@ export default function Home() {
         section={section}
         navigate={navigate}
         isRegistered={isRegistered}
+        authResolved={authResolved}
         rattlingSection={rattlingSection}
         profile={profile}
       />
@@ -3207,7 +3222,6 @@ export default function Home() {
         {section === "tasks" && (
           <>
             <PageHeading
-              eyebrow="Подготовка к ЕГЭ"
               title="База заданий"
               description="Выберите тему — все подходящие задания появятся ниже."
             />
@@ -3232,11 +3246,13 @@ export default function Home() {
                 <span>Номер задания</span>
                 <select value={type} onChange={(event) => setType(event.target.value)}>
                   <option value="" disabled>Выберите номер</option>
-                  {Array.from({ length: 27 }, (_, index) => index + 1)
-                    .filter((number) => number !== 20 && number !== 21)
-                    .map((number) => (
+                  {taskCatalog.map(([number, title]) => (
                       <option value={number} key={number}>
-                        {number === 19 ? "№19–21 · Теория игр" : `№${number}`}
+                        {number === 19
+                          ? "№19–21"
+                          : number >= 100
+                            ? `№${number - 100} (старое)`
+                            : `№${number}`} · {title}
                       </option>
                     ))}
                 </select>
@@ -3268,7 +3284,7 @@ export default function Home() {
               <div className="results-bar">
                 <span>Найдено: <b>{filteredTasks.length}</b></span>
                 <i />
-                <span>Загружен только №{type}</span>
+                <span>Загружен только №{type === "19" ? "19–21" : type}</span>
               </div>
             )}
 
@@ -3313,7 +3329,6 @@ export default function Home() {
         {section === "variants" && (
           <>
             <PageHeading
-              eyebrow="Экзаменационный режим"
               title="Варианты"
               description="Официальные варианты КЕГЭ с 2023/24 учебного года."
             />
@@ -3421,10 +3436,21 @@ export default function Home() {
           </Suspense>
         )}
 
+        {section === "materials" && user && (
+          <Suspense fallback={<div className="materials-loading">Открываем конспекты...</div>}>
+            <MaterialsCenter />
+          </Suspense>
+        )}
+
+        {section === "boards" && (
+          <Suspense fallback={<div className="boards-loading">Открываем доски…</div>}>
+            <BoardList user={user} onLogin={() => setProfileOpen(true)} />
+          </Suspense>
+        )}
+
         {section === "dashboard" && user && (
           <>
             <PageHeading
-              eyebrow="Ваш профиль"
               title="Дашборд"
               description="Прогресс, рейтинг и друзья синхронизируются с вашим аккаунтом."
             />
@@ -3446,7 +3472,6 @@ export default function Home() {
             user={user}
             attempts={examAttempts}
             preferences={preferences}
-            isPremium={isPremium}
             isAdmin={isAdmin}
             avatarEmoji={community?.profile.avatarEmoji ?? "🙂"}
             onPreference={updatePreferences}
@@ -3484,7 +3509,7 @@ export default function Home() {
         onSave={saveCurrentConsent}
         onLogout={logout}
       />
-      {analyticsConsent === null && <AnalyticsChoice onChoose={chooseAnalytics} />}
+      {analyticsConsentResolved && analyticsConsent === null && <AnalyticsChoice onChoose={chooseAnalytics} />}
       <Toast message={toast} />
       <button
         className={`scroll-to-top ${showScrollTop ? "is-visible" : ""}`}
