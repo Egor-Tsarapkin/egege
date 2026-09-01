@@ -46,6 +46,14 @@ async function copyCompactVariantData(root: string, publicOutput: string) {
   }, null, 2)}\n`);
 }
 
+async function removeProductionOnlyMedia(publicOutput: string) {
+  await Promise.all([
+    resolve(publicOutput, "database-gifs"),
+    resolve(publicOutput, "theme-gifs"),
+    resolve(publicOutput, "materials", "kege", "imported"),
+  ].map((path) => rm(path, { recursive: true, force: true })));
+}
+
 // Packages Sites metadata and migrations after Vite finishes compiling.
 export function sites(): Plugin {
   let root = process.cwd();
@@ -81,6 +89,7 @@ export function sites(): Plugin {
       ]) {
         if (await exists(publicOutput)) {
           await copyCompactVariantData(root, publicOutput);
+          await removeProductionOnlyMedia(publicOutput);
         }
       }
     },
