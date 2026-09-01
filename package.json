@@ -11,7 +11,7 @@
     "start": "next start",
     "board:realtime": "REALTIME_PORT=3001 INTERNAL_APP_ORIGIN=http://127.0.0.1:3000 node --env-file-if-exists=.env --env-file-if-exists=.env.local realtime/server.mjs",
     "board:load": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/load-test-boards.mjs",
-    "build:sites": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext build",
+    "build:sites": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext build && node scripts/trim-sites-output.mjs",
     "dev:sites": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext dev",
     "test": "npm run build && node --test tests/vps-release.test.mjs tests/board-*.test.mjs",
     "test:sites": "npm run build:sites && node --test tests/rendered-html.test.mjs",
