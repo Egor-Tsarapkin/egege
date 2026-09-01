@@ -21,6 +21,10 @@ const SITE_VERSION = "1.0.24";
 
 type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard" | "profile" | "admin";
 type GateSection = Extract<Section, "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard">;
+
+function isSitesGuestHost() {
+  return typeof window !== "undefined" && window.location.hostname.endsWith(".chatgpt.site");
+}
 type Difficulty = "Базовый" | "Средний" | "Высокий";
 type Activity = Record<string, number>;
 type Theme = "dark" | "light";
@@ -2198,6 +2202,7 @@ export default function Home() {
   const [authConfigured, setAuthConfigured] = useState<boolean | null>(null);
   const [authProviders, setAuthProviders] = useState({ yandex: false, google: false });
   const [authResolved, setAuthResolved] = useState(false);
+  const [sitesGuestAccess, setSitesGuestAccess] = useState(false);
   const [consentPromptOpen, setConsentPromptOpen] = useState(false);
   const [consentSaving, setConsentSaving] = useState(false);
   const [analyticsConsent, setAnalyticsConsent] = useState<boolean | null>(null);
@@ -2218,12 +2223,17 @@ export default function Home() {
   const taskIndex = useRef<Record<string, number>>({});
   const analyticsSession = useRef("");
   const isRegistered = Boolean(user);
+  const hasContentAccess = isRegistered || sitesGuestAccess;
   const taskStyleAssets = useMemo(
     () => section === "tasks"
       ? pickRandomAssets(databaseStyleAssets, databaseStyleAssets.length)
       : [],
     [section],
   );
+
+  useEffect(() => {
+    if (isSitesGuestHost()) setSitesGuestAccess(true);
+  }, []);
 
   useEffect(() => {
     const syncSectionFromUrl = () => {
@@ -2556,7 +2566,7 @@ export default function Home() {
   }, [authResolved, user]);
 
   useEffect(() => {
-    if (!authResolved || user || !["theory", "game", "trainer", "materials", "boards", "dashboard"].includes(section)) return;
+    if (!authResolved || user || isSitesGuestHost() || !["theory", "game", "trainer", "materials", "boards", "dashboard"].includes(section)) return;
     const requestedSection = section as GateSection;
     queueMicrotask(() => {
       setGateSection(requestedSection);
@@ -2646,12 +2656,12 @@ export default function Home() {
     }
     if (
       (nextSection === "dashboard" || nextSection === "game" || nextSection === "trainer" || nextSection === "materials" || nextSection === "boards") &&
-      !isRegistered
+      !hasContentAccess
     ) {
       showAccessGate(nextSection);
       return;
     }
-    if (nextSection === "theory" && !isRegistered) {
+    if (nextSection === "theory" && !hasContentAccess) {
       showAccessGate("theory");
       return;
     }
@@ -3148,7 +3158,7 @@ export default function Home() {
           <p className="eyebrow">ЕГЭ по информатике</p>
           <Dock
             navigate={navigate}
-            isRegistered={isRegistered}
+            isRegistered={hasContentAccess}
             authResolved={authResolved}
             rattlingSection={rattlingSection}
           />
@@ -3205,7 +3215,7 @@ export default function Home() {
       <AppHeader
         section={section}
         navigate={navigate}
-        isRegistered={isRegistered}
+        isRegistered={hasContentAccess}
         authResolved={authResolved}
         rattlingSection={rattlingSection}
         profile={profile}
@@ -3400,7 +3410,7 @@ export default function Home() {
           </>
         )}
 
-        {section === "theory" && user && (
+        {section === "theory" && hasContentAccess && (
           <Suspense
             fallback={
               <div className="theory-loading" role="status">
@@ -3409,11 +3419,11 @@ export default function Home() {
               </div>
             }
           >
-            <TheorySpace accessToken={authAccessToken} userId={user.id} />
+            <TheorySpace accessToken={authAccessToken} userId={user?.id ?? "sites-guest"} />
           </Suspense>
         )}
 
-        {section === "game" && user && (
+        {section === "game" && hasContentAccess && (
           <Suspense fallback={<div className="marathon-loading"><span>•••</span><p>Готовим марафон</p></div>}>
             <EgeMarathon
               theme={preferences.theme}
@@ -3423,7 +3433,7 @@ export default function Home() {
           </Suspense>
         )}
 
-        {section === "trainer" && user && (
+        {section === "trainer" && hasContentAccess && (
           <Suspense
             fallback={
               <div className="trainer-loading" role="status">
@@ -3432,11 +3442,18 @@ export default function Home() {
               </div>
             }
           >
-            <TypingTrainer userId={user.id} onComplete={claimTrainerXp} />
+            <TypingTrainer
+              userId={user?.id ?? "sites-guest"}
+              onComplete={user ? claimTrainerXp : async () => ({
+                status: "duplicate",
+                message: "Результат сохранён на этом устройстве",
+                awarded: 0,
+              })}
+            />
           </Suspense>
         )}
 
-        {section === "materials" && user && (
+        {section === "materials" && hasContentAccess && (
           <Suspense fallback={<div className="materials-loading">Открываем конспекты...</div>}>
             <MaterialsCenter />
           </Suspense>
@@ -3448,7 +3465,7 @@ export default function Home() {
           </Suspense>
         )}
 
-        {section === "dashboard" && user && (
+        {section === "dashboard" && hasContentAccess && (
           <>
             <PageHeading
               title="Дашборд"
