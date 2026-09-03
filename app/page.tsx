@@ -18,7 +18,7 @@ const TeacherStudio = lazy(() => import("./teacher-studio"));
 const BoardList = lazy(() => import("./boards/board-list"));
 const MaterialsCenter = lazy(() => import("./materials-center"));
 
-const SITE_VERSION = "1.0.26";
+const SITE_VERSION = "1.0.27";
 
 type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard" | "profile" | "admin";
 type GateSection = Extract<Section, "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard">;
@@ -2828,6 +2828,7 @@ export default function Home() {
     }
     if (claimingTasks.current.has(taskId)) return;
     claimingTasks.current.add(taskId);
+    const reactionBounds = event.currentTarget.getBoundingClientRect();
 
     try {
       const result = await communityRequest<ClaimResult>("/api/community", {
@@ -2847,11 +2848,10 @@ export default function Home() {
         preferences.reaction === "random"
           ? randomReactions[Math.floor(Math.random() * randomReactions.length)]
           : preferences.reaction;
-      const bounds = event.currentTarget.getBoundingClientRect();
       const nextBurst = {
         id: ++burstId.current,
-        x: bounds.left + bounds.width / 2,
-        y: bounds.top + bounds.height / 2,
+        x: reactionBounds.left + reactionBounds.width / 2,
+        y: reactionBounds.top + reactionBounds.height / 2,
         reaction: selectedReaction,
       };
       setBursts((current) => [...current, nextBurst]);
