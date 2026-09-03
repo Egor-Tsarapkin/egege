@@ -136,7 +136,49 @@ function rowToUser(row: {
   };
 }
 
+function isSitesPreviewRequest(request: Request) {
+  try {
+    return new URL(request.url).hostname.toLowerCase().endsWith(".chatgpt.site");
+  } catch {
+    return false;
+  }
+}
+
+async function sitesPreviewUser(request: Request): Promise<AppUser | null> {
+  if (!isSitesPreviewRequest(request)) return null;
+
+  const forwardedId = request.headers.get("oai-authenticated-user-id")?.trim() ?? "";
+  const forwardedEmail = request.headers.get("oai-authenticated-user-email")?.trim() ?? "";
+  const identitySource = forwardedId || forwardedEmail || "anonymous-preview";
+  const userId = `sites_${(await sha256(identitySource)).slice(0, 32)}`;
+
+  let forwardedName = "";
+  const encodedName = request.headers.get("oai-authenticated-user-full-name")?.trim() ?? "";
+  if (
+    encodedName &&
+    request.headers.get("oai-authenticated-user-full-name-encoding") === "percent-encoded-utf-8"
+  ) {
+    try {
+      forwardedName = decodeURIComponent(encodedName);
+    } catch {
+      forwardedName = "";
+    }
+  }
+  const displayName = forwardedName || forwardedEmail.split("@")[0] || "Демо-ученик";
+
+  return {
+    id: userId,
+    user_metadata: {
+      name: displayName,
+      full_name: displayName,
+    },
+  };
+}
+
 export async function authenticatedUser(request: Request): Promise<AppUser | null> {
+  const previewUser = await sitesPreviewUser(request);
+  if (previewUser) return previewUser;
+
   const bearer = request.headers.get("authorization")?.match(/^Bearer\s+([a-f0-9]{64})$/i)?.[1] ?? "";
   const token = cookieValue(request, AUTH_SESSION_COOKIE) || bearer;
   if (!token) return null;

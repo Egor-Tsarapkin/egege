@@ -18,7 +18,7 @@ const TeacherStudio = lazy(() => import("./teacher-studio"));
 const BoardList = lazy(() => import("./boards/board-list"));
 const MaterialsCenter = lazy(() => import("./materials-center"));
 
-const SITE_VERSION = "1.0.25";
+const SITE_VERSION = "1.0.26";
 
 type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard" | "profile" | "admin";
 type GateSection = Extract<Section, "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard">;
@@ -2613,6 +2613,10 @@ export default function Home() {
       queueMicrotask(() => setConsentPromptOpen(false));
       return;
     }
+    if (isSitesGuestHost()) {
+      queueMicrotask(() => setConsentPromptOpen(false));
+      return;
+    }
     let active = true;
     const syncConsent = async () => {
       type PendingConsent = { termsConsent?: boolean; dataConsent?: boolean; distributionConsent?: boolean };
@@ -2963,6 +2967,10 @@ export default function Home() {
   };
 
   const logout = async () => {
+    if (isSitesGuestHost()) {
+      notify("На тестовом сайте демо-профиль всегда активен");
+      return;
+    }
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
     setPreferences((current) => {
       const guestAccent = guestAccentOptions.some((accent) => accent.value === current.accent)
