@@ -126,10 +126,10 @@ async function loadCommunity(userId: string, view: "all" | "friends") {
     .bind(userId, userId, userId, userId)
     .all<FriendRow>();
 
-  const completedResult = await db
-    .prepare("SELECT task_id FROM score_events WHERE user_id = ?")
+  const taskResult = await db
+    .prepare("SELECT task_id, xp_awarded FROM score_events WHERE user_id = ? AND task_id NOT LIKE 'trainer:%'")
     .bind(userId)
-    .all<{ task_id: string }>();
+    .all<{ task_id: string; xp_awarded: number }>();
   const activityResult = await db
     .prepare(
       `SELECT date_key, COUNT(*) AS count
@@ -162,7 +162,12 @@ async function loadCommunity(userId: string, view: "all" | "friends") {
       status: row.status,
       direction: row.direction,
     })),
-    completedTaskIds: completedResult.results.map((row: { task_id: string }) => row.task_id),
+    completedTaskIds: taskResult.results
+      .filter((row: { xp_awarded: number }) => row.xp_awarded > 0)
+      .map((row: { task_id: string }) => row.task_id),
+    blockedTaskIds: taskResult.results
+      .filter((row: { xp_awarded: number }) => row.xp_awarded <= 0)
+      .map((row: { task_id: string }) => row.task_id),
     activity: Object.fromEntries(
       activityResult.results.map((row: { date_key: string; count: number }) => [
         row.date_key,
@@ -424,6 +429,33 @@ export async function POST(request: Request) {
       });
     }
 
+    if (action === "reveal_answer") {
+      const taskId = String(body.taskId ?? "");
+      if (!/^\d{1,20}$/.test(taskId)) return response({ error: "Некорректный ID задания." }, 400);
+      if (!(await taskExists(taskId))) return response({ error: "Задание не найдено." }, 404);
+
+      const existing = await db
+        .prepare("SELECT xp_awarded FROM score_events WHERE user_id = ? AND task_id = ?")
+        .bind(user.id, taskId)
+        .first<{ xp_awarded: number }>();
+      if (!existing) {
+        await db
+          .prepare(
+            `INSERT OR IGNORE INTO score_events
+             (user_id, task_id, xp_awarded, reason, date_key, created_at)
+             VALUES (?, ?, 0, 'answer_revealed', ?, ?)`,
+          )
+          .bind(user.id, taskId, moscowDateKey(), now)
+          .run();
+      }
+      return response({
+        status: existing?.xp_awarded ? "already_awarded" : "blocked",
+        message: existing?.xp_awarded
+          ? "XP за это задание уже был начислен."
+          : "Ответ открыт — XP за это задание больше не начисляется.",
+      });
+    }
+
     if (action === "set_username") {
       const username = String(body.username ?? "").trim().toLowerCase();
       if (!/^[a-z0-9_]{3,20}$/.test(username)) {
@@ -438,6 +470,18 @@ export async function POST(request: Request) {
         return response({ error: "Этот username уже занят." }, 409);
       }
       return response({ status: "updated", message: `Username изменён на @${username}.` });
+    }
+
+    if (action === "set_display_name") {
+      const displayName = String(body.displayName ?? "").trim().replace(/\s+/g, " ");
+      if (displayName.length < 2 || displayName.length > 48 || /[\u0000-\u001f\u007f]/.test(displayName)) {
+        return response({ error: "Имя должно содержать от 2 до 48 символов." }, 400);
+      }
+      await db
+        .prepare("UPDATE profiles SET display_name = ?, updated_at = ? WHERE user_id = ?")
+        .bind(displayName, now, user.id)
+        .run();
+      return response({ status: "updated", message: "Имя и фамилия обновлены.", displayName });
     }
 
     if (action === "set_avatar") {

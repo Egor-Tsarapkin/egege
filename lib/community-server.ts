@@ -56,13 +56,6 @@ export async function ensureCommunityProfile(user: AppUser) {
 
   const name = displayName(user);
   if (existing) {
-    if (existing.display_name !== name) {
-      await db
-        .prepare("UPDATE profiles SET display_name = ?, updated_at = ? WHERE user_id = ?")
-        .bind(name, Math.floor(Date.now() / 1000), user.id)
-        .run();
-      existing.display_name = name;
-    }
     return existing;
   }
 

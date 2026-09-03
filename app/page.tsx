@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { AppUser } from "@/lib/app-user";
 import { taskDownloadHref, taskDownloadName } from "@/lib/task-download";
@@ -17,7 +18,7 @@ const TeacherStudio = lazy(() => import("./teacher-studio"));
 const BoardList = lazy(() => import("./boards/board-list"));
 const MaterialsCenter = lazy(() => import("./materials-center"));
 
-const SITE_VERSION = "1.0.24";
+const SITE_VERSION = "1.0.25";
 
 type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard" | "profile" | "admin";
 type GateSection = Extract<Section, "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard">;
@@ -45,7 +46,7 @@ type Accent =
   | "violet"
   | "teal"
   | "matcha";
-type Reaction = "xp" | "hearts" | "letters" | "fire" | "fireworks" | "random";
+type Reaction = "xp" | "hearts" | "numbers" | "fire" | "fireworks" | "random";
 type BurstReaction = Exclude<Reaction, "random">;
 type Preferences = {
   theme: Theme;
@@ -214,6 +215,7 @@ type CommunityPayload = {
   leaderboard: LeaderboardEntry[];
   friends: FriendEntry[];
   completedTaskIds: string[];
+  blockedTaskIds: string[];
   activity: Activity;
   protection: { active: boolean; until: number };
   view: LeaderboardScope;
@@ -425,9 +427,9 @@ const heartParticles = burstParticles.map((particle, index) => ({
   label: index % 3 === 0 ? "♡" : "♥",
 }));
 
-const letterParticles = burstParticles.map((particle, index) => ({
+const numberParticles = burstParticles.map((particle, index) => ({
   ...particle,
-  label: ["А", "Q", "Ж", "E", "Ю", "Z", "Б", "G", "Я", "R"][index],
+  label: ["67", "52", "228", "69", "1488", "42", "67", "52", "228", "69"][index],
 }));
 
 const fireParticles = burstParticles.map((particle, index) => ({
@@ -440,7 +442,7 @@ const fireworkParticles = burstParticles.map((particle, index) => ({
   label: index % 3 === 0 ? "✦" : "•",
 }));
 
-const randomReactions: BurstReaction[] = ["xp", "hearts", "letters", "fire", "fireworks"];
+const randomReactions: BurstReaction[] = ["xp", "hearts", "numbers", "fire", "fireworks"];
 
 function dateKey(date: Date) {
   const year = date.getFullYear();
@@ -1090,19 +1092,25 @@ function AnalyticsChoice({ onChoose }: { onChoose: (allowed: boolean) => void })
 function TaskItem({
   task,
   completed,
+  xpBlocked,
   onCorrect,
   onIncorrect,
+  onReveal,
   decoration,
   decorationMotion,
 }: {
   task: Task;
   completed: boolean;
-  onCorrect: (taskId: string, event: React.MouseEvent<HTMLButtonElement>) => Promise<void>;
+  xpBlocked: boolean;
+  onCorrect: (taskId: string, event: React.SyntheticEvent<HTMLElement>) => Promise<void>;
   onIncorrect: () => void;
+  onReveal: (taskId: string) => void;
   decoration?: StyleAsset;
   decorationMotion?: boolean;
 }) {
   const [answerOpen, setAnswerOpen] = useState(false);
+  const [answerDraft, setAnswerDraft] = useState("");
+  const [answerStatus, setAnswerStatus] = useState<"" | "correct" | "incorrect">("");
   const [saving, setSaving] = useState(false);
   const sourceKind = getTaskSourceKind(task);
   const sourceLabel =
@@ -1112,14 +1120,34 @@ function TaskItem({
         ? "Авторская задача"
         : "База КЕГЭ";
 
-  const markCorrect = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (completed || saving) return;
+  const normalizedAnswer = (value: string) => value
+    .replace(/\\n/g, "\n")
+    .replace(/\u00a0/g, " ")
+    .trim()
+    .toLocaleLowerCase("ru-RU")
+    .replace(/ё/g, "е")
+    .replace(/\s+/g, " ");
+
+  const submitAnswer = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!answerDraft.trim() || completed || xpBlocked || saving || answerOpen) return;
+    if (normalizedAnswer(answerDraft) !== normalizedAnswer(task.answer)) {
+      setAnswerStatus("incorrect");
+      onIncorrect();
+      return;
+    }
     setSaving(true);
+    setAnswerStatus("correct");
     try {
       await onCorrect(task.id, event);
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleAnswer = () => {
+    if (!answerOpen && !completed && !xpBlocked) onReveal(task.id);
+    setAnswerOpen((current) => !current);
   };
 
   return (
@@ -1155,29 +1183,47 @@ function TaskItem({
           ))}
         </div>
       )}
-      <button
-        className={`answer-toggle ${answerOpen ? "is-open" : ""}`}
-        onClick={() => setAnswerOpen((current) => !current)}
-        aria-expanded={answerOpen}
-      >
-        {answerOpen ? "Скрыть ответ" : "Показать ответ"}
-      </button>
+      <div className="task-answer-actions">
+        <button
+          className={`answer-toggle ${answerOpen ? "is-open" : ""}`}
+          onClick={toggleAnswer}
+          aria-expanded={answerOpen}
+        >
+          {answerOpen ? "Скрыть ответ" : "Показать ответ"}
+        </button>
+        <form className="task-answer-form" onSubmit={submitAnswer}>
+          <input
+            value={answerDraft}
+            onChange={(event) => {
+              setAnswerDraft(event.target.value);
+              setAnswerStatus("");
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }}
+            placeholder={completed ? "XP уже начислен" : xpBlocked ? "Ответ открыт — без XP" : "Введите ответ"}
+            aria-label="Ответ на задание"
+            disabled={completed || xpBlocked || answerOpen || saving}
+          />
+          {answerDraft.trim() && !completed && !xpBlocked && !answerOpen && (
+            <button className="save-task-answer" type="submit" disabled={saving}>
+              {saving ? "Сохраняем…" : "Сохранить ответ"}
+            </button>
+          )}
+        </form>
+      </div>
+      {answerStatus && (
+        <p className={`task-answer-status is-${answerStatus}`} role="status">
+          {answerStatus === "correct" ? "Верно!" : "Пока неверно — попробуйте ещё раз."}
+        </p>
+      )}
       <div className={`answer-reveal ${answerOpen ? "is-open" : ""}`}>
         <div>
           <div className="answer-inner">
             <p className="answer-label">Ответ</p>
             <p className="answer-value">{task.answer.replace(/\\n/g, "\n")}</p>
-            <div className="match-row">
-              <span>{completed ? "Ответ уже отмечен" : "Ваш ответ совпал?"}</span>
-              <button
-                className={`match-yes ${completed ? "is-complete" : ""}`}
-                onClick={markCorrect}
-                disabled={completed || saving}
-              >
-                {completed ? "Учтено" : saving ? "Сохраняем…" : "Да"}
-              </button>
-              <button onClick={onIncorrect} disabled={completed || saving}>Нет</button>
-            </div>
           </div>
         </div>
       </div>
@@ -1895,7 +1941,7 @@ function Dashboard({
           <span>0 XP</span>
           <div>
             <h2>Начните с любого задания</h2>
-            <p>Откройте ответ и нажмите «Да» — активность сразу появится здесь.</p>
+            <p>Введите верный ответ — активность сразу появится здесь.</p>
           </div>
         </section>
       )}
@@ -1909,10 +1955,12 @@ function StudentCabinet({
   preferences,
   isAdmin,
   avatarEmoji,
+  displayName,
   onPreference,
   onDeleteAttempt,
   onOpenAdmin,
   onAvatarChange,
+  onDisplayNameChange,
   onLogout,
 }: {
   user: AppUser;
@@ -1920,15 +1968,21 @@ function StudentCabinet({
   preferences: Preferences;
   isAdmin: boolean;
   avatarEmoji: string;
+  displayName?: string;
   onPreference: (next: Partial<Preferences>) => void;
   onDeleteAttempt: (attempt: ExamAttempt) => void;
   onOpenAdmin: () => void;
   onAvatarChange: (avatarEmoji: string) => Promise<void>;
+  onDisplayNameChange: (displayName: string) => Promise<void>;
   onLogout: () => Promise<void>;
 }) {
   const [cabinetView, setCabinetView] = useState<"overview" | "variants" | "tasks">("overview");
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [avatarSaving, setAvatarSaving] = useState(false);
+  const [nameEditing, setNameEditing] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+  const [logoutBusy, setLogoutBusy] = useState(false);
   const scores = attempts.map((attempt) => attempt.testScore);
   const average = scores.length
     ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length)
@@ -1938,11 +1992,11 @@ function StudentCabinet({
     : 0;
   const formatDuration = (seconds: number) =>
     `${Math.floor(seconds / 3600)} ч ${Math.floor((seconds % 3600) / 60)} мин`;
-  const name = user.user_metadata?.name ?? user.email ?? "Ученик EGEGE";
+  const name = displayName ?? user.user_metadata?.name ?? user.email ?? "Ученик EGEGE";
   const reactions: Array<{ value: Reaction; label: string; icon: string }> = [
     { value: "xp", label: "XP", icon: "+10" },
     { value: "hearts", label: "Сердца", icon: "♥" },
-    { value: "letters", label: "Буквы", icon: "ЯA" },
+    { value: "numbers", label: "Рофл-числа", icon: "67" },
     { value: "fire", label: "Огоньки", icon: "🔥" },
     { value: "fireworks", label: "Салют", icon: "✦" },
     { value: "random", label: "Случайно", icon: "?" },
@@ -1959,6 +2013,31 @@ function StudentCabinet({
       await onAvatarChange(nextAvatar);
     } finally {
       setAvatarSaving(false);
+    }
+  };
+  const startNameEditing = () => {
+    setNameDraft(name);
+    setNameEditing(true);
+  };
+  const saveDisplayName = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextName = nameDraft.trim().replace(/\s+/g, " ");
+    if (nameSaving || nextName === name || nextName.length < 2) return;
+    setNameSaving(true);
+    try {
+      await onDisplayNameChange(nextName);
+      setNameEditing(false);
+    } finally {
+      setNameSaving(false);
+    }
+  };
+  const runLogout = async () => {
+    if (logoutBusy) return;
+    setLogoutBusy(true);
+    try {
+      await onLogout();
+    } finally {
+      setLogoutBusy(false);
     }
   };
 
@@ -1991,7 +2070,27 @@ function StudentCabinet({
       <section className="cabinet-hero">
         <div>
           <p>Личный кабинет</p>
-          <h1>{name}</h1>
+          <div className="cabinet-name-row">
+            <h1>{name}</h1>
+            <button
+              type="button"
+              className="cabinet-name-edit"
+              onClick={startNameEditing}
+              aria-label="Редактировать имя и фамилию"
+              data-label="Редактировать имя и фамилию"
+            >
+              <Pencil aria-hidden="true" strokeWidth={2} />
+            </button>
+          </div>
+          {nameEditing && (
+            <form className="cabinet-name-form" onSubmit={saveDisplayName}>
+              <input autoFocus value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} maxLength={48} placeholder="Имя и фамилия" aria-label="Имя и фамилия" />
+              <button type="submit" disabled={nameSaving || nameDraft.trim().length < 2 || nameDraft.trim() === name}>
+                {nameSaving ? "Сохраняем…" : "Сохранить"}
+              </button>
+              <button type="button" onClick={() => setNameEditing(false)}>Отмена</button>
+            </form>
+          )}
           <span>Здесь собираются результаты завершённых вариантов на этом устройстве.</span>
         </div>
         <div className="cabinet-hero-actions">
@@ -2161,8 +2260,8 @@ function StudentCabinet({
                 <small>Профиль EGEGE</small>
               </div>
             </div>
-            <button className="secondary-auth" onClick={() => void onLogout()}>
-              Выйти
+            <button className={`secondary-auth ${logoutBusy ? "is-active" : ""}`} onClick={() => void runLogout()} disabled={logoutBusy}>
+              {logoutBusy ? "Выходим…" : "Выйти"}
             </button>
           </div>
         </section>
@@ -2188,6 +2287,7 @@ export default function Home() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [activity, setActivity] = useState<Activity>({});
   const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(() => new Set());
+  const [blockedTaskIds, setBlockedTaskIds] = useState<Set<string>>(() => new Set());
   const [community, setCommunity] = useState<CommunityPayload | null>(null);
   const [communityLoading, setCommunityLoading] = useState(false);
   const [leaderboardScope, setLeaderboardScope] = useState<LeaderboardScope>("all");
@@ -2270,17 +2370,19 @@ export default function Home() {
 
     try {
       const saved = JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) ?? "{}") as
-        Partial<Preferences>;
+        Partial<Omit<Preferences, "reaction">> & { reaction?: Reaction | "letters" };
       restored = {
         theme: saved.theme === "light" ? "light" : "dark",
         accent: accentOptions.some((accent) => accent.value === saved.accent)
           ? (saved.accent as Accent)
           : defaultPreferences.accent,
-        reaction: ["xp", "hearts", "letters", "fire", "fireworks", "random"].includes(
+        reaction: ["xp", "hearts", "numbers", "fire", "fireworks", "random"].includes(
           saved.reaction ?? "",
         )
           ? (saved.reaction as Reaction)
-          : defaultPreferences.reaction,
+          : saved.reaction === "letters"
+            ? "numbers"
+            : defaultPreferences.reaction,
         siteStyle: siteStyleOptions.some((style) => style.value === saved.siteStyle)
           ? (saved.siteStyle as SiteStyle)
           : defaultPreferences.siteStyle,
@@ -2338,6 +2440,7 @@ export default function Home() {
     setCommunity(payload);
     setActivity(payload.activity);
     setCompletedTaskIds(new Set(payload.completedTaskIds));
+    setBlockedTaskIds(new Set(payload.blockedTaskIds));
   };
 
   const refreshCommunity = async () => {
@@ -2708,7 +2811,7 @@ export default function Home() {
 
   const addCorrectAnswer = async (
     taskId: string,
-    event: React.MouseEvent<HTMLButtonElement>,
+    event: React.SyntheticEvent<HTMLElement>,
   ) => {
     if (!user) {
       setProfileOpen(true);
@@ -2740,10 +2843,11 @@ export default function Home() {
         preferences.reaction === "random"
           ? randomReactions[Math.floor(Math.random() * randomReactions.length)]
           : preferences.reaction;
+      const bounds = event.currentTarget.getBoundingClientRect();
       const nextBurst = {
         id: ++burstId.current,
-        x: event.clientX,
-        y: event.clientY,
+        x: bounds.left + bounds.width / 2,
+        y: bounds.top + bounds.height / 2,
         reaction: selectedReaction,
       };
       setBursts((current) => [...current, nextBurst]);
@@ -3078,6 +3182,9 @@ export default function Home() {
   const setCommunityUsername = (username: string) =>
     mutateCommunity({ action: "set_username", username });
 
+  const setCommunityDisplayName = (displayName: string) =>
+    mutateCommunity({ action: "set_display_name", displayName });
+
   const setCommunityAvatar = async (avatarEmoji: string) => {
     const previousAvatar = community?.profile.avatarEmoji;
     setCommunity((current) => current ? {
@@ -3106,6 +3213,16 @@ export default function Home() {
   const addCommunityFriend = (username: string) =>
     mutateCommunity({ action: "add_friend", username });
 
+  const revealTaskAnswer = (taskId: string) => {
+    if (completedTaskIds.has(taskId) || blockedTaskIds.has(taskId)) return;
+    setBlockedTaskIds((current) => new Set(current).add(taskId));
+    if (!user) return;
+    void communityRequest<{ message: string }>("/api/community", {
+      method: "POST",
+      body: JSON.stringify({ action: "reveal_answer", taskId }),
+    }).catch(() => notify("Ответ открыт — XP за это задание больше не начисляется"));
+  };
+
   const updateCommunityFriend = (
     action: "accept_friend" | "decline_friend" | "remove_friend",
     userId: string,
@@ -3113,7 +3230,8 @@ export default function Home() {
 
   const taskProps = {
     onCorrect: addCorrectAnswer,
-    onIncorrect: () => notify("Ответ отмечен — попробуйте ещё одно задание"),
+    onIncorrect: () => notify("Пока неверно — попробуйте ещё раз"),
+    onReveal: revealTaskAnswer,
   };
 
   const continueFromGate = () => {
@@ -3238,7 +3356,7 @@ export default function Home() {
 
             <section className="filter-panel" aria-label="Фильтры заданий">
               <label className="search-field">
-                <span>Поиск по ID</span>
+                <span>Поиск по номеру задачи</span>
                 <div>
                   <i aria-hidden="true" />
                   <input
@@ -3316,6 +3434,7 @@ export default function Home() {
                   <TaskItem
                     task={task}
                     completed={completedTaskIds.has(task.id)}
+                    xpBlocked={blockedTaskIds.has(task.id)}
                     decoration={isRegistered && preferences.taskGifs && taskStyleAssets.length
                       ? taskStyleAssets[index % taskStyleAssets.length]
                       : undefined}
@@ -3491,10 +3610,12 @@ export default function Home() {
             preferences={preferences}
             isAdmin={isAdmin}
             avatarEmoji={community?.profile.avatarEmoji ?? "🙂"}
+            displayName={community?.profile.displayName}
             onPreference={updatePreferences}
             onDeleteAttempt={deleteExamAttempt}
             onOpenAdmin={() => navigate("admin")}
             onAvatarChange={setCommunityAvatar}
+            onDisplayNameChange={setCommunityDisplayName}
             onLogout={logout}
           />
         )}
@@ -3554,7 +3675,7 @@ export default function Home() {
             <strong>
               {burst.reaction === "xp" && `+${XP_PER_ANSWER} XP`}
               {burst.reaction === "hearts" && "♥"}
-              {burst.reaction === "letters" && "ЕГЭ"}
+              {burst.reaction === "numbers" && "67"}
               {burst.reaction === "fire" && "🔥"}
               {burst.reaction === "fireworks" && "✦"}
             </strong>
@@ -3562,8 +3683,8 @@ export default function Home() {
               ? burstParticles
               : burst.reaction === "hearts"
                 ? heartParticles
-                : burst.reaction === "letters"
-                  ? letterParticles
+                : burst.reaction === "numbers"
+                  ? numberParticles
                   : burst.reaction === "fire"
                     ? fireParticles
                     : fireworkParticles
@@ -3576,8 +3697,8 @@ export default function Home() {
                       : "xp-spark"
                     : burst.reaction === "hearts"
                       ? "heart-token"
-                      : burst.reaction === "letters"
-                        ? "letter-token"
+                      : burst.reaction === "numbers"
+                        ? "number-token"
                         : burst.reaction === "fire"
                           ? particle.label === "·" ? "fire-ember" : "fire-token"
                           : burst.reaction === "fireworks"
