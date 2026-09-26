@@ -35,7 +35,7 @@ test("publishes the boards gate and quota controls without account tiers", async
   assert.doesNotMatch(page, /Премиум|премиум/);
   assert.match(admin, /action: "set_board_limit"/);
   assert.match(admin, /Лимиты досок/);
-  assert.match(boardSurface, /zoomAt\(viewportRef\.current, point, Math\.exp\(-deltaY \* \.008\)\)/);
+  assert.match(boardSurface, /wheelZoomFactor\(deltaY, event\.shiftKey\)/);
   assert.match(boardSurface, /addEventListener\("wheel", wheel, \{ passive: false, capture: true \}\)/);
   assert.match(boardSurface, /event\.stopPropagation\(\)/);
   assert.doesNotMatch(boardSurface, /onWheel=/);

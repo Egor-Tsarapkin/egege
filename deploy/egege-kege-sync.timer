@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily EGEGE task bank update
+
+[Timer]
+OnCalendar=*-*-* 04:20:00 Europe/Moscow
+Persistent=true
+RandomizedDelaySec=15m
+Unit=egege-kege-sync.service
+
+[Install]
+WantedBy=timers.target

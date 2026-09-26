@@ -25,6 +25,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const sourceValue = url.searchParams.get("source");
   const requestedName = safeDownloadName(url.searchParams.get("name") ?? "material");
+  const taskId = url.searchParams.get("taskId") ?? "";
+  const fileIndex = Number(url.searchParams.get("fileIndex") ?? 0);
 
   if (!sourceValue) {
     return Response.json({ error: "Не указан адрес файла" }, { status: 400 });
@@ -43,13 +45,29 @@ export async function GET(request: Request) {
 
   const requestRange = request.headers.get("range");
 
-  const sourceResponse = await fetch(source, {
+  const fetchFile = (fileUrl: URL) => fetch(fileUrl, {
     headers: {
       Accept: "*/*",
       "User-Agent": "EGEGE educational file mirror",
       ...(requestRange ? { Range: requestRange } : {}),
     },
   });
+  let sourceResponse = await fetchFile(source);
+  if ((!sourceResponse.ok || !sourceResponse.body) && /^\d{1,20}$/.test(taskId) && Number.isInteger(fileIndex) && fileIndex >= 0) {
+    const currentTaskResponse = await fetch(`https://kompege.ru/api/v1/task/${taskId}`, {
+      headers: { Accept: "application/json", "User-Agent": "EGEGE educational file mirror" },
+    });
+    if (currentTaskResponse.ok) {
+      const currentTask = await currentTaskResponse.json() as { files?: Array<{ url?: string }> };
+      const currentSource = currentTask.files?.[fileIndex]?.url;
+      if (currentSource) {
+        const currentUrl = new URL(currentSource, "https://kompege.ru");
+        if (currentUrl.protocol === "https:" && currentUrl.hostname === "kompege.ru" && currentUrl.pathname.startsWith("/files/")) {
+          sourceResponse = await fetchFile(currentUrl);
+        }
+      }
+    }
+  }
   if (!sourceResponse.ok || !sourceResponse.body) {
     return Response.json({ error: "Файл временно недоступен" }, { status: 502 });
   }

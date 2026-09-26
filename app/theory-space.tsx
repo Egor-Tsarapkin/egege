@@ -4381,9 +4381,6 @@ export default function TheorySpace({ accessToken, userId }: TheorySpaceProps) {
           </section>
         </div>
 
-        <p className="theory-map-hint">
-          Выберите планету, чтобы открыть главу. Для лучшего результата двигайтесь по порядку.
-        </p>
       </div>
 
       {futurePreviewOpen && (

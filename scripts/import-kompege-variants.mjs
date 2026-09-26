@@ -180,11 +180,12 @@ async function importVariant(entry, index, total, currentAcademicYear) {
     kim: String(source.kim),
     title: entry.title || source.description || `КИМ № ${source.kim}`,
     sourceUrl: `${SITE_ROOT}/variant?kim=${source.kim}`,
-    tasks: (source.tasks ?? []).map((task) => ({
+    tasks: (source.tasks ?? []).map((task, index) => ({
+      slot: index + 1,
       id: String(task.taskId),
       number: Number(task.number),
       html: prepareTaskHtml(task.text),
-      answer: String(task.answer ?? ""),
+      answer: String(task.key ?? task.answer ?? ""),
       table: {
         cols: Math.max(1, Number(task.table?.cols ?? 1)),
         rows: Math.max(1, Number(task.table?.rows ?? 1)),

@@ -50,9 +50,18 @@ test("previews partial text formatting before committing", async () => {
   assert.match(surface, /applyCreate\(object\); setSelection\(""\)/);
 });
 
+test("allows replacing the whole font-size value before validating it", async () => {
+  const surface = await readFile(new URL("../app/boards/board-surface.tsx", import.meta.url), "utf8");
+  assert.match(surface, /value=\{fontSizeInput\}/);
+  assert.match(surface, /fontSizeInput\.trim\(\).*: 10/);
+  assert.match(surface, /min="1" max="160"/);
+  assert.doesNotMatch(surface, /Number\(event\.target\.value\) \|\| 10/);
+});
+
 test("uses the system clipboard first and pastes near the pointer", async () => {
   const surface = await readFile(new URL("../app/boards/board-surface.tsx", import.meta.url), "utf8");
   assert.match(surface, /navigator\.clipboard\.write\(\[new ClipboardItem/);
+  assert.match(surface, /new ClipboardItem\(\{ "image\/png": png \}\)/);
   assert.match(surface, /const local = localPoint\(event\); lastPointerScreen\.current = local/);
   assert.match(surface, /const screen = pasteScreenPoint\(520, 260\)/);
   assert.doesNotMatch(surface, /event\.code === "KeyV" && clipboardObjects\.current\.length/);
@@ -64,6 +73,9 @@ test("restores a separate viewport for every board", async () => {
   assert.match(surface, /VIEWPORT_STORAGE_PREFIX/);
   assert.match(surface, /const viewportStorageKey = `\$\{VIEWPORT_STORAGE_PREFIX\}\$\{board\.id\}`/);
   assert.match(surface, /localStorage\.setItem\(viewportStorageKey, JSON\.stringify\(viewportRef\.current\)\)/);
+  assert.match(surface, /window\.addEventListener\("pagehide", persistViewport\)/);
+  assert.match(surface, /document\.addEventListener\("visibilitychange", onVisibilityChange\)/);
+  assert.match(surface, /scheduleViewportPersistence\(\)/);
 });
 
 test("renders escaped task answer newlines as real line breaks", async () => {

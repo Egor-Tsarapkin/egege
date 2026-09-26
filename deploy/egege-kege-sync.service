@@ -1,0 +1,9 @@
+[Unit]
+Description=Update EGEGE task bank from kompege.ru
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/egege
+ExecStart=/usr/bin/docker compose --profile tools run --rm kege-sync

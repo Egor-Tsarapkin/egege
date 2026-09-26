@@ -33,6 +33,8 @@ test("boards replace export with task search, layers, and 15 MB files", async ()
   assert.match(surface, /moveLayer\("front"\)/);
   assert.match(surface, /ChevronsDown/);
   assert.match(surface, /images: body\.task\.images/);
+  assert.match(surface, /files: body\.task\.files/);
+  assert.match(surface, /board-task-files/);
   assert.match(surface, /type: "marquee"/);
   assert.match(surface, /selectedIdsRef/);
   assert.match(surface, /event\.code === "KeyA"/);
@@ -45,6 +47,7 @@ test("boards replace export with task search, layers, and 15 MB files", async ()
   assert.match(assets, /15 \* 1024 \* 1024/);
   assert.match(taskRoute, /task-index\.json/);
   assert.match(taskRoute, /imageSources/);
+  assert.match(taskRoute, /taskFiles/);
   assert.match(taskRoute, /html,/);
   assert.match(renderer, /isDarkBackground/);
   assert.match(surface, /board-task-rich-layer/);
@@ -81,7 +84,7 @@ test("board undo keeps object identity and serializes rapid operations", async (
     readFile(new URL("../lib/boards/client/collaboration.ts", import.meta.url), "utf8"),
     readFile(new URL("../realtime/server.mjs", import.meta.url), "utf8"),
   ]);
-  assert.match(surface, /redo: \(\) => applyCreate\(cloneObject\(object\), false\)/);
+  assert.match(surface, /redo: \(\) => applyCreate\(cloneObject\(record\.object\), false\)/);
   assert.doesNotMatch(surface, /redo: \(\) => applyCreate\(\{ \.\.\.cloneObject\(object\), id: newObjectId\(\) \}/);
   assert.match(operations, /existing && !existing\.deleted_at/);
   assert.match(operations, /WHERE board_objects\.version < excluded\.version/);

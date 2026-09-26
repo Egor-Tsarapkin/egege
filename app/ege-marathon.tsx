@@ -21,6 +21,9 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QUESTIONS, type MarathonQuestion } from "./ege-marathon-data";
+import { cleanMarathonProgress, restoreMarathonProgress, type MarathonProgress } from "@/lib/marathon-progress";
+import { shuffleMarathonOptions } from "@/lib/marathon-options";
+import { useMarathonActivity } from "@/lib/marathon-activity-client";
 
 type MarathonTheme = "dark" | "light";
 type MarathonAccent =
@@ -38,17 +41,12 @@ type MarathonAccent =
   | "indigo"
   | "violet"
   | "teal"
-  | "matcha";
+  | "matcha"
+  | "crimson"
+  | "deepPurple"
+  | "goldApex";
 type MarathonScreen = "home" | "quiz" | "themes" | "favorites" | "errors" | "settings";
-type AnswerState = "correct" | "wrong";
-
-type LocalState = {
-  answered: Record<string, AnswerState>;
-  favorites: string[];
-  marathonOrder: string[];
-  autoAdvance: boolean;
-  successEffect: boolean;
-};
+type LocalState = MarathonProgress;
 
 const STORAGE_KEY = "egege-marathon-mvp-v1";
 const DEFAULT_LOCAL_STATE: LocalState = {
@@ -142,14 +140,23 @@ export default function EgeMarathon({
   theme,
   accent,
   onThemeChange,
+  userId,
+  onAnswer,
+  remoteProgress,
+  onProgressChange,
 }: {
   theme: MarathonTheme;
   accent: MarathonAccent;
   onThemeChange: (theme: MarathonTheme) => void;
+  userId?: string;
+  onAnswer?: (questionId: string, optionIndex: number, eventId: string) => Promise<void>;
+  remoteProgress?: MarathonProgress | null;
+  onProgressChange?: (progress: MarathonProgress) => Promise<void>;
 }) {
   const [screen, setScreen] = useState<MarathonScreen>("home");
-  const [local, setLocal] = useState<LocalState>(DEFAULT_LOCAL_STATE);
+  const [local, setLocalState] = useState<LocalState>(DEFAULT_LOCAL_STATE);
   const [ready, setReady] = useState(false);
+  const [optionOrders, setOptionOrders] = useState<Record<string, number[]>>({});
   const [queue, setQueue] = useState<string[]>(QUESTIONS.map((question) => question.id));
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -174,33 +181,107 @@ export default function EgeMarathon({
   const suppressAnswerUntil = useRef(0);
   const autoTimer = useRef<number | null>(null);
   const navigationTimer = useRef<number | null>(null);
+  const progressSaveTimer = useRef<number | null>(null);
+  const remoteApplied = useRef(false);
+  const onProgressChangeRef = useRef(onProgressChange);
+
+  const localRef = useRef<LocalState>(DEFAULT_LOCAL_STATE);
+  const hadSavedLocal = useRef(false);
+  const onAnswerRef = useRef(onAnswer);
+  const xpFlushing = useRef(false);
+  const xpPending = useRef<Array<{ questionId: string; optionIndex: number; eventId: string }>>([]);
+  const storageKey = userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
+  const xpStorageKey = `egege-marathon-xp:${userId ?? "guest"}`;
+  useMarathonActivity(userId);
+
+  useEffect(() => { onProgressChangeRef.current = onProgressChange; onAnswerRef.current = onAnswer; }, [onProgressChange, onAnswer]);
+
+  function writeLocal(next: LocalState) {
+    localRef.current = next;
+    setLocalState(next);
+    try { window.localStorage.setItem(storageKey, JSON.stringify(next)); } catch {}
+  }
+
+  function updateLocal(update: (current: LocalState) => LocalState) {
+    // eslint-disable-next-line react-hooks/purity -- Called only by user actions, never during render.
+    writeLocal({ ...update(localRef.current), updatedAt: Date.now() });
+  }
+
+  function persistPendingXp() {
+    try { localStorage.setItem(xpStorageKey, JSON.stringify(xpPending.current)); } catch {}
+  }
+
+  async function flushXp() {
+    if (xpFlushing.current || !onAnswerRef.current) return;
+    xpFlushing.current = true;
+    try {
+      while (xpPending.current.length) {
+        const event = xpPending.current[0];
+        await onAnswerRef.current(event.questionId, event.optionIndex, event.eventId);
+        xpPending.current = xpPending.current.filter((item) => item.eventId !== event.eventId);
+        persistPendingXp();
+      }
+    } catch {
+      // Retry the same event ID after reconnecting, so it cannot award XP twice.
+    } finally { xpFlushing.current = false; }
+  }
 
   useEffect(() => {
     queueMicrotask(() => {
       try {
-        const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}") as Partial<LocalState>;
-        setLocal({
-          answered: saved.answered ?? {},
-          favorites: Array.isArray(saved.favorites) ? saved.favorites : [],
-          marathonOrder: Array.isArray(saved.marathonOrder) ? saved.marathonOrder : [],
-          autoAdvance: saved.autoAdvance ?? true,
-          successEffect: saved.successEffect ?? true,
-        });
-      } catch {
-        setLocal(DEFAULT_LOCAL_STATE);
-      }
+        const owner = localStorage.getItem(`${STORAGE_KEY}:owner`);
+        const serialized = localStorage.getItem(storageKey) ?? ((!owner || owner === userId) ? localStorage.getItem(STORAGE_KEY) : null);
+        const saved = serialized ? JSON.parse(serialized) : {};
+        const restored = cleanMarathonProgress({ ...DEFAULT_LOCAL_STATE, ...saved }) ?? DEFAULT_LOCAL_STATE;
+        hadSavedLocal.current = Boolean(serialized);
+        writeLocal(restored);
+        if (userId && serialized) localStorage.setItem(`${STORAGE_KEY}:owner`, userId);
+        const pending = JSON.parse(localStorage.getItem(xpStorageKey) || "[]");
+        xpPending.current = Array.isArray(pending) ? pending.filter((item) => item && typeof item.questionId === "string" && Number.isInteger(item.optionIndex) && typeof item.eventId === "string") : [];
+      } catch { writeLocal(DEFAULT_LOCAL_STATE); }
       setReady(true);
+      void flushXp();
     });
+    const timer = window.setInterval(() => void flushXp(), 10_000);
+    return () => window.clearInterval(timer);
+    // Storage and callbacks belong to this user's keyed component.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!ready) return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
-    } catch {
-      // The marathon remains usable when browser storage is unavailable.
-    }
+    if (!ready || remoteProgress === undefined || remoteApplied.current) return;
+    remoteApplied.current = true;
+    queueMicrotask(() => {
+      const restored = hadSavedLocal.current || localRef.current.updatedAt
+        ? restoreMarathonProgress(localRef.current, remoteProgress)
+        : remoteProgress ?? localRef.current;
+      writeLocal(restored);
+      void onProgressChangeRef.current?.(restored).catch(() => undefined);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, remoteProgress]);
+
+  useEffect(() => {
+    if (!ready || !remoteApplied.current || !onProgressChangeRef.current) return;
+    if (progressSaveTimer.current) window.clearTimeout(progressSaveTimer.current);
+    progressSaveTimer.current = window.setTimeout(() => {
+      void onProgressChangeRef.current?.(localRef.current).catch(() => undefined);
+    }, 450);
+    return () => { if (progressSaveTimer.current) window.clearTimeout(progressSaveTimer.current); };
   }, [local, ready]);
+
+  useEffect(() => {
+    const flushProgress = () => {
+      if (ready && remoteApplied.current) void onProgressChangeRef.current?.(localRef.current).catch(() => undefined);
+    };
+    window.addEventListener("pagehide", flushProgress);
+    document.addEventListener("visibilitychange", flushProgress);
+    return () => {
+      flushProgress();
+      window.removeEventListener("pagehide", flushProgress);
+      document.removeEventListener("visibilitychange", flushProgress);
+    };
+  }, [ready]);
 
   useEffect(() => {
     const syncVisibleQuestions = () => {
@@ -220,6 +301,7 @@ export default function EgeMarathon({
   useEffect(() => () => {
     if (autoTimer.current) window.clearTimeout(autoTimer.current);
     if (navigationTimer.current) window.clearTimeout(navigationTimer.current);
+    if (progressSaveTimer.current) window.clearTimeout(progressSaveTimer.current);
   }, []);
 
   const byId = useMemo(() => new Map(QUESTIONS.map((question) => [question.id, question])), []);
@@ -281,8 +363,16 @@ export default function EgeMarathon({
     if (questionIndex > 0) goTo(questionIndex - 1);
   };
 
-  const start = (ids: string[], index = 0) => {
+  const start = (ids: string[], index = 0, randomizeOptions = false) => {
     if (!ids.length) return;
+    let nextOptionOrders: Record<string, number[]> = {};
+    if (randomizeOptions) {
+      let previous: Record<string, number[]> = {};
+      try { previous = JSON.parse(localStorage.getItem(`${storageKey}:option-orders`) || "{}"); } catch {}
+      nextOptionOrders = Object.fromEntries(ids.map((id) => [id, shuffleMarathonOptions(byId.get(id)?.options.length ?? 0, Array.isArray(previous?.[id]) ? previous[id] : [])]));
+      try { localStorage.setItem(`${storageKey}:option-orders`, JSON.stringify({ ...previous, ...nextOptionOrders })); } catch {}
+    }
+    setOptionOrders(nextOptionOrders);
     setQueue(ids);
     setQuestionIndex(index);
     setSelected(null);
@@ -293,7 +383,7 @@ export default function EgeMarathon({
 
   const startNewMarathon = () => {
     const order = createMarathonOrder();
-    setLocal((current) => ({ ...current, answered: {}, marathonOrder: order }));
+    updateLocal((current) => ({ ...current, answered: {}, marathonOrder: order }));
     setShowResumePrompt(false);
     start(order);
   };
@@ -304,10 +394,16 @@ export default function EgeMarathon({
     const isCorrect = optionIndex === activeQuestion.correct;
     setSelected(optionIndex);
     setGraded(true);
-    setLocal((current) => ({
+    updateLocal((current) => ({
       ...current,
       answered: { ...current.answered, [activeQuestion.id]: isCorrect ? "correct" : "wrong" },
     }));
+
+    if (isCorrect && onAnswerRef.current) {
+      xpPending.current.push({ questionId: activeQuestion.id, optionIndex, eventId: crypto.randomUUID() });
+      persistPendingXp();
+      void flushXp();
+    }
 
     if (isCorrect && local.successEffect) setFlash((value) => value + 1);
     if (isCorrect && local.autoAdvance) {
@@ -316,7 +412,7 @@ export default function EgeMarathon({
   };
 
   const toggleFavorite = (id: string) => {
-    setLocal((current) => ({
+    updateLocal((current) => ({
       ...current,
       favorites: current.favorites.includes(id)
         ? current.favorites.filter((item) => item !== id)
@@ -387,6 +483,8 @@ export default function EgeMarathon({
 
   const topics = useMemo(() => [...new Set(QUESTIONS.map((question) => question.topic))], []);
 
+  if (!ready) return <div className="marathon-loading"><span>•••</span><p>Восстанавливаем прогресс</p></div>;
+
   if (screen === "quiz") {
     const questionSlots = Array.from(
       { length: visibleQuestionRadius * 2 + 1 },
@@ -411,8 +509,8 @@ export default function EgeMarathon({
           <h2>{question.prompt}</h2>
           {question.code && <PythonCode code={question.code} scale={0.9} onScale={() => undefined} />}
           <div className="marathon-options">
-            {question.options.map((option, index) => (
-              <button tabIndex={-1} key={`${question.id}-${option}`}><span>{index + 1}</span><code>{option}</code></button>
+            {(optionOrders[question.id] ?? question.options.map((_, index) => index)).map((optionIndex, index) => (
+              <button tabIndex={-1} key={`${question.id}-${optionIndex}`}><span>{index + 1}</span><code>{question.options[optionIndex]}</code></button>
             ))}
           </div>
         </article>
@@ -480,14 +578,15 @@ export default function EgeMarathon({
           <h2>{activeQuestion.prompt}</h2>
           {activeQuestion.code && <PythonCode code={activeQuestion.code} scale={codeScale} onScale={setCodeScale} />}
           <div className="marathon-options">
-            {activeQuestion.options.map((option, index) => {
-              const isCorrect = index === activeQuestion.correct;
+            {(optionOrders[activeQuestion.id] ?? activeQuestion.options.map((_, index) => index)).map((optionIndex, index) => {
+              const option = activeQuestion.options[optionIndex];
+              const isCorrect = optionIndex === activeQuestion.correct;
               let state = "";
               if (graded && isCorrect) state = "is-correct";
               else if (graded && !isCorrect && selected !== activeQuestion.correct) state = "is-wrong";
-              else if (selected === index) state = "is-selected";
+              else if (selected === optionIndex) state = "is-selected";
               return (
-                <button className={state} onClick={() => answer(index)} onPointerUp={(event) => event.currentTarget.blur()} disabled={graded} key={`${activeQuestion.id}-${option}`}>
+                <button className={state} onClick={() => answer(optionIndex)} onPointerUp={(event) => event.currentTarget.blur()} disabled={graded} key={`${activeQuestion.id}-${option}`}>
                   <span>{index + 1}</span><code>{option}</code>
                   {graded && isCorrect && <Check />}
                   {graded && !isCorrect && selected !== activeQuestion.correct && <X />}
@@ -533,13 +632,13 @@ export default function EgeMarathon({
             active={local.autoAdvance}
             label="Сразу переходить дальше"
             note="После верного ответа откроется следующий вопрос"
-            onClick={() => setLocal((current) => ({ ...current, autoAdvance: !current.autoAdvance }))}
+            onClick={() => updateLocal((current) => ({ ...current, autoAdvance: !current.autoAdvance }))}
           />
           <Toggle
             active={local.successEffect}
             label="Мягкая вспышка"
             note="Акцентная волна по краям при верном ответе"
-            onClick={() => setLocal((current) => ({ ...current, successEffect: !current.successEffect }))}
+            onClick={() => updateLocal((current) => ({ ...current, successEffect: !current.successEffect }))}
           />
           <div className="marathon-theme-setting">
             <div><strong>Оформление</strong><small>Тема применяется ко всему сайту</small></div>
@@ -562,7 +661,7 @@ export default function EgeMarathon({
             const ids = QUESTIONS.filter((question) => question.topic === topic).map((question) => question.id);
             const done = ids.filter((id) => local.answered[id]).length;
             return (
-              <button onClick={() => start(ids)} key={topic}>
+              <button onClick={() => start(ids, 0, true)} key={topic}>
                 <span className="marathon-topic-icon">{topic.startsWith("Python") ? <Code2 /> : <BookOpen />}</span>
                 <span><strong>{topic}</strong><small>{done} из {ids.length} пройдено</small><i><b style={{ width: `${(done / ids.length) * 100}%` }} /></i></span>
                 <ChevronRight />
@@ -649,7 +748,6 @@ export default function EgeMarathon({
         <button onClick={() => setScreen("favorites")}><span><Star /></span><div><strong>Избранное</strong><small>{favorites.size} сохранено</small></div><ChevronRight /></button>
       </div>
 
-      <p className="marathon-local-note">Прогресс сохраняется на устройстве</p>
     </section>
   );
 }

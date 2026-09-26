@@ -37,27 +37,43 @@ export async function GET(request: Request) {
   await ensureTeacherSchema();
   const db = communityDb();
   const now = Math.floor(Date.now() / 1000);
-  const since7 = now - 7 * 86400;
   const since30 = now - 30 * 86400;
 
-  const [online, registered, newUsers, averageTime, users, activity, funnel, content, actions, teacherTasks, teacherVariants] = await Promise.all([
-    db.prepare("SELECT COUNT(*) AS value FROM analytics_sessions WHERE last_seen_at >= ?").bind(now - 120).first<{ value: number }>(),
+  const [registered, newUsers, visitorsToday, users, activity, funnel, content, actions, teacherTasks, teacherVariants, sources] = await Promise.all([
     db.prepare("SELECT COUNT(*) AS value FROM profiles").first<{ value: number }>(),
-    db.prepare("SELECT COUNT(*) AS value FROM profiles WHERE created_at >= ?").bind(since7).first<{ value: number }>(),
-    db.prepare("SELECT COALESCE(AVG(active_seconds), 0) AS value FROM analytics_sessions").first<{ value: number }>(),
+    db.prepare("SELECT COUNT(*) AS value FROM profiles WHERE created_at >= ?").bind(since30).first<{ value: number }>(),
+    db.prepare(`SELECT COUNT(*) AS value FROM (
+      SELECT CASE WHEN user_id IS NOT NULL THEN 'user:' || user_id ELSE 'guest:' || session_id END AS visitor
+      FROM analytics_events WHERE event_type = 'page_view' AND date(created_at, 'unixepoch', '+3 hours') = date(?, 'unixepoch', '+3 hours')
+      UNION
+      SELECT 'user:' || user_id FROM user_access WHERE date(last_seen_at, 'unixepoch', '+3 hours') = date(?, 'unixepoch', '+3 hours')
+    )`).bind(now, now).first<{ value: number }>(),
     db.prepare(`SELECT p.user_id, p.username, p.display_name, p.avatar_emoji, p.created_at,
       COALESCE(a.email, '') AS email, COALESCE(a.board_limit, 3) AS board_limit,
+      COALESCE((SELECT s.source FROM analytics_sessions s WHERE s.user_id = p.user_id ORDER BY s.started_at ASC LIMIT 1), '') AS acquisition_source,
+      COALESCE((SELECT s.campaign FROM analytics_sessions s WHERE s.user_id = p.user_id ORDER BY s.started_at ASC LIMIT 1), '') AS acquisition_campaign,
+      COALESCE((SELECT s.started_at FROM analytics_sessions s WHERE s.user_id = p.user_id ORDER BY s.started_at ASC LIMIT 1), 0) AS acquisition_at,
       (SELECT COUNT(*) FROM boards b WHERE b.owner_user_id = p.user_id AND b.deleted_at IS NULL) AS board_count,
       COALESCE(a.last_seen_at, p.updated_at) AS last_seen_at,
+      COALESCE((SELECT SUM(ms.active_seconds) FROM marathon_sessions ms WHERE ms.user_id = p.user_id), 0) AS marathon_seconds,
+      COALESCE((SELECT MAX(ms.last_seen_at) FROM marathon_sessions ms WHERE ms.user_id = p.user_id AND ms.is_active = 1), 0) AS marathon_last_seen_at,
+      EXISTS(SELECT 1 FROM marathon_sessions ms WHERE ms.user_id = p.user_id AND ms.is_active = 1 AND ms.last_seen_at >= strftime('%s', 'now') - 45) AS marathon_online,
       COUNT(e.id) AS variants, COALESCE(ROUND(AVG(e.test_score)), 0) AS average_score
       FROM profiles p
       LEFT JOIN user_access a ON a.user_id = p.user_id
       LEFT JOIN exam_attempts e ON e.user_id = p.user_id
-      GROUP BY p.user_id ORDER BY last_seen_at DESC LIMIT 100`).all(),
-    db.prepare(`SELECT date(created_at, 'unixepoch') AS day,
-      SUM(CASE WHEN event_type = 'page_view' THEN 1 ELSE 0 END) AS visits,
-      SUM(CASE WHEN event_type = 'login' THEN 1 ELSE 0 END) AS registrations
-      FROM analytics_events WHERE created_at >= ? GROUP BY day ORDER BY day`).bind(since30).all(),
+      GROUP BY p.user_id ORDER BY last_seen_at DESC`).all(),
+    db.prepare(`SELECT day, SUM(visits) AS visits, SUM(registrations) AS registrations FROM (
+      SELECT day, COUNT(*) AS visits, 0 AS registrations FROM (
+        SELECT date(created_at, 'unixepoch', '+3 hours') AS day, CASE WHEN user_id IS NOT NULL THEN 'user:' || user_id ELSE 'guest:' || session_id END AS visitor
+        FROM analytics_events WHERE event_type = 'page_view' AND created_at >= ?
+        UNION
+        SELECT date(last_seen_at, 'unixepoch', '+3 hours') AS day, 'user:' || user_id AS visitor FROM user_access WHERE last_seen_at >= ?
+      ) GROUP BY day
+      UNION ALL
+      SELECT date(created_at, 'unixepoch', '+3 hours') AS day, 0 AS visits, COUNT(*) AS registrations
+      FROM profiles WHERE created_at >= ? GROUP BY day
+    ) GROUP BY day ORDER BY day`).bind(since30, since30, since30).all(),
     db.prepare(`SELECT
       COUNT(DISTINCT session_id) AS opened,
       COUNT(DISTINCT CASE WHEN user_id IS NOT NULL THEN session_id END) AS logged,
@@ -68,6 +84,7 @@ export async function GET(request: Request) {
       WHEN path LIKE '/tasks%' THEN 'База заданий'
       WHEN path LIKE '/variants%' THEN 'Варианты'
       WHEN path LIKE '/trainer%' THEN 'Тренажёр'
+      WHEN path LIKE '/game%' THEN 'Марафон'
       ELSE 'Другое' END AS label, COUNT(*) AS value
       FROM analytics_events WHERE event_type = 'page_view' AND created_at >= ?
       GROUP BY label ORDER BY value DESC`).bind(since30).all(),
@@ -83,26 +100,30 @@ export async function GET(request: Request) {
       FROM teacher_variants v LEFT JOIN profiles p ON p.user_id = v.owner_id
       LEFT JOIN teacher_variant_tasks vt ON vt.variant_id = v.id
       GROUP BY v.id ORDER BY v.approved ASC, v.updated_at DESC LIMIT 200`).all(),
+    db.prepare(`SELECT s.source, s.medium, s.campaign, s.content, s.referrer_host, COUNT(DISTINCT COALESCE(s.user_id, s.session_id)) AS visitors,
+      COUNT(DISTINCT CASE WHEN p.created_at >= ? THEN s.user_id END) AS registrations
+      FROM analytics_sessions s LEFT JOIN profiles p ON p.user_id = s.user_id
+      WHERE s.started_at >= ? GROUP BY s.source, s.medium, s.campaign, s.content, s.referrer_host ORDER BY visitors DESC`).bind(since30, since30).all(),
   ]);
 
   return Response.json({
     metrics: {
-      online: online?.value ?? 0,
       registered: registered?.value ?? 0,
       newUsers: newUsers?.value ?? 0,
-      averageMinutes: Math.round((averageTime?.value ?? 0) / 60),
+      visitorsToday: visitorsToday?.value ?? 0,
     },
     users: users.results,
     activity: activity.results,
     funnel: funnel ?? { opened: 0, logged: 0, started: 0, completed: 0 },
     content: content.results,
     actions: actions.results,
+    sources: sources.results,
     teacherTasks: teacherTasks.results,
     teacherVariants: await Promise.all(teacherVariants.results.map(async (variant) => ({
       ...variant,
       complete: await variantIsComplete(Number((variant as Record<string, unknown>).id)),
     }))),
-  });
+  }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function POST(request: Request) {

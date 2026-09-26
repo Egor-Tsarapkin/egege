@@ -1,13 +1,19 @@
 "use client";
 
+import { normalizeAnswer } from "@/lib/answer-normalization";
+
 import Link from "next/link";
-import { Pencil } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, Pencil } from "lucide-react";
+import { Fragment, lazy, Suspense, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AppUser } from "@/lib/app-user";
 import { taskDownloadHref, taskDownloadName } from "@/lib/task-download";
-import { AVATAR_EMOJIS } from "@/lib/avatar-emojis";
+import { ANIMATED_AVATARS, AVATAR_EMOJIS } from "@/lib/avatar-emojis";
 import type { ExamAttempt } from "./exam-station";
 import RichHtml from "./rich-html";
+import CopyTaskId from "./copy-task-id";
+import AvatarVisual, { animatedAvatarNumber } from "./avatar-visual";
+import { streakSummary } from "@/lib/streaks";
+import type { MarathonProgress } from "@/lib/marathon-progress";
 
 const TypingTrainer = lazy(() => import("./typing-trainer"));
 const TheorySpace = lazy(() => import("./theory-space"));
@@ -18,7 +24,7 @@ const TeacherStudio = lazy(() => import("./teacher-studio"));
 const BoardList = lazy(() => import("./boards/board-list"));
 const MaterialsCenter = lazy(() => import("./materials-center"));
 
-const SITE_VERSION = "1.0.27";
+const SITE_VERSION = "1.0.29";
 
 type Section = "home" | "tasks" | "variants" | "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard" | "profile" | "admin";
 type GateSection = Extract<Section, "theory" | "game" | "trainer" | "materials" | "boards" | "dashboard">;
@@ -45,7 +51,10 @@ type Accent =
   | "indigo"
   | "violet"
   | "teal"
-  | "matcha";
+  | "matcha"
+  | "crimson"
+  | "deepPurple"
+  | "goldApex";
 type Reaction = "xp" | "hearts" | "numbers" | "fire" | "fireworks" | "random";
 type BurstReaction = Exclude<Reaction, "random">;
 type Preferences = {
@@ -198,6 +207,9 @@ type LeaderboardEntry = {
   avatarEmoji: string;
   xp: number;
   correctCount: number;
+  currentStreak: number;
+  longestStreak: number;
+  todayActive: boolean;
   isCurrent: boolean;
   isFriend: boolean;
 };
@@ -207,16 +219,22 @@ type FriendEntry = {
   displayName: string;
   avatarEmoji: string;
   xp: number;
+  currentStreak: number;
+  longestStreak: number;
+  todayActive: boolean;
   status: "pending" | "accepted";
   direction: "incoming" | "outgoing" | "friend";
 };
 type CommunityPayload = {
   profile: CommunityProfile;
+  preferences: Preferences | null;
+  marathonProgress: MarathonProgress | null;
   leaderboard: LeaderboardEntry[];
   friends: FriendEntry[];
   completedTaskIds: string[];
   blockedTaskIds: string[];
   activity: Activity;
+  todayKey: string;
   protection: { active: boolean; until: number };
   view: LeaderboardScope;
 };
@@ -289,6 +307,9 @@ const accentOptions: Array<{ value: Accent; label: string }> = [
   { value: "violet", label: "Электрический ирис" },
   { value: "teal", label: "Океанский бриз" },
   { value: "matcha", label: "Матча-латте" },
+  { value: "crimson", label: "Карминовый форсаж" },
+  { value: "deepPurple", label: "Аметистовая полночь" },
+  { value: "goldApex", label: "Золотой апекс" },
 ];
 const guestAccentOptions = accentOptions.slice(0, 5);
 const siteStyleOptions: Array<{ value: SiteStyle; label: string; note: string }> = [
@@ -555,31 +576,6 @@ function StreakFlame({ active }: { active: boolean }) {
   );
 }
 
-function AccessBadge({ compact = false }: { compact?: boolean }) {
-  return (
-    <span
-      className={`access-lock ${compact ? "is-compact" : ""}`}
-      aria-hidden="true"
-    >
-      <svg className="access-chain-art" viewBox="0 0 120 72" focusable="false">
-        <g className="access-chain-row access-chain-forward" transform="rotate(22 60 36)">
-          <path d="M13 36H107" />
-          {[20, 36, 52, 68, 84, 100].map((x) => (
-            <rect x={x - 7} y="30" width="14" height="12" rx="6" key={x} />
-          ))}
-        </g>
-        <g className="access-chain-row access-chain-reverse" transform="rotate(-22 60 36)">
-          <path d="M13 36H107" />
-          {[20, 36, 52, 68, 84, 100].map((x) => (
-            <rect x={x - 7} y="30" width="14" height="12" rx="6" key={x} />
-          ))}
-        </g>
-      </svg>
-      <span className="chain-padlock"><i /></span>
-    </span>
-  );
-}
-
 function AuthorContact() {
   return (
     <div className="author-contact">
@@ -630,12 +626,10 @@ function Dock({
   navigate,
   isRegistered,
   authResolved,
-  rattlingSection,
 }: {
   navigate: (section: Section) => void;
   isRegistered: boolean;
   authResolved: boolean;
-  rattlingSection: GateSection | null;
 }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const items: Array<{
@@ -683,8 +677,8 @@ function Dock({
       {items.map((item, index) => (
         <button
           className={`dock-item ${item.locked ? "is-locked" : ""} ${
-            rattlingSection === item.section ? "is-rattling" : ""
-          } ${hoveredIndex === index ? "is-dock-hovered" : ""}`}
+            hoveredIndex === index ? "is-dock-hovered" : ""
+          }`}
           onPointerEnter={(event) => {
             if (event.pointerType !== "touch") setHoveredIndex(index);
           }}
@@ -701,7 +695,6 @@ function Dock({
         >
           {item.icon}
           <span>{item.label}</span>
-          {item.locked && <AccessBadge compact />}
         </button>
       ))}
     </div>
@@ -713,14 +706,12 @@ function AppHeader({
   navigate,
   isRegistered,
   authResolved,
-  rattlingSection,
   profile,
 }: {
   section: Section;
   navigate: (section: Section) => void;
   isRegistered: boolean;
   authResolved: boolean;
-  rattlingSection: GateSection | null;
   profile: React.ReactNode;
 }) {
   const navRef = useRef<HTMLElement | null>(null);
@@ -803,7 +794,7 @@ function AppHeader({
             <button
               className={`${section === item.section ? "nav-active" : ""} ${
                 item.locked ? "is-locked" : ""
-              } ${rattlingSection === item.section ? "is-rattling" : ""}`}
+              }`}
               onClick={() => navigate(item.section)}
               aria-label={
                 item.locked
@@ -813,7 +804,6 @@ function AppHeader({
               key={item.section}
             >
               {item.label}
-              {item.locked && <AccessBadge compact />}
             </button>
           ))}
         </nav>
@@ -882,7 +872,7 @@ function ProfileMenu({
           onClick={onToggle}
           aria-label="Открыть личный кабинет"
         >
-          <span className={avatarEmoji ? "avatar-emoji" : ""}>{avatarEmoji || userInitial}</span>
+          <AvatarVisual value={avatarEmoji || userInitial} animated={preferences.styleMotion} />
         </button>
       </div>
     );
@@ -898,7 +888,7 @@ function ProfileMenu({
       >
         {isRegistered ? (
           <>
-            <span className={avatarEmoji ? "avatar-emoji" : ""}>{avatarEmoji || userInitial}</span>
+            <AvatarVisual value={avatarEmoji || userInitial} animated={preferences.styleMotion} />
           </>
         ) : "Войти"}
       </button>
@@ -1096,6 +1086,7 @@ function TaskItem({
   onCorrect,
   onIncorrect,
   onReveal,
+  onNotify,
   decoration,
   decorationMotion,
 }: {
@@ -1105,6 +1096,7 @@ function TaskItem({
   onCorrect: (taskId: string, event: React.SyntheticEvent<HTMLElement>) => Promise<void>;
   onIncorrect: () => void;
   onReveal: (taskId: string) => void;
+  onNotify: (message: string) => void;
   decoration?: StyleAsset;
   decorationMotion?: boolean;
 }) {
@@ -1120,18 +1112,10 @@ function TaskItem({
         ? "Авторская задача"
         : "База КЕГЭ";
 
-  const normalizedAnswer = (value: string) => value
-    .replace(/\\n/g, "\n")
-    .replace(/\u00a0/g, " ")
-    .trim()
-    .toLocaleLowerCase("ru-RU")
-    .replace(/ё/g, "е")
-    .replace(/\s+/g, " ");
-
   const submitAnswer = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!answerDraft.trim() || completed || xpBlocked || saving || answerOpen) return;
-    if (normalizedAnswer(answerDraft) !== normalizedAnswer(task.answer)) {
+    if (normalizeAnswer(answerDraft) !== normalizeAnswer(task.answer)) {
       setAnswerStatus("incorrect");
       onIncorrect();
       return;
@@ -1157,8 +1141,8 @@ function TaskItem({
         <div>
           <p className="task-primary-source">{task.note || sourceLabel}</p>
           <div className="task-meta">
-            <span className="task-id">ID {task.id}</span>
-            <span>{task.difficulty}</span>
+            <CopyTaskId id={task.id} onNotify={onNotify} />
+            <span className="task-difficulty">{task.difficulty}</span>
             <span className={`task-source-tag is-${sourceKind}`}>{sourceLabel}</span>
           </div>
         </div>
@@ -1302,6 +1286,83 @@ function mergeGameTasks(groups: Task[][]): Task[] {
   });
 }
 
+function MinimalSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: ReadonlyArray<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
+  const selected = options.find((option) => option.value === value) ?? options[0];
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <div className="filter-field">
+      <span>{label}</span>
+      <div className={`minimal-select ${open ? "is-open" : ""}`} ref={rootRef}>
+        <button
+          type="button"
+          className="minimal-select-trigger"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-controls={listId}
+          onClick={() => setOpen((current) => !current)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+              event.preventDefault();
+              setOpen(true);
+            }
+          }}
+        >
+          <span>{selected?.label}</span>
+          <ChevronDown aria-hidden="true" />
+        </button>
+        {open && (
+          <div className="minimal-select-menu" id={listId} role="listbox" aria-label={label}>
+            {options.map((option) => (
+              <button
+                type="button"
+                role="option"
+                aria-selected={option.value === value}
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+                key={option.value}
+              >
+                <span>{option.label}</span>
+                {option.value === value && <Check aria-hidden="true" />}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PageHeading({
   eyebrow,
   title,
@@ -1309,13 +1370,13 @@ function PageHeading({
 }: {
   eyebrow?: string;
   title: string;
-  description: string;
+  description?: ReactNode;
 }) {
   return (
     <section className="tasks-heading">
       {eyebrow && <p className="eyebrow">{eyebrow}</p>}
       <h1>{title}</h1>
-      <p>{description}</p>
+      {description && <p>{description}</p>}
     </section>
   );
 }
@@ -1380,9 +1441,6 @@ function GatePreview({ section }: { section: GateSection }) {
             <i />
           </div>
         ))}
-        <div className="preview-theory-lock">
-          <AccessBadge compact />
-        </div>
       </div>
     );
   }
@@ -1543,8 +1601,13 @@ function AccessGateModal({
   );
 }
 
+function formatAttemptDuration(seconds: number) {
+  return `${Math.floor(seconds / 3600)} ч ${Math.floor((seconds % 3600) / 60)} мин`;
+}
+
 function Dashboard({
   activity,
+  attempts,
   community,
   loading,
   scope,
@@ -1552,8 +1615,11 @@ function Dashboard({
   onSetUsername,
   onAddFriend,
   onFriendAction,
+  onOpenAttempt,
+  onDeleteAttempt,
 }: {
   activity: Activity;
+  attempts: ExamAttempt[];
   community: CommunityPayload | null;
   loading: boolean;
   scope: LeaderboardScope;
@@ -1564,6 +1630,8 @@ function Dashboard({
     action: "accept_friend" | "decline_friend" | "remove_friend",
     userId: string,
   ) => Promise<void>;
+  onOpenAttempt: (attempt: ExamAttempt) => void;
+  onDeleteAttempt: (attempt: ExamAttempt) => void;
 }) {
   const [usernameDraft, setUsernameDraft] = useState<string | null>(null);
   const [friendUsername, setFriendUsername] = useState("");
@@ -1589,14 +1657,13 @@ function Dashboard({
     community?.profile.correctCount ??
     Object.values(activity).reduce((sum, count) => sum + count, 0);
   const xp = community?.profile.xp ?? total * XP_PER_ANSWER;
-  const activeDays = Object.values(activity).filter((count) => count > 0).length;
-  let streak = 0;
-  const cursor = new Date();
-  cursor.setHours(12, 0, 0, 0);
-  while ((activity[dateKey(cursor)] ?? 0) > 0) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
+  const streak = streakSummary(
+    Object.entries(activity).filter(([, count]) => count > 0).map(([key]) => key),
+    community?.todayKey ?? dateKey(new Date()),
+  );
+  const scores = attempts.map((attempt) => attempt.testScore);
+  const averageScore = scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 0;
+  const averageSeconds = attempts.length ? Math.round(attempts.reduce((sum, attempt) => sum + attempt.durationSeconds, 0) / attempts.length) : 0;
   const friends = community?.friends.filter((friend) => friend.status === "accepted") ?? [];
   const incoming =
     community?.friends.filter(
@@ -1619,6 +1686,9 @@ function Dashboard({
               avatarEmoji: community.profile.avatarEmoji,
               xp: community.profile.xp,
               correctCount: community.profile.correctCount,
+              currentStreak: streak.currentStreak,
+              longestStreak: streak.longestStreak,
+              todayActive: streak.todayActive,
               isCurrent: true,
               isFriend: false,
             },
@@ -1630,6 +1700,9 @@ function Dashboard({
               avatarEmoji: friend.avatarEmoji,
               xp: friend.xp,
               correctCount: 0,
+              currentStreak: friend.currentStreak,
+              longestStreak: friend.longestStreak,
+              todayActive: friend.todayActive,
               isCurrent: false,
               isFriend: true,
             })),
@@ -1652,32 +1725,52 @@ function Dashboard({
 
   return (
     <div className="dashboard-content">
-      <section className="stats-grid" aria-label="Статистика">
-        <article>
-          <span>Правильных ответов</span>
-          <strong>{total}</strong>
-        </article>
-        <article>
+      <section className="dashboard-summary" aria-label="Общая статистика">
+        <article className="dashboard-summary-xp">
           <span>Накоплено</span>
           <strong>{xp}<small> XP</small></strong>
         </article>
-        <article>
-          <span>Активных дней</span>
-          <strong>{activeDays}</strong>
-        </article>
-        <article>
-          <span>Серия</span>
-          <strong className="streak-value"><StreakFlame active={streak > 0} />{streak}<small> дн.</small></strong>
+        <article className="dashboard-summary-streak">
+          <span>Серия дней</span>
+          <div className="dashboard-streak-values">
+            <div>
+              <small>Сейчас</small>
+              <strong><StreakFlame active={streak.todayActive} />{streak.currentStreak}<em>дн.</em></strong>
+            </div>
+            <div>
+              <small>Рекорд</small>
+              <strong>{streak.longestStreak}<em>дн.</em></strong>
+            </div>
+          </div>
         </article>
       </section>
-
+      <section className="dashboard-variants" aria-label="Статистика вариантов">
+        <div className="cabinet-section-title">
+          <div><p>Варианты</p><h2>Мои результаты</h2></div>
+          <span>{attempts.length}</span>
+        </div>
+        <div className="cabinet-stats">
+          <div><span>Средний балл</span><strong>{attempts.length ? averageScore : "—"}</strong></div>
+          <div><span>Лучший</span><strong>{scores.length ? Math.max(...scores) : "—"}</strong></div>
+          <div><span>Худший</span><strong>{scores.length ? Math.min(...scores) : "—"}</strong></div>
+          <div><span>Среднее время</span><strong>{attempts.length ? formatAttemptDuration(averageSeconds) : "—"}</strong></div>
+        </div>
+        {attempts.length ? (
+          <div className="cabinet-attempts">
+            {attempts.map((attempt) => (
+              <article key={`${attempt.kim}-${attempt.completedAt}`}>
+                <div><strong>КИМ № {attempt.kim}</strong><span>{new Date(attempt.completedAt).toLocaleDateString("ru-RU")} · {formatAttemptDuration(attempt.durationSeconds)}</span></div>
+                <b>{attempt.testScore}<small>/100</small></b>
+                <button className="cabinet-attempt-view" onClick={() => onOpenAttempt(attempt)} aria-label={`Посмотреть попытку КИМ № ${attempt.kim} от ${new Date(attempt.completedAt).toLocaleDateString("ru-RU")}`}>Посмотреть</button>
+                <button className="cabinet-attempt-delete" onClick={() => onDeleteAttempt(attempt)} aria-label={`Удалить попытку КИМ № ${attempt.kim}`}>Удалить</button>
+              </article>
+            ))}
+          </div>
+        ) : <div className="cabinet-empty">Завершите первый вариант — результат появится здесь.</div>}
+      </section>
       <section className="activity-card">
         <div className="activity-heading">
-          <div>
-            <h2>Активность</h2>
-            <p>Каждое задание может добавить XP только один раз.</p>
-          </div>
-          <span>Последние 16 недель</span>
+          <h2>Активность</h2>
         </div>
         <div className="calendar-scroll">
           <div className="activity-grid" aria-label="Календарь активности">
@@ -1751,13 +1844,15 @@ function Dashboard({
                 <div className="leaderboard-skeleton" key={index} />
               ))
             ) : visibleLeaderboard.length ? (
-              visibleLeaderboard.map((entry) => (
+              visibleLeaderboard.map((entry, index) => (
+                <Fragment key={entry.userId}>
+                {index > 0 && entry.rank > visibleLeaderboard[index - 1].rank + 1 && <div className="leaderboard-gap" aria-label="Пропущенные места">···</div>}
                 <article
                   className={`leaderboard-row ${entry.isCurrent ? "is-current" : ""}`}
                   key={entry.userId}
                 >
                   <span className={`leaderboard-rank rank-${entry.rank}`}>{entry.rank}</span>
-                  <span className="leaderboard-avatar" aria-hidden="true"><span className="avatar-emoji">{entry.avatarEmoji}</span></span>
+                  <span className="leaderboard-avatar" aria-hidden="true"><AvatarVisual value={entry.avatarEmoji} /></span>
                   <div className="leaderboard-person">
                     <strong>{entry.displayName}</strong>
                     <small>
@@ -1766,10 +1861,15 @@ function Dashboard({
                     </small>
                   </div>
                   <div className="leaderboard-score">
+                    <span className="leaderboard-streak" aria-label={`Серия ${entry.currentStreak} дней, ${entry.todayActive ? "сегодня активна" : "сегодня ещё не закрыта"}`}>
+                      <StreakFlame active={entry.todayActive} />
+                      <b>{entry.currentStreak}</b>
+                    </span>
                     <strong>{entry.xp}</strong>
                     <small>XP</small>
                   </div>
                 </article>
+                </Fragment>
               ))
             ) : (
               <div className="community-empty">
@@ -1865,7 +1965,7 @@ function Dashboard({
               <p>Входящие заявки</p>
               {incoming.map((friend) => (
                 <article className="friend-row" key={friend.userId}>
-                  <span><span className="avatar-emoji">{friend.avatarEmoji}</span></span>
+                  <span><AvatarVisual value={friend.avatarEmoji} /></span>
                   <div>
                     <strong>{friend.displayName}</strong>
                     <small>@{friend.username}</small>
@@ -1904,7 +2004,7 @@ function Dashboard({
             {friends.length ? (
               friends.map((friend) => (
                 <article className="friend-row" key={friend.userId}>
-                  <span><span className="avatar-emoji">{friend.avatarEmoji}</span></span>
+                  <span><AvatarVisual value={friend.avatarEmoji} /></span>
                   <div>
                     <strong>{friend.displayName}</strong>
                     <small>@{friend.username} · {friend.xp} XP</small>
@@ -1951,26 +2051,22 @@ function Dashboard({
 
 function StudentCabinet({
   user,
-  attempts,
   preferences,
   isAdmin,
   avatarEmoji,
   displayName,
   onPreference,
-  onDeleteAttempt,
   onOpenAdmin,
   onAvatarChange,
   onDisplayNameChange,
   onLogout,
 }: {
   user: AppUser;
-  attempts: ExamAttempt[];
   preferences: Preferences;
   isAdmin: boolean;
   avatarEmoji: string;
   displayName?: string;
   onPreference: (next: Partial<Preferences>) => void;
-  onDeleteAttempt: (attempt: ExamAttempt) => void;
   onOpenAdmin: () => void;
   onAvatarChange: (avatarEmoji: string) => Promise<void>;
   onDisplayNameChange: (displayName: string) => Promise<void>;
@@ -1978,20 +2074,15 @@ function StudentCabinet({
 }) {
   const [cabinetView, setCabinetView] = useState<"overview" | "variants" | "tasks">("overview");
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [avatarPickerTab, setAvatarPickerTab] = useState<"classic" | "animated">(
+    animatedAvatarNumber(avatarEmoji) ? "animated" : "classic",
+  );
   const [avatarSaving, setAvatarSaving] = useState(false);
+  const avatarPickerRef = useRef<HTMLDivElement>(null);
   const [nameEditing, setNameEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [nameSaving, setNameSaving] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
-  const scores = attempts.map((attempt) => attempt.testScore);
-  const average = scores.length
-    ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length)
-    : 0;
-  const averageSeconds = attempts.length
-    ? Math.round(attempts.reduce((total, attempt) => total + attempt.durationSeconds, 0) / attempts.length)
-    : 0;
-  const formatDuration = (seconds: number) =>
-    `${Math.floor(seconds / 3600)} ч ${Math.floor((seconds % 3600) / 60)} мин`;
   const name = displayName ?? user.user_metadata?.name ?? user.email ?? "Ученик EGEGE";
   const reactions: Array<{ value: Reaction; label: string; icon: string }> = [
     { value: "xp", label: "XP", icon: "+10" },
@@ -2001,6 +2092,21 @@ function StudentCabinet({
     { value: "fireworks", label: "Салют", icon: "✦" },
     { value: "random", label: "Случайно", icon: "?" },
   ];
+  useEffect(() => {
+    if (!avatarPickerOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!avatarPickerRef.current?.contains(event.target as Node)) setAvatarPickerOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAvatarPickerOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [avatarPickerOpen]);
   const selectAvatar = async (nextAvatar: string) => {
     if (avatarSaving) return;
     if (nextAvatar === avatarEmoji) {
@@ -2091,11 +2197,10 @@ function StudentCabinet({
               <button type="button" onClick={() => setNameEditing(false)}>Отмена</button>
             </form>
           )}
-          <span>Здесь собираются результаты завершённых вариантов на этом устройстве.</span>
         </div>
         <div className="cabinet-hero-actions">
           {isAdmin && <button className="cabinet-admin-button" onClick={onOpenAdmin}>Админ-панель</button>}
-          <div className="cabinet-avatar-picker">
+          <div className="cabinet-avatar-picker" ref={avatarPickerRef}>
             <button
               type="button"
               className="cabinet-avatar"
@@ -2104,25 +2209,32 @@ function StudentCabinet({
               aria-label="Выбрать эмодзи для аватара"
               title="Изменить аватар"
             >
-              <span className="avatar-emoji">{avatarEmoji}</span>
+              <AvatarVisual value={avatarEmoji} animated={preferences.styleMotion} />
             </button>
             {avatarPickerOpen && (
               <div className="avatar-picker-panel" role="dialog" aria-label="Выбор аватара">
-                <div><strong>Выберите эмодзи</strong><span>Он появится в профиле и рейтинге</span></div>
+                <div><strong>Выберите эмоцию</strong><span>Она появится в профиле и рейтинге</span></div>
+                <div className="avatar-picker-tabs" role="tablist" aria-label="Вид аватара">
+                  <button type="button" role="tab" aria-selected={avatarPickerTab === "classic"} onClick={() => setAvatarPickerTab("classic")}>Обычные</button>
+                  <button type="button" role="tab" aria-selected={avatarPickerTab === "animated"} onClick={() => setAvatarPickerTab("animated")}>Анимированные</button>
+                </div>
                 <div className="avatar-picker-grid">
-                  {AVATAR_EMOJIS.map((emoji) => (
+                  {(avatarPickerTab === "classic" ? AVATAR_EMOJIS : ANIMATED_AVATARS).map((emoji) => {
+                    const animatedNumber = animatedAvatarNumber(emoji);
+                    return (
                     <button
                       type="button"
                       className={emoji === avatarEmoji ? "is-selected" : ""}
                       onClick={() => void selectAvatar(emoji)}
                       disabled={avatarSaving}
-                      aria-label={`Выбрать ${emoji}`}
+                      aria-label={animatedNumber ? `Выбрать анимированную эмоцию ${animatedNumber}` : `Выбрать ${emoji}`}
                       aria-pressed={emoji === avatarEmoji}
                       key={emoji}
                     >
-                      {emoji}
+                      {animatedNumber ? <AvatarVisual value={emoji} animated={false} /> : emoji}
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -2130,42 +2242,7 @@ function StudentCabinet({
         </div>
       </section>
 
-      <section className="cabinet-stats" aria-label="Статистика вариантов">
-        <div><span>Средний балл</span><strong>{average}</strong></div>
-        <div><span>Лучший</span><strong>{scores.length ? Math.max(...scores) : "—"}</strong></div>
-        <div><span>Худший</span><strong>{scores.length ? Math.min(...scores) : "—"}</strong></div>
-        <div><span>Среднее время</span><strong>{attempts.length ? formatDuration(averageSeconds) : "—"}</strong></div>
-      </section>
-
       <div className="cabinet-grid">
-        <section className="cabinet-history">
-          <div className="cabinet-section-title">
-            <div><p>История</p><h2>Завершённые варианты</h2></div>
-            <span>{attempts.length}</span>
-          </div>
-          {attempts.length ? (
-            <div className="cabinet-attempts">
-              {attempts.map((attempt) => (
-                <article key={`${attempt.kim}-${attempt.completedAt}`}>
-                  <div><strong>КИМ № {attempt.kim}</strong><span>{new Date(attempt.completedAt).toLocaleDateString("ru-RU")}</span></div>
-                  <b>{attempt.testScore}<small>/100</small></b>
-                  <span>{formatDuration(attempt.durationSeconds)}</span>
-                  <button
-                    className="cabinet-attempt-delete"
-                    onClick={() => onDeleteAttempt(attempt)}
-                    aria-label={`Удалить попытку КИМ № ${attempt.kim}`}
-                    title="Удалить попытку"
-                  >
-                    Удалить
-                  </button>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="cabinet-empty">Завершите первый вариант — результат появится здесь.</div>
-          )}
-        </section>
-
         <section className="cabinet-settings">
           <div className="cabinet-section-title"><div><p>Оформление</p><h2>Настройки сайта</h2></div></div>
           <fieldset className="settings-block">
@@ -2253,7 +2330,7 @@ function StudentCabinet({
           <div className="cabinet-account">
             <div className="profile-person">
               <span>
-                <span className="avatar-emoji">{avatarEmoji}</span>
+                <AvatarVisual value={avatarEmoji} animated={preferences.styleMotion} />
               </span>
               <div>
                 <strong>{name}</strong>
@@ -2276,12 +2353,15 @@ export default function Home() {
   const [tasksLoading, setTasksLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
+  const [taskSort, setTaskSort] = useState("default");
   const [difficulty, setDifficulty] = useState("all");
   const [source, setSource] = useState("all");
   const [variants, setVariants] = useState<Variant[]>([]);
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantSearch, setVariantSearch] = useState("");
   const [examVariant, setExamVariant] = useState<ExamVariantData | null>(null);
+  const [reviewAttempt, setReviewAttempt] = useState<ExamAttempt | null>(null);
+  const [reviewVariant, setReviewVariant] = useState<ExamVariantData | null>(null);
   const [variantKimFromUrl, setVariantKimFromUrl] = useState("");
   const [openingVariantKim, setOpeningVariantKim] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -2295,7 +2375,6 @@ export default function Home() {
   const [toast, setToast] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const [gateSection, setGateSection] = useState<GateSection | null>(null);
-  const [rattlingSection, setRattlingSection] = useState<GateSection | null>(null);
   const [user, setUser] = useState<AppUser | null>(null);
   const [authAccessToken, setAuthAccessToken] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -2308,21 +2387,17 @@ export default function Home() {
   const [analyticsConsent, setAnalyticsConsent] = useState<boolean | null>(null);
   const [analyticsConsentResolved, setAnalyticsConsentResolved] = useState(false);
   const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
-  const [examAttempts, setExamAttempts] = useState<ExamAttempt[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      return JSON.parse(window.localStorage.getItem(EXAM_HISTORY_KEY) ?? "[]") as ExamAttempt[];
-    } catch {
-      return [];
-    }
-  });
+  const preferencesRef = useRef<Preferences>(defaultPreferences);
+  const preferencesRestoredRef = useRef(false);
+  const preferencesSaveTimer = useRef<number | null>(null);
+  const [examAttempts, setExamAttempts] = useState<ExamAttempt[]>([]);
   const toastTimer = useRef<number | null>(null);
-  const gateTimer = useRef<number | null>(null);
   const burstId = useRef(0);
   const claimingTasks = useRef(new Set<string>());
   const taskIndex = useRef<Record<string, number>>({});
   const analyticsSession = useRef("");
   const isRegistered = Boolean(user);
+  const examHistoryKey = `${EXAM_HISTORY_KEY}:${user?.id ?? "guest"}`;
   const hasContentAccess = isRegistered || sitesGuestAccess;
   const taskStyleAssets = useMemo(
     () => section === "tasks"
@@ -2334,6 +2409,24 @@ export default function Home() {
   useEffect(() => {
     if (isSitesGuestHost()) setSitesGuestAccess(true);
   }, []);
+
+  useEffect(() => {
+    if (!authResolved) return;
+    try {
+      let saved = window.localStorage.getItem(examHistoryKey);
+      if (user && saved === null) {
+        const legacy = window.localStorage.getItem(EXAM_HISTORY_KEY);
+        if (legacy !== null) {
+          saved = legacy;
+          window.localStorage.setItem(examHistoryKey, legacy);
+          window.localStorage.removeItem(EXAM_HISTORY_KEY);
+        }
+      }
+      setExamAttempts(JSON.parse(saved ?? "[]") as ExamAttempt[]);
+    } catch {
+      setExamAttempts([]);
+    }
+  }, [authResolved, examHistoryKey, user]);
 
   useEffect(() => {
     const syncSectionFromUrl = () => {
@@ -2395,14 +2488,20 @@ export default function Home() {
 
     document.documentElement.dataset.theme = restored.theme;
     document.documentElement.dataset.accent = restored.accent;
+    preferencesRef.current = restored;
+    preferencesRestoredRef.current = true;
     queueMicrotask(() => setPreferences(restored));
+  }, []);
+
+  useEffect(() => () => {
+    if (preferencesSaveTimer.current) window.clearTimeout(preferencesSaveTimer.current);
   }, []);
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem(ANALYTICS_SESSION_KEY);
+      const saved = window.sessionStorage.getItem(ANALYTICS_SESSION_KEY);
       analyticsSession.current = saved || `s_${crypto.randomUUID().replace(/-/g, "")}`;
-      if (!saved) window.localStorage.setItem(ANALYTICS_SESSION_KEY, analyticsSession.current);
+      if (!saved) window.sessionStorage.setItem(ANALYTICS_SESSION_KEY, analyticsSession.current);
     } catch {
       analyticsSession.current = `s_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
     }
@@ -2441,6 +2540,18 @@ export default function Home() {
     setActivity(payload.activity);
     setCompletedTaskIds(new Set(payload.completedTaskIds));
     setBlockedTaskIds(new Set(payload.blockedTaskIds));
+    if (payload.preferences) {
+      preferencesRef.current = payload.preferences;
+      setPreferences(payload.preferences);
+      document.documentElement.dataset.theme = payload.preferences.theme;
+      document.documentElement.dataset.accent = payload.preferences.accent;
+      try { window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(payload.preferences)); } catch {}
+    } else if (user && preferencesRestoredRef.current) {
+      void communityRequest("/api/community", {
+        method: "POST",
+        body: JSON.stringify({ action: "set_preferences", preferences: preferencesRef.current }),
+      }).catch(() => undefined);
+    }
   };
 
   const refreshCommunity = async () => {
@@ -2697,7 +2808,7 @@ export default function Home() {
     if (!analyticsSession.current || analyticsConsent !== true) return;
     let disposed = false;
     const send = async (eventType: "page_view" | "login" | "heartbeat", activeSeconds = 0) => {
-      if (disposed) return;
+      if (disposed || document.hidden) return;
       void fetch("/api/analytics", {
         method: "POST",
         keepalive: true,
@@ -2709,6 +2820,11 @@ export default function Home() {
           eventType,
           path: sectionPaths[section],
           activeSeconds,
+          source: new URLSearchParams(window.location.search).get("utm_source") || (document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, "") : "direct"),
+          medium: new URLSearchParams(window.location.search).get("utm_medium") || (document.referrer ? "referral" : "none"),
+          campaign: new URLSearchParams(window.location.search).get("utm_campaign") || "",
+          content: new URLSearchParams(window.location.search).get("utm_content") || "",
+          referrerHost: document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, "") : "",
         }),
       }).catch(() => undefined);
     };
@@ -2737,23 +2853,8 @@ export default function Home() {
     });
   }, [isRegistered]);
 
-  useEffect(() => {
-    return () => {
-      if (gateTimer.current) clearTimeout(gateTimer.current);
-    };
-  }, []);
-
   const showAccessGate = (target: GateSection) => {
-    if (gateTimer.current) clearTimeout(gateTimer.current);
-    setRattlingSection(null);
-    window.requestAnimationFrame(() => {
-      setRattlingSection(target);
-      gateTimer.current = window.setTimeout(() => {
-        setRattlingSection(null);
-        setGateSection(target);
-        gateTimer.current = null;
-      }, 460);
-    });
+    setGateSection(target);
   };
 
   const navigate = (nextSection: Section) => {
@@ -2817,6 +2918,7 @@ export default function Home() {
     taskId: string,
     event: React.SyntheticEvent<HTMLElement>,
   ) => {
+    const reactionBounds = event.currentTarget.getBoundingClientRect();
     if (!user) {
       setProfileOpen(true);
       notify("Войдите, чтобы сохранить XP и место в рейтинге");
@@ -2828,7 +2930,21 @@ export default function Home() {
     }
     if (claimingTasks.current.has(taskId)) return;
     claimingTasks.current.add(taskId);
-    const reactionBounds = event.currentTarget.getBoundingClientRect();
+
+    const selectedReaction =
+      preferences.reaction === "random"
+        ? randomReactions[Math.floor(Math.random() * randomReactions.length)]
+        : preferences.reaction;
+    const nextBurst = {
+      id: ++burstId.current,
+      x: reactionBounds.left + reactionBounds.width / 2,
+      y: reactionBounds.top + reactionBounds.height / 2,
+      reaction: selectedReaction,
+    };
+    setBursts((current) => [...current, nextBurst]);
+    window.setTimeout(() => {
+      setBursts((current) => current.filter((burst) => burst.id !== nextBurst.id));
+    }, 900);
 
     try {
       const result = await communityRequest<ClaimResult>("/api/community", {
@@ -2843,21 +2959,6 @@ export default function Home() {
         void refreshCommunity().catch(() => undefined);
         return;
       }
-
-      const selectedReaction =
-        preferences.reaction === "random"
-          ? randomReactions[Math.floor(Math.random() * randomReactions.length)]
-          : preferences.reaction;
-      const nextBurst = {
-        id: ++burstId.current,
-        x: reactionBounds.left + reactionBounds.width / 2,
-        y: reactionBounds.top + reactionBounds.height / 2,
-        reaction: selectedReaction,
-      };
-      setBursts((current) => [...current, nextBurst]);
-      window.setTimeout(() => {
-        setBursts((current) => current.filter((burst) => burst.id !== nextBurst.id));
-      }, 900);
 
       if (result.dateKey) {
         setActivity((current) => ({
@@ -2888,17 +2989,25 @@ export default function Home() {
   };
 
   const updatePreferences = (next: Partial<Preferences>) => {
-    setPreferences((current) => {
-      const updated = { ...current, ...next };
-      document.documentElement.dataset.theme = updated.theme;
-      document.documentElement.dataset.accent = updated.accent;
-      try {
-        window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
-      } catch {
-        // The settings still work for the current session.
-      }
-      return updated;
-    });
+    const updated = { ...preferencesRef.current, ...next };
+    preferencesRef.current = updated;
+    setPreferences(updated);
+    document.documentElement.dataset.theme = updated.theme;
+    document.documentElement.dataset.accent = updated.accent;
+    try {
+      window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
+    } catch {
+      // The settings still work for the current session.
+    }
+    if (user) {
+      if (preferencesSaveTimer.current) window.clearTimeout(preferencesSaveTimer.current);
+      preferencesSaveTimer.current = window.setTimeout(() => {
+        void communityRequest("/api/community", {
+          method: "POST",
+          body: JSON.stringify({ action: "set_preferences", preferences: preferencesRef.current }),
+        }).catch(() => notify("Не удалось синхронизировать оформление"));
+      }, 350);
+    }
   };
 
   const claimTrainerXp = async (mode: "python" | "russian" | "english", wordsPerMinute: number, attemptId: string) => {
@@ -2971,20 +3080,15 @@ export default function Home() {
       notify("На тестовом сайте демо-профиль всегда активен");
       return;
     }
+    if (preferencesSaveTimer.current) {
+      window.clearTimeout(preferencesSaveTimer.current);
+      preferencesSaveTimer.current = null;
+    }
+    await communityRequest("/api/community", {
+      method: "POST",
+      body: JSON.stringify({ action: "set_preferences", preferences: preferencesRef.current }),
+    }).catch(() => undefined);
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
-    setPreferences((current) => {
-      const guestAccent = guestAccentOptions.some((accent) => accent.value === current.accent)
-        ? current.accent
-        : defaultPreferences.accent;
-      const updated: Preferences = { ...current, siteStyle: "base", accent: guestAccent, taskGifs: false };
-      document.documentElement.dataset.accent = updated.accent;
-      try {
-        window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(updated));
-      } catch {
-        // Guest defaults still apply for the current session.
-      }
-      return updated;
-    });
     setUser(null);
     setSection("home");
     window.history.replaceState({ section: "home" }, "", sectionPaths.home);
@@ -3015,12 +3119,20 @@ export default function Home() {
         const normalizedSearch = search.trim();
         const sourceKind = getTaskSourceKind(task);
         return (
-          (!normalizedSearch || task.id.includes(normalizedSearch)) &&
+          (!normalizedSearch || task.id === normalizedSearch) &&
         (Number(type) === 19 ? task.number >= 19 && task.number <= 21 : task.number === Number(type)) &&
           (difficulty === "all" || task.difficulty === difficulty) &&
           (source === "all" || source === "kege" || source === sourceKind)
         );
       }).sort((a, b) => {
+        if (taskSort === "default" || taskSort === "newest" || taskSort === "oldest") {
+          return (Number(a.parentId ?? a.id) - Number(b.parentId ?? b.id)) * (taskSort === "oldest" ? 1 : -1);
+        }
+        if (taskSort === "easy" || taskSort === "hard") {
+          const rank: Record<string, number> = { "Базовый": 0, "Средний": 1, "Высокий": 2, "Сложный": 2 };
+          const difference = (rank[a.difficulty] ?? 1) - (rank[b.difficulty] ?? 1);
+          if (difference) return difference * (taskSort === "hard" ? -1 : 1);
+        }
         const order: Record<TaskSourceKind, number> = {
           official: 0,
           author: 1,
@@ -3028,7 +3140,7 @@ export default function Home() {
         };
         return order[getTaskSourceKind(a)] - order[getTaskSourceKind(b)];
       }),
-    [tasks, search, type, difficulty, source],
+    [tasks, search, type, difficulty, source, taskSort],
   );
 
   const variantYears = useMemo(() => {
@@ -3043,11 +3155,6 @@ export default function Home() {
       ),
     })).filter((group) => group.official.length || group.teachers.length);
   }, [variantSearch, variants]);
-  const visibleVariantTotal = variantYears.reduce(
-    (total, group) => total + group.official.length + group.teachers.length,
-    0,
-  );
-
   const openExamVariant = async (kim: string) => {
     if (openingVariantKim) return;
     setOpeningVariantKim(kim);
@@ -3074,7 +3181,7 @@ export default function Home() {
         );
       }
       setVariantKimFromUrl(kim);
-      if (analyticsSession.current) {
+      if (analyticsSession.current && analyticsConsent === true) {
         void fetch("/api/analytics", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -3083,6 +3190,37 @@ export default function Home() {
       }
     } catch (openError) {
       notify(openError instanceof Error ? openError.message : "Не удалось открыть вариант");
+    } finally {
+      setOpeningVariantKim("");
+    }
+  };
+
+  const openSavedAttempt = async (attempt: ExamAttempt) => {
+    if (openingVariantKim) return;
+    setOpeningVariantKim(attempt.kim);
+    try {
+      const response = await fetch(attempt.kim.startsWith("0")
+        ? `/api/teacher-variants/${attempt.kim}`
+        : `/data/variants/${attempt.kim}.json`).catch(() => null);
+      const payload = response ? await response.json().catch(() => null) as ExamVariantData | null : null;
+      const savedVariant: ExamVariantData = response?.ok && payload ? payload : {
+        kim: attempt.kim,
+        title: attempt.title,
+        sourceUrl: "",
+        tasks: (attempt.results ?? []).map((row) => ({
+          id: row.taskId,
+          slot: row.slot,
+          number: row.taskNumber,
+          html: "",
+          table: { cols: 1, rows: 1 },
+          files: [],
+          answer: row.correctAnswer,
+        })),
+      };
+      setReviewAttempt(attempt);
+      setReviewVariant(savedVariant);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Не удалось открыть попытку");
     } finally {
       setOpeningVariantKim("");
     }
@@ -3115,7 +3253,7 @@ export default function Home() {
     setExamAttempts((current) => {
       const next = [attempt, ...current].slice(0, 50);
       try {
-        window.localStorage.setItem(EXAM_HISTORY_KEY, JSON.stringify(next));
+        window.localStorage.setItem(examHistoryKey, JSON.stringify(next));
       } catch {
         // The result remains visible even when browser storage is unavailable.
       }
@@ -3132,7 +3270,7 @@ export default function Home() {
         method: "POST",
         body: JSON.stringify(attempt),
       }).catch(() => undefined);
-      if (analyticsSession.current) {
+      if (analyticsSession.current && analyticsConsent === true) {
         void communityRequest("/api/analytics", {
           method: "POST",
           body: JSON.stringify({ sessionId: analyticsSession.current, eventType: "exam_complete", path: "/variants" }),
@@ -3148,7 +3286,7 @@ export default function Home() {
         item.kim !== attempt.kim || item.completedAt !== attempt.completedAt
       );
       try {
-        window.localStorage.setItem(EXAM_HISTORY_KEY, JSON.stringify(next));
+        window.localStorage.setItem(examHistoryKey, JSON.stringify(next));
       } catch {
         // The attempt is still removed from the current session.
       }
@@ -3161,6 +3299,7 @@ export default function Home() {
     setSearch("");
     setType("");
     setDifficulty("all");
+    setTaskSort("default");
     setSource("all");
   };
 
@@ -3240,6 +3379,7 @@ export default function Home() {
     onCorrect: addCorrectAnswer,
     onIncorrect: () => notify("Пока неверно — попробуйте ещё раз"),
     onReveal: revealTaskAnswer,
+    onNotify: notify,
   };
 
   const continueFromGate = () => {
@@ -3278,15 +3418,12 @@ export default function Home() {
           home
         />
         <div className="home-content">
-          <div className="brand-mark" aria-hidden="true">Е</div>
           <h1><span className="ege-part">EGE</span><span className="ge-part">GE</span></h1>
           <p className="brand-by">by Tsarapkin</p>
-          <p className="eyebrow">ЕГЭ по информатике</p>
           <Dock
             navigate={navigate}
             isRegistered={hasContentAccess}
             authResolved={authResolved}
-            rattlingSection={rattlingSection}
           />
           <AuthorContact />
           <HomeReleaseBadge />
@@ -3343,7 +3480,6 @@ export default function Home() {
         navigate={navigate}
         isRegistered={hasContentAccess}
         authResolved={authResolved}
-        rattlingSection={rattlingSection}
         profile={profile}
       />
 
@@ -3359,7 +3495,7 @@ export default function Home() {
           <>
             <PageHeading
               title="База заданий"
-              description="Выберите тему — все подходящие задания появятся ниже."
+              description={<>В проекте используются задачи с сайта <a href="https://kompege.ru" target="_blank" rel="noreferrer">kompege</a></>}
             />
 
             <section className="filter-panel" aria-label="Фильтры заданий">
@@ -3378,39 +3514,37 @@ export default function Home() {
                   )}
                 </div>
               </label>
-              <label>
-                <span>Номер задания</span>
-                <select value={type} onChange={(event) => setType(event.target.value)}>
-                  <option value="" disabled>Выберите номер</option>
-                  {taskCatalog.map(([number, title]) => (
-                      <option value={number} key={number}>
-                        {number === 19
-                          ? "№19–21"
-                          : number >= 100
-                            ? `№${number - 100} (старое)`
-                            : `№${number}`} · {title}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label>
-                <span>Сложность</span>
-                <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
-                  <option value="all">Любая</option>
-                  <option>Базовый</option>
-                  <option>Средний</option>
-                  <option>Высокий</option>
-                </select>
-              </label>
-              <label>
-                <span>Источник</span>
-                <select value={source} onChange={(event) => setSource(event.target.value)}>
-                  <option value="all">Все источники</option>
-                  <option value="official">Официальные источники</option>
-                  <option value="author">Авторские задачи</option>
-                  <option value="kege">КЕГЭ</option>
-                </select>
-              </label>
+              <MinimalSelect
+                label="Номер задания"
+                value={type}
+                options={[
+                  { value: "", label: "Выберите номер" },
+                  ...taskCatalog.map(([number, title]) => ({
+                    value: String(number),
+                    label: `${number === 19 ? "№19–21" : number >= 100 ? `№${number - 100} (старое)` : `№${number}`} · ${title}`,
+                  })),
+                ]}
+                onChange={setType}
+              />
+              <MinimalSelect label="Сложность" value={difficulty} options={[
+                { value: "all", label: "Любая" },
+                { value: "Базовый", label: "Базовый" },
+                { value: "Средний", label: "Средний" },
+                { value: "Высокий", label: "Высокий" },
+              ]} onChange={setDifficulty} />
+              <MinimalSelect label="Источник" value={source} options={[
+                { value: "all", label: "Все источники" },
+                { value: "official", label: "Официальные источники" },
+                { value: "author", label: "Авторские задачи" },
+                { value: "kege", label: "КЕГЭ" },
+              ]} onChange={setSource} />
+              <MinimalSelect label="Сортировка" value={taskSort} options={[
+                { value: "default", label: "По умолчанию" },
+                { value: "newest", label: "Сначала новые" },
+                { value: "oldest", label: "Сначала старые" },
+                { value: "easy", label: "Сначала простые" },
+                { value: "hard", label: "Сначала сложные" },
+              ]} onChange={setTaskSort} />
               <button className="reset-button" onClick={resetFilters}>
                 <span aria-hidden="true">↺</span> Сбросить
               </button>
@@ -3419,8 +3553,6 @@ export default function Home() {
             {type && (
               <div className="results-bar">
                 <span>Найдено: <b>{filteredTasks.length}</b></span>
-                <i />
-                <span>Загружен только №{type === "19" ? "19–21" : type}</span>
               </div>
             )}
 
@@ -3429,7 +3561,6 @@ export default function Home() {
                 <div className="empty-state choose-task-number">
                   <span>№</span>
                   <h2>Выберите номер задания</h2>
-                  <p>Мы загрузим только нужный тип — так база останется быстрой.</p>
                 </div>
               ) : tasksLoading ? (
                 <div className="empty-state is-loading">
@@ -3467,7 +3598,6 @@ export default function Home() {
           <>
             <PageHeading
               title="Варианты"
-              description="Официальные варианты КЕГЭ с 2023/24 учебного года."
             />
             <div className="variant-toolbar">
               <label>
@@ -3479,7 +3609,6 @@ export default function Home() {
                   placeholder="КИМ или название"
                 />
               </label>
-              <span>{visibleVariantTotal} вариантов</span>
             </div>
             <section className="variant-catalog" aria-label="Доступные варианты">
               {variantsLoading && (
@@ -3553,9 +3682,29 @@ export default function Home() {
         {section === "game" && hasContentAccess && (
           <Suspense fallback={<div className="marathon-loading"><span>•••</span><p>Готовим марафон</p></div>}>
             <EgeMarathon
+              key={user?.id ?? "guest"}
+              userId={user?.id}
               theme={preferences.theme}
               accent={preferences.accent}
               onThemeChange={(theme) => updatePreferences({ theme })}
+              remoteProgress={community && community.profile.userId === user?.id ? community.marathonProgress : undefined}
+              onAnswer={user ? async (questionId, optionIndex, eventId) => {
+                const result = await communityRequest<{ xp: number; correctCount: number }>("/api/community", {
+                  method: "POST", keepalive: true,
+                  body: JSON.stringify({ action: "marathon_answer", questionId, optionIndex, eventId }),
+                });
+                setCommunity((current) => current ? {
+                  ...current, profile: { ...current.profile, xp: Math.max(current.profile.xp, result.xp), correctCount: Math.max(current.profile.correctCount, result.correctCount) },
+                } : current);
+                void refreshCommunity().catch(() => undefined);
+              } : undefined}
+              onProgressChange={user ? async (progress) => {
+                await communityRequest("/api/community", {
+                  method: "POST",
+                  keepalive: true,
+                  body: JSON.stringify({ action: "set_marathon_progress", progress }),
+                });
+              } : undefined}
             />
           </Suspense>
         )}
@@ -3596,10 +3745,10 @@ export default function Home() {
           <>
             <PageHeading
               title="Дашборд"
-              description="Прогресс, рейтинг и друзья синхронизируются с вашим аккаунтом."
             />
             <Dashboard
               activity={activity}
+              attempts={examAttempts}
               community={community}
               loading={communityLoading}
               scope={leaderboardScope}
@@ -3607,6 +3756,8 @@ export default function Home() {
               onSetUsername={setCommunityUsername}
               onAddFriend={addCommunityFriend}
               onFriendAction={updateCommunityFriend}
+              onOpenAttempt={(attempt) => void openSavedAttempt(attempt)}
+              onDeleteAttempt={deleteExamAttempt}
             />
           </>
         )}
@@ -3614,13 +3765,11 @@ export default function Home() {
         {section === "profile" && user && (
           <StudentCabinet
             user={user}
-            attempts={examAttempts}
             preferences={preferences}
             isAdmin={isAdmin}
             avatarEmoji={community?.profile.avatarEmoji ?? "🙂"}
             displayName={community?.profile.displayName}
             onPreference={updatePreferences}
-            onDeleteAttempt={deleteExamAttempt}
             onOpenAdmin={() => navigate("admin")}
             onAvatarChange={setCommunityAvatar}
             onDisplayNameChange={setCommunityDisplayName}
@@ -3670,6 +3819,16 @@ export default function Home() {
             variant={examVariant}
             onClose={closeExamVariant}
             onFinish={saveExamAttempt}
+          />
+        </Suspense>
+      )}
+      {reviewVariant && reviewAttempt && (
+        <Suspense fallback={<div className="exam-loading-screen">Открываем результат…</div>}>
+          <ExamStation
+            key={reviewAttempt.completedAt}
+            variant={reviewVariant}
+            reviewAttempt={reviewAttempt}
+            onClose={() => { setReviewVariant(null); setReviewAttempt(null); }}
           />
         </Suspense>
       )}

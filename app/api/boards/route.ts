@@ -1,5 +1,5 @@
 import { authenticatedUser } from "@/lib/community-server";
-import { BoardLimitError, boardQuota, cleanBoardTitle, createBoard, listOwnedBoards } from "@/lib/boards/server";
+import { BoardLimitError, boardQuota, cleanBoardTitle, createBoard, listInvitedBoards, listOwnedBoards } from "@/lib/boards/server";
 
 export const dynamic = "force-dynamic";
 
@@ -7,8 +7,8 @@ export async function GET(request: Request) {
   const user = await authenticatedUser(request);
   if (!user) return Response.json({ error: "Нужно войти в аккаунт" }, { status: 401 });
   const search = new URL(request.url).searchParams.get("search") ?? "";
-  const [boards, quota] = await Promise.all([listOwnedBoards(user.id, search), boardQuota(user.id)]);
-  return Response.json({ boards, quota });
+  const [boards, invitedBoards, quota] = await Promise.all([listOwnedBoards(user.id, search), listInvitedBoards(user.id), boardQuota(user.id)]);
+  return Response.json({ boards, invitedBoards, quota });
 }
 
 export async function POST(request: Request) {

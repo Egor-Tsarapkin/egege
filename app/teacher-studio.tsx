@@ -723,7 +723,7 @@ export default function TeacherStudio({ section, onSectionChange }: { section: S
 
   return (
     <div className="teacher-studio">
-      <section className="teacher-studio-hero"><div><p>Рабочее пространство учителя</p><h1>{section === "variants" ? "Мои варианты" : "Мои задания"}</h1><span>{section === "variants" ? "Собирайте варианты по ID и следите за результатами учеников." : "Создавайте свои задания с формулами, таблицами, изображениями и разборами."}</span></div><button className="teacher-primary" onClick={() => section === "tasks" ? setEditingTask(null) : setEditingVariant(null)}><Plus /> {section === "tasks" ? "Новое задание" : "Новый вариант"}</button></section>
+      <section className="teacher-studio-hero"><div><h1>{section === "variants" ? "Мои варианты" : "Мои задания"}</h1></div><button className="teacher-primary" onClick={() => section === "tasks" ? setEditingTask(null) : setEditingVariant(null)}><Plus /> {section === "tasks" ? "Новое задание" : "Новый вариант"}</button></section>
       <nav className="teacher-material-tabs" aria-label="Материалы учителя"><button className={section === "variants" ? "is-active" : ""} onClick={() => onSectionChange("variants")}>Мои варианты <span>{data?.variants.length ?? 0}</span></button><button className={section === "tasks" ? "is-active" : ""} onClick={() => onSectionChange("tasks")}>Мои задания <span>{data?.tasks.length ?? 0}</span></button></nav>
       <section className="teacher-explorer">
         <div className="teacher-explorer-toolbar">

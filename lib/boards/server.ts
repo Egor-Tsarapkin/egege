@@ -87,6 +87,12 @@ function createStatements() {
       updated_at INTEGER NOT NULL,
       revoked_at INTEGER
     )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS board_invitations (
+      board_id TEXT NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL,
+      share_link_id TEXT NOT NULL REFERENCES board_share_links(id) ON DELETE CASCADE,
+      PRIMARY KEY (board_id, user_id)
+    )`),
     db.prepare(boardObjectsTableSql("IF NOT EXISTS board_objects")),
     db.prepare(`CREATE TABLE IF NOT EXISTS board_operations (
       board_id TEXT NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
@@ -253,6 +259,17 @@ export async function listOwnedBoards(userId: string, search = "") {
   return result.results.map(boardSummary);
 }
 
+export async function listInvitedBoards(userId: string) {
+  await ensureBoardSchema();
+  const result = await communityDb().prepare(`${BOARD_SELECT}
+    JOIN board_invitations i ON i.board_id = b.id
+    JOIN board_share_links l ON l.id = i.share_link_id AND l.board_id = b.id
+    WHERE i.user_id = ? AND b.owner_user_id != ? AND b.deleted_at IS NULL
+      AND l.revoked_at IS NULL ORDER BY b.updated_at DESC`)
+    .bind(userId, userId).all<BoardRow>();
+  return result.results.map(boardSummary);
+}
+
 export async function boardQuota(userId: string) {
   await ensureBoardSchema();
   const [access, usage] = await Promise.all([
@@ -323,12 +340,21 @@ export async function resolveBoardAccess(request: Request, boardId: string, expl
     return { board: boardSummary(row), permission: "edit", owner: true, userId: user.id };
   }
   const token = explicitShareToken ?? shareTokenFromRequest(request);
-  if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
-  const link = await communityDb().prepare(`SELECT permission FROM board_share_links
-    WHERE board_id = ? AND token_hash = ? AND revoked_at IS NULL LIMIT 1`)
-    .bind(boardId, await sha256(token))
-    .first<{ permission: BoardPermission }>();
+  if (token && !/^[a-f0-9]{64}$/.test(token)) return null;
+  const link = token
+    ? await communityDb().prepare(`SELECT id, permission FROM board_share_links
+        WHERE board_id = ? AND token_hash = ? AND revoked_at IS NULL LIMIT 1`)
+        .bind(boardId, await sha256(token)).first<{ id: string; permission: BoardPermission }>()
+    : user ? await communityDb().prepare(`SELECT l.id, l.permission FROM board_invitations i
+        JOIN board_share_links l ON l.id = i.share_link_id AND l.board_id = i.board_id
+        WHERE i.board_id = ? AND i.user_id = ? AND l.revoked_at IS NULL`)
+        .bind(boardId, user.id).first<{ id: string; permission: BoardPermission }>() : null;
   if (!link) return null;
+  if (token && user) {
+    await communityDb().prepare(`INSERT INTO board_invitations (board_id, user_id, share_link_id)
+      VALUES (?, ?, ?) ON CONFLICT(board_id, user_id) DO UPDATE SET share_link_id = excluded.share_link_id`)
+      .bind(boardId, user.id, link.id).run();
+  }
   return {
     board: boardSummary(row),
     permission: link.permission,

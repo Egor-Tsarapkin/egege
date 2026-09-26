@@ -10,6 +10,11 @@ import { isAvatarEmoji } from "@/lib/avatar-emojis";
 import taskIndex from "@/public/data/task-index.json";
 import { ensureTeacherSchema } from "@/lib/teacher-studio-server";
 import { ensureAdminSchema } from "@/lib/admin-server";
+import { cleanSitePreferences } from "@/lib/site-preferences";
+import { streakSummary } from "@/lib/streaks";
+import { QUESTIONS } from "@/app/ege-marathon-data";
+import { awardMarathonAnswer } from "@/lib/marathon-rewards";
+import { cleanMarathonProgress } from "@/lib/marathon-progress";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +23,7 @@ const MIN_AWARD_INTERVAL_SECONDS = 12;
 const BURST_WINDOW_SECONDS = 5 * 60;
 const BURST_AWARD_LIMIT = 8;
 const PROTECTION_SECONDS = 10 * 60;
-const TRAINER_DAILY_LIMIT = 100;
+const TRAINER_DAILY_LIMIT = 50;
 const TRAINER_MODES = new Set(["python", "russian", "english"]);
 
 async function taskExists(taskId: string) {
@@ -33,14 +38,14 @@ async function taskExists(taskId: string) {
 }
 
 function trainerXpForSpeed(wordsPerMinute: number) {
-  if (wordsPerMinute > 100) return 30;
-  if (wordsPerMinute >= 50) return 15;
-  if (wordsPerMinute > 25) return 10;
-  if (wordsPerMinute > 10) return 5;
+  if (wordsPerMinute > 100) return 15;
+  if (wordsPerMinute >= 50) return 7;
+  if (wordsPerMinute > 25) return 5;
+  if (wordsPerMinute > 10) return 2;
   return 0;
 }
 
-type LeaderboardRow = CommunityProfileRow & { is_friend: number };
+type LeaderboardRow = CommunityProfileRow & { is_friend: number; rank: number };
 type FriendRow = {
   user_id: string;
   username: string;
@@ -69,6 +74,18 @@ async function loadCommunity(userId: string, view: "all" | "friends") {
     .bind(userId)
     .first<CommunityProfileRow>();
   if (!profile) throw new Error("Profile is missing");
+  const preferenceRow = await db
+    .prepare("SELECT preferences_json FROM user_preferences WHERE user_id = ?")
+    .bind(userId)
+    .first<{ preferences_json: string }>();
+  let preferences = null;
+  try { preferences = cleanSitePreferences(JSON.parse(preferenceRow?.preferences_json ?? "null")); } catch {}
+  const marathonRow = await db
+    .prepare("SELECT progress_json FROM marathon_progress WHERE user_id = ?")
+    .bind(userId)
+    .first<{ progress_json: string }>();
+  let marathonProgress = null;
+  try { marathonProgress = cleanMarathonProgress(JSON.parse(marathonRow?.progress_json ?? "null")); } catch {}
 
   const leaderboardSql =
     view === "friends"
@@ -84,8 +101,7 @@ async function loadCommunity(userId: string, view: "all" | "friends") {
                   OR (f.addressee_id = ? AND f.requester_id = p.user_id)
                 )
             )
-         ORDER BY p.xp DESC, p.correct_count DESC, p.created_at ASC
-         LIMIT 50`
+         `
       : `SELECT p.*,
                 CASE WHEN EXISTS (
                   SELECT 1 FROM friendships f
@@ -101,13 +117,17 @@ async function loadCommunity(userId: string, view: "all" | "friends") {
               SELECT 1 FROM privacy_consents pc
               WHERE pc.user_id = p.user_id AND pc.distribution_accepted_at IS NOT NULL
             )
-         ORDER BY p.xp DESC, p.correct_count DESC, p.created_at ASC
-         LIMIT 50`;
-  const leaderboardQuery = db.prepare(leaderboardSql);
+         `;
+  const leaderboardQuery = db.prepare(`WITH eligible AS (${leaderboardSql}), ranked AS (
+    SELECT *, ROW_NUMBER() OVER (ORDER BY xp DESC, correct_count DESC, created_at ASC, user_id ASC) AS rank
+    FROM eligible
+  ) SELECT * FROM ranked WHERE rank <= 10
+    OR ABS(rank - (SELECT rank FROM ranked WHERE user_id = ?)) <= 1
+    ORDER BY rank`);
   const leaderboardResult =
     view === "friends"
-      ? await leaderboardQuery.bind(userId, userId, userId, userId).all<LeaderboardRow>()
-      : await leaderboardQuery.bind(userId, userId, userId).all<LeaderboardRow>();
+      ? await leaderboardQuery.bind(userId, userId, userId, userId, userId).all<LeaderboardRow>()
+      : await leaderboardQuery.bind(userId, userId, userId, userId).all<LeaderboardRow>();
 
   const friendResult = await db
     .prepare(
@@ -127,7 +147,7 @@ async function loadCommunity(userId: string, view: "all" | "friends") {
     .all<FriendRow>();
 
   const taskResult = await db
-    .prepare("SELECT task_id, xp_awarded FROM score_events WHERE user_id = ? AND task_id NOT LIKE 'trainer:%'")
+    .prepare("SELECT task_id, xp_awarded FROM score_events WHERE user_id = ? AND task_id NOT LIKE 'trainer:%' AND task_id NOT LIKE 'marathon:%'")
     .bind(userId)
     .all<{ task_id: string; xp_awarded: number }>();
   const activityResult = await db
@@ -139,17 +159,40 @@ async function loadCommunity(userId: string, view: "all" | "friends") {
     )
     .bind(userId)
     .all<{ date_key: string; count: number }>();
+  const streakUserIds = Array.from(new Set([
+    userId,
+    ...leaderboardResult.results.map((row: LeaderboardRow) => row.user_id),
+    ...friendResult.results.map((row: FriendRow) => row.user_id),
+  ]));
+  const streakRows = streakUserIds.length
+    ? await db.prepare(`SELECT user_id, date_key FROM score_events
+        WHERE xp_awarded > 0 AND user_id IN (${streakUserIds.map(() => "?").join(",")})
+        GROUP BY user_id, date_key`)
+      .bind(...streakUserIds)
+      .all<{ user_id: string; date_key: string }>()
+    : { results: [] as Array<{ user_id: string; date_key: string }> };
+  const datesByUser = new Map<string, string[]>();
+  streakRows.results.forEach((row: { user_id: string; date_key: string }) => {
+    const dates = datesByUser.get(row.user_id) ?? [];
+    dates.push(row.date_key);
+    datesByUser.set(row.user_id, dates);
+  });
+  const todayKey = moscowDateKey();
+  const streakFor = (streakUserId: string) => streakSummary(datesByUser.get(streakUserId) ?? [], todayKey);
 
   return {
     profile: publicProfile(profile),
-    leaderboard: leaderboardResult.results.map((row: LeaderboardRow, index: number) => ({
-      rank: index + 1,
+    preferences,
+    marathonProgress,
+    leaderboard: leaderboardResult.results.map((row: LeaderboardRow) => ({
+      rank: row.rank,
       userId: row.user_id,
       username: row.username,
       displayName: row.display_name,
       avatarEmoji: row.avatar_emoji,
       xp: row.xp,
       correctCount: row.correct_count,
+      ...streakFor(row.user_id),
       isCurrent: row.user_id === userId,
       isFriend: Boolean(row.is_friend),
     })),
@@ -159,6 +202,7 @@ async function loadCommunity(userId: string, view: "all" | "friends") {
       displayName: row.display_name,
       avatarEmoji: row.avatar_emoji,
       xp: row.xp,
+      ...streakFor(row.user_id),
       status: row.status,
       direction: row.direction,
     })),
@@ -174,6 +218,7 @@ async function loadCommunity(userId: string, view: "all" | "friends") {
         Number(row.count),
       ]),
     ),
+    todayKey,
     protection: {
       active: profile.rate_limited_until > Math.floor(Date.now() / 1000),
       until: profile.rate_limited_until,
@@ -214,6 +259,20 @@ export async function POST(request: Request) {
     const profile = await ensureCommunityProfile(user);
     const action = String(body.action ?? "");
     const now = Math.floor(Date.now() / 1000);
+
+    if (action === "marathon_answer") {
+      const eventId = String(body.eventId ?? "");
+      const question = QUESTIONS.find((item) => item.id === body.questionId);
+      const optionIndex = body.optionIndex;
+      if (!/^[a-f0-9-]{36}$/i.test(eventId) || !question || typeof optionIndex !== "number" ||
+          !Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= question.options.length) {
+        return response({ error: "Некорректный ответ марафона." }, 400);
+      }
+      const result = await awardMarathonAnswer(db, user.id, eventId, optionIndex === question.correct, moscowDateKey(), now);
+      const updated = await db.prepare("SELECT xp, correct_count FROM profiles WHERE user_id = ?")
+        .bind(user.id).first<{ xp: number; correct_count: number }>();
+      return response({ ...result, xp: updated?.xp ?? profile.xp, correctCount: updated?.correct_count ?? profile.correct_count });
+    }
 
     if (action === "claim_trainer_xp") {
       const mode = String(body.mode ?? "");
@@ -301,7 +360,7 @@ export async function POST(request: Request) {
         message: awarded > 0
           ? `+${awarded} XP · за тренировку`
           : totalToday >= TRAINER_DAILY_LIMIT
-            ? "Лимит 100 XP для этого режима на сегодня достигнут."
+            ? "Лимит 50 XP для этого режима на сегодня достигнут."
             : "Для XP нужна скорость выше 10 слов в минуту.",
         awarded,
         earnedToday: totalToday,
@@ -494,6 +553,30 @@ export async function POST(request: Request) {
         .bind(avatarEmoji, now, user.id)
         .run();
       return response({ status: "updated", message: "Аватар обновлён.", avatarEmoji });
+    }
+
+    if (action === "set_preferences") {
+      const preferences = cleanSitePreferences(body.preferences);
+      if (!preferences) return response({ error: "Некорректные настройки оформления." }, 400);
+      await db.prepare(`INSERT INTO user_preferences (user_id, preferences_json, updated_at)
+        VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET
+          preferences_json = excluded.preferences_json, updated_at = excluded.updated_at`)
+        .bind(user.id, JSON.stringify(preferences), now)
+        .run();
+      return response({ status: "updated", preferences });
+    }
+
+    if (action === "set_marathon_progress") {
+      const progress = cleanMarathonProgress(body.progress);
+      if (!progress) return response({ error: "Некорректный прогресс марафона." }, 400);
+      await db.prepare(`INSERT INTO marathon_progress (user_id, progress_json, updated_at)
+        VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET
+          progress_json = excluded.progress_json, updated_at = excluded.updated_at
+          WHERE COALESCE(json_extract(excluded.progress_json, '$.updatedAt'), 0) >=
+            COALESCE(json_extract(marathon_progress.progress_json, '$.updatedAt'), 0)`)
+        .bind(user.id, JSON.stringify(progress), now)
+        .run();
+      return response({ status: "updated" });
     }
 
     if (action === "add_friend") {

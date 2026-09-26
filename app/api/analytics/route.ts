@@ -6,7 +6,7 @@ const eventTypes = new Set(["page_view", "login", "exam_start", "exam_complete",
 export async function POST(request: Request) {
   const requestUrl = new URL(request.url);
   const origin = request.headers.get("origin");
-  if (origin !== requestUrl.origin) {
+  if (origin !== new URL(process.env.SITE_URL || requestUrl.origin).origin) {
     return Response.json({ error: "Запрос отклонён" }, { status: 403 });
   }
   const contentLength = Number(request.headers.get("content-length") ?? 0);
@@ -18,6 +18,7 @@ export async function POST(request: Request) {
     eventType?: unknown;
     path?: unknown;
     activeSeconds?: unknown;
+    source?: unknown; medium?: unknown; campaign?: unknown; content?: unknown; referrerHost?: unknown;
   };
   const sessionId = safeSessionId(body?.sessionId);
   const eventType = typeof body?.eventType === "string" ? body.eventType : "";
@@ -31,6 +32,12 @@ export async function POST(request: Request) {
   const now = Math.floor(Date.now() / 1000);
   const path = typeof body?.path === "string" ? body.path.slice(0, 80) : "/";
   const activeSeconds = Math.max(0, Math.min(60, Number(body?.activeSeconds) || 0));
+  const clean = (value: unknown, fallback = "") => typeof value === "string" ? value.trim().toLowerCase().slice(0, 80) : fallback;
+  const source = clean(body?.source, "direct");
+  const medium = clean(body?.medium, "none");
+  const campaign = clean(body?.campaign);
+  const content = clean(body?.content);
+  const referrerHost = clean(body?.referrerHost);
   const db = communityDb();
   const previousSession = await db.prepare(
     "SELECT last_seen_at FROM analytics_sessions WHERE session_id = ?",
@@ -39,14 +46,14 @@ export async function POST(request: Request) {
     return Response.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
   }
   await db.prepare(`INSERT INTO analytics_sessions
-    (session_id, user_id, path, started_at, last_seen_at, active_seconds)
-    VALUES (?, ?, ?, ?, ?, ?)
+    (session_id, user_id, path, started_at, last_seen_at, active_seconds, source, medium, campaign, content, referrer_host)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(session_id) DO UPDATE SET
       user_id = COALESCE(excluded.user_id, analytics_sessions.user_id),
       path = excluded.path,
       last_seen_at = excluded.last_seen_at,
       active_seconds = analytics_sessions.active_seconds + excluded.active_seconds`)
-    .bind(sessionId, user?.id ?? null, path, now, now, activeSeconds)
+    .bind(sessionId, user?.id ?? null, path, now, now, activeSeconds, source, medium, campaign, content, referrerHost)
     .run();
 
   if (eventType !== "heartbeat") {

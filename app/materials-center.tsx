@@ -16,7 +16,7 @@ const materials: Array<{ id: MaterialId; title: string; short: string; icon: typ
 
 const clean = (value: string) => value.replaceAll("—", "-").replaceAll("–", "-");
 const plain = (value: string) => clean(value).replaceAll("`", "").replace(/\*\*/g, "").replace(/^[^а-яА-Я\w.]+/u, "").trim();
-const slug = (value: string) => plain(value).toLowerCase().replace(/[^a-zа-я0-9.]+/giu, "-").replace(/^-|-$/g, "");
+const slug = (value: string) => plain(value).toLowerCase().replace(/^\./, "").replace(/[^a-zа-я0-9.]+/giu, "-").replace(/^-|-$/g, "");
 
 function Inline({ children }: { children: string }) {
   const parts = clean(children).split(/(`[^`]+`|\*\*[^*]+\*\*)/g).filter(Boolean);

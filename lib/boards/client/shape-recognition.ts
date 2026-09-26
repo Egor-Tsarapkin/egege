@@ -30,12 +30,12 @@ export function recognizeHeldStroke(points: ShapePoint[]): RecognizedShape | nul
     return { kind: "line", startX: first.x, startY: first.y, endX: last.x, endY: last.y };
   }
 
-  if (width < 20 || height < 20 || endpointDistance > Math.max(28, diagonal * .24)) return null;
-  const edgeTolerance = Math.max(5, Math.min(width, height) * .1);
+  if (width < 20 || height < 20 || endpointDistance > Math.max(36, diagonal * .34)) return null;
+  const edgeTolerance = Math.max(7, Math.min(width, height) * .16);
   const edgeRatio = sampled.filter((point) => Math.min(point.x - minX, maxX - point.x, point.y - minY, maxY - point.y) <= edgeTolerance).length / sampled.length;
   const corners = [[minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY]];
   const visitsCorners = corners.every(([x, y]) => Math.min(...sampled.map((point) => Math.hypot(point.x - x, point.y - y))) <= diagonal * .12);
-  if (edgeRatio >= .68 && visitsCorners) return { kind: "rectangle", x: minX, y: minY, width, height };
+  if (edgeRatio >= .62 && visitsCorners) return { kind: "rectangle", x: minX, y: minY, width, height };
 
   const centerX = (minX + maxX) / 2; const centerY = (minY + maxY) / 2;
   const radii = sampled.map((point) => Math.hypot((point.x - centerX) / (width / 2), (point.y - centerY) / (height / 2)));

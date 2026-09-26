@@ -33,9 +33,15 @@ function broadcast(socket, value) {
 function participants(room) { return Array.from(room.values()).map((peer) => ({ clientId: peer.identity.clientId, name: peer.identity.displayName })); }
 function leave(socket) {
   const identity = socket.identity; if (!identity) return;
-  const room = rooms.get(identity.boardId); room?.delete(identity.clientId); counters.connections = Math.max(0, counters.connections - 1);
-  if (!room?.size) rooms.delete(identity.boardId);
-  else broadcast(socket, { type: "participant-left", clientId: identity.clientId, participants: participants(room) });
+  const room = rooms.get(identity.boardId);
+  counters.connections = Math.max(0, counters.connections - 1);
+  // A replacement can join before the previous socket's close event arrives.
+  // Only the socket that still owns this room entry may remove it.
+  if (room?.get(identity.clientId) === socket) {
+    room.delete(identity.clientId);
+    if (!room.size) rooms.delete(identity.boardId);
+    else broadcast(socket, { type: "participant-left", clientId: identity.clientId, participants: participants(room) });
+  }
   socket.identity = null;
 }
 

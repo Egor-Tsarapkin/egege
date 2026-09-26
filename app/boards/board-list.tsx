@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Copy, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowDownUp, Copy, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppUser } from "@/lib/app-user";
 import type { BoardSummary } from "@/lib/boards/types";
 
 type Props = { user: AppUser | null; onLogin: () => void };
 type BoardDialog = { mode: "rename" | "delete"; board: BoardSummary; title: string } | null;
 type BoardQuota = { used: number; limit: number };
+type BoardSort = "created" | "title";
+type SortDirection = "asc" | "desc";
 
 async function boardRequest<T>(path: string, init?: RequestInit) {
   const response = await fetch(path, {
@@ -22,6 +24,10 @@ async function boardRequest<T>(path: string, init?: RequestInit) {
 
 export default function BoardList({ user, onLogin }: Props) {
   const [boards, setBoards] = useState<BoardSummary[]>([]);
+  const [group, setGroup] = useState<"owned" | "invited">("owned");
+  const [sort, setSort] = useState<BoardSort>("created");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [invitedBoards, setInvitedBoards] = useState<BoardSummary[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(Boolean(user));
   const [busy, setBusy] = useState("");
@@ -29,13 +35,15 @@ export default function BoardList({ user, onLogin }: Props) {
   const [error, setError] = useState("");
   const [dialog, setDialog] = useState<BoardDialog>(null);
   const [quota, setQuota] = useState<BoardQuota>({ used: 0, limit: 3 });
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const result = await boardRequest<{ boards: BoardSummary[]; quota: BoardQuota }>("/api/boards");
+      const result = await boardRequest<{ boards: BoardSummary[]; invitedBoards: BoardSummary[]; quota: BoardQuota }>("/api/boards");
       setBoards(result.boards);
+      setInvitedBoards(result.invitedBoards);
       setQuota(result.quota);
       setError("");
     } catch (reason) {
@@ -47,10 +55,32 @@ export default function BoardList({ user, onLogin }: Props) {
 
   useEffect(() => { queueMicrotask(() => void load()); }, [load]);
 
+  useEffect(() => {
+    if (!menu) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenu("");
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenu("");
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menu]);
+
   const visible = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("ru");
-    return query ? boards.filter((board) => board.title.toLocaleLowerCase("ru").includes(query)) : boards;
-  }, [boards, search]);
+    const items = group === "owned" ? boards : invitedBoards;
+    const filtered = query ? items.filter((board) => board.title.toLocaleLowerCase("ru").includes(query)) : items;
+    const direction = sortDirection === "asc" ? 1 : -1;
+    return [...filtered].sort((first, second) => {
+      if (sort === "title") return first.title.localeCompare(second.title, "ru", { numeric: true, sensitivity: "base" }) * direction;
+      return (first.createdAt - second.createdAt) * direction;
+    });
+  }, [boards, group, invitedBoards, search, sort, sortDirection]);
 
   async function createBoard() {
     setBusy("create");
@@ -119,21 +149,45 @@ export default function BoardList({ user, onLogin }: Props) {
   return (
     <section className="boards-page">
       <header className="boards-heading">
-        <div><h1>Доски</h1><span>Всё сохраняется автоматически · {quota.used} из {quota.limit}</span></div>
+        <div><h1>Доски</h1><span>Доступно · {quota.used} из {quota.limit}</span></div>
         <button className="boards-primary" onClick={() => void createBoard()} disabled={busy === "create" || quota.used >= quota.limit} title={quota.used >= quota.limit ? `Доступно досок: ${quota.limit}` : ""}>
           <Plus aria-hidden="true" /> {busy === "create" ? "Создаём…" : "Новая доска"}
         </button>
       </header>
-      <label className="boards-search"><Search aria-hidden="true" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Найти доску" /></label>
+      <div className="boards-groups" role="group" aria-label="Тип досок">
+        <button aria-pressed={group === "owned"} onClick={() => { setGroup("owned"); setMenu(""); }}>Свои доски · {boards.length}</button>
+        <button aria-pressed={group === "invited"} onClick={() => { setGroup("invited"); setMenu(""); }}>Приглашённые доски · {invitedBoards.length}</button>
+      </div>
+      <div className="boards-controls">
+        <label className="boards-search"><Search aria-hidden="true" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Найти доску" /></label>
+        <div className="boards-sort" aria-label="Сортировка досок">
+          <div role="group" aria-label="Поле сортировки">
+            <button type="button" aria-pressed={sort === "created"} onClick={() => setSort("created")}>Дата создания</button>
+            <button type="button" aria-pressed={sort === "title"} onClick={() => setSort("title")}>Название</button>
+          </div>
+          <button
+            type="button"
+            className="boards-sort-direction"
+            onClick={() => setSortDirection((current) => current === "asc" ? "desc" : "asc")}
+            aria-label="Изменить направление сортировки"
+          >
+            <ArrowDownUp aria-hidden="true" />
+            {sort === "title" ? (sortDirection === "asc" ? "А → Я" : "Я → А") : (sortDirection === "asc" ? "Сначала старые" : "Сначала новые")}
+          </button>
+        </div>
+      </div>
       {error && <div className="boards-error" role="alert">{error}<button onClick={() => setError("") }>Закрыть</button></div>}
       {loading ? <div className="boards-loading">Загружаем доски…</div> : visible.length ? (
         <div className="boards-grid">
           {visible.map((board) => (
-            <article className={`board-card ${busy === board.id ? "is-busy" : ""}`} key={board.id}>
+            <article className={`board-card ${busy === board.id ? "is-busy" : ""} ${menu === board.id ? "is-menu-open" : ""}`} key={board.id}>
               <div className="board-card-info">
-                <Link href={`/boards/${board.id}`} aria-label={`Открыть ${board.title}`}><strong>{board.title}</strong></Link>
-                <button className="board-menu-trigger" onClick={() => setMenu((value) => value === board.id ? "" : board.id)} aria-label="Действия с доской"><MoreHorizontal /></button>
-                {menu === board.id && <div className="board-card-menu">
+                <Link href={`/boards/${board.id}`} aria-label={`Открыть ${board.title}`}>
+                  <strong>{board.title}</strong>
+                  {group === "invited" && <span className="board-owner-name">{board.ownerName}</span>}
+                </Link>
+                {group === "owned" && <button className="board-menu-trigger" onClick={() => setMenu((value) => value === board.id ? "" : board.id)} aria-label="Действия с доской" aria-expanded={menu === board.id} aria-controls={`board-menu-${board.id}`}><MoreHorizontal /></button>}
+                {menu === board.id && <div className="board-card-menu" id={`board-menu-${board.id}`} ref={menuRef}>
                   <button onClick={() => { setDialog({ mode: "rename", board, title: board.title }); setMenu(""); }}><Pencil />Переименовать</button>
                   <button onClick={() => void duplicate(board)} disabled={quota.used >= quota.limit}><Copy />Дублировать</button>
                   <button className="is-danger" onClick={() => { setDialog({ mode: "delete", board, title: board.title }); setMenu(""); }}><Trash2 />Удалить</button>
@@ -142,7 +196,7 @@ export default function BoardList({ user, onLogin }: Props) {
             </article>
           ))}
         </div>
-      ) : <div className="boards-empty"><span>◎</span><h2>{search ? "Ничего не найдено" : "Первая доска ещё не создана"}</h2><p>{search ? "Проверьте запрос." : "Начните с пустого бесконечного полотна."}</p></div>}
+      ) : <div className="boards-empty"><span>◎</span><h2>{search ? "Ничего не найдено" : group === "owned" ? "Первая доска ещё не создана" : "Пока нет приглашённых досок"}</h2><p>{search ? "Проверьте запрос." : group === "owned" ? "Начните с пустого бесконечного полотна." : "Откройте ссылку на доску, войдя в аккаунт — она появится здесь."}</p></div>}
       {dialog && <div className="board-modal-layer" onMouseDown={(event) => event.target === event.currentTarget && setDialog(null)}><form className="board-dialog" onSubmit={(event) => {
         event.preventDefault();
         if (dialog.mode === "rename") void rename(dialog.board, dialog.title);

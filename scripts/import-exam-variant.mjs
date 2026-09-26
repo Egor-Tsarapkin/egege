@@ -59,7 +59,9 @@ const payload = {
   title: source.description || `КИМ № ${source.kim}`,
   sourceUrl: `https://kompege.ru/variant?kim=${source.kim}`,
   importedAt: new Date().toISOString(),
-  tasks: source.tasks.map((task) => ({
+  tasks: source.tasks.map((task, index) => ({
+    slot: index + 1,
+    answer: String(task.key ?? task.answer ?? ""),
     id: String(task.taskId),
     number: Number(task.number),
     html: prepareTaskHtml(task.text),

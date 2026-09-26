@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { AppUser } from "@/lib/app-user";
+import AvatarVisual from "./avatar-visual";
 import {
   Activity,
   BarChart3,
   BookOpen,
   CheckCircle2,
-  Clock3,
   FileText,
   Files,
   LayoutDashboard,
@@ -30,20 +30,27 @@ type AdminUser = {
   last_seen_at: number;
   variants: number;
   average_score: number;
+  marathon_seconds?: number;
+  marathon_last_seen_at?: number;
+  marathon_online?: number;
+  acquisition_source: string;
+  acquisition_campaign: string;
+  acquisition_at: number;
 };
 
 type AdminPayload = {
-  metrics: { online: number; registered: number; newUsers: number; averageMinutes: number };
+  metrics: { registered: number; newUsers: number; visitorsToday: number };
   users: AdminUser[];
   activity: Array<{ day: string; visits: number; registrations: number }>;
   funnel: { opened: number; logged: number; started: number; completed: number };
+  sources: Array<{ source: string; medium: string; campaign: string; content: string; referrer_host: string; visitors: number; registrations: number }>;
   content: Array<{ label: string; value: number }>;
   actions: Array<{ action: string; created_at: number; display_name: string; username: string }>;
   teacherTasks: Array<{ id: number; public_id: string; exam_number: number; note: string; statement_html: string; difficulty: string; approved: number; author: string }>;
   teacherVariants: Array<{ id: number; kim: string; title: string; description_html: string; task_count: number; approved: number; complete: boolean; author: string }>;
 };
 
-type AdminTab = "overview" | "users" | "limits" | "content" | "events";
+type AdminTab = "overview" | "users" | "sources" | "limits" | "content" | "events";
 
 async function adminRequest<T>(init?: RequestInit) {
   const response = await fetch("/api/admin", {
@@ -62,6 +69,13 @@ function compactNumber(value: number) {
   return new Intl.NumberFormat("ru-RU").format(Number(value) || 0);
 }
 
+function marathonTime(seconds: number) {
+  if (!seconds) return "0 мин";
+  if (seconds < 60) return `${Math.floor(seconds)} сек`;
+  const minutes = Math.floor(seconds / 60);
+  return minutes < 60 ? `${minutes} мин` : `${Math.floor(minutes / 60)} ч ${minutes % 60} мин`;
+}
+
 function timeAgo(timestamp: number) {
   if (!timestamp) return "Ещё не входил";
   return new Intl.DateTimeFormat("ru-RU", {
@@ -72,49 +86,58 @@ function timeAgo(timestamp: number) {
   }).format(new Date(timestamp * 1000));
 }
 
-function ActivityChart({ data }: { data: AdminPayload["activity"] }) {
-  const points = useMemo(() => {
+function ActivityChart({ data, dataKey, label }: {
+  data: AdminPayload["activity"];
+  dataKey: "visits" | "registrations";
+  label: string;
+}) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const chart = useMemo(() => {
     const days = Array.from({ length: 30 }, (_, offset) => {
       const date = new Date();
       date.setDate(date.getDate() - (29 - offset));
-      const key = date.toISOString().slice(0, 10);
+      const key = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
       const found = data.find((item) => item.day === key);
       return { key, visits: Number(found?.visits ?? 0), registrations: Number(found?.registrations ?? 0) };
     });
-    const max = Math.max(4, ...days.flatMap((item) => [item.visits, item.registrations]));
-    const build = (key: "visits" | "registrations") => days.map((item, index) => ({
-      x: (index / 29) * 100,
-      y: 94 - (item[key] / max) * 82,
-    }));
-    return { days, visits: build("visits"), registrations: build("registrations"), max };
-  }, [data]);
-
-  const path = (items: Array<{ x: number; y: number }>) =>
-    items.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" ");
+    const max = Math.max(1, ...days.map((item) => item[dataKey]));
+    return { days, max };
+  }, [data, dataKey]);
+  const activeDay = activeIndex == null ? null : chart.days[activeIndex];
+  const activeDate = activeDay
+    ? new Intl.DateTimeFormat("ru-RU", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+      .format(new Date(`${activeDay.key}T12:00:00`))
+    : "";
 
   return (
-    <div className="admin-chart">
-      <div className="admin-chart-legend">
-        <span><i /> Посещения</span>
-        <span><i className="is-dotted" /> Регистрации</span>
-      </div>
+    <div className={`admin-chart is-${dataKey}`}>
       <div className="admin-chart-canvas">
-        <div className="admin-chart-scale"><span>{points.max}</span><span>{Math.round(points.max / 2)}</span><span>0</span></div>
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Активность сайта за 30 дней">
-          <defs>
-            <linearGradient id="admin-chart-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="var(--accent)" stopOpacity=".23" />
-              <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path className="admin-chart-area" d={`${path(points.visits)} L100,100 L0,100 Z`} />
-          <path className="admin-chart-line" d={path(points.visits)} />
-          <path className="admin-chart-line is-secondary" d={path(points.registrations)} />
-        </svg>
+        <div className="admin-chart-scale"><span>{chart.max}</span><span>{Math.round(chart.max / 2)}</span><span>0</span></div>
+        <div className="admin-chart-bars" aria-label={`${label} по дням за последние 30 дней`}>
+          {chart.days.map((item, index) => <button
+            aria-label={`${new Date(`${item.key}T12:00:00`).toLocaleDateString("ru-RU")}: ${item[dataKey]} — ${label.toLowerCase()}`}
+            className={`admin-chart-bar ${activeIndex === index ? "is-active" : ""}`}
+            key={item.key}
+            onBlur={() => setActiveIndex((current) => current === index ? null : current)}
+            onFocus={() => setActiveIndex(index)}
+            onMouseEnter={() => setActiveIndex(index)}
+            onMouseLeave={() => setActiveIndex((current) => current === index ? null : current)}
+            style={{ height: `${Math.max(item[dataKey] ? 4 : 1, (item[dataKey] / chart.max) * 100)}%` }}
+            type="button"
+          />)}
+        </div>
+        {activeDay && <div
+          className="admin-chart-tooltip"
+          style={{ "--tooltip-x": `${(activeIndex! / 29) * 100}%` } as CSSProperties}
+        >
+          <span>{activeDate}</span>
+          <strong>{compactNumber(activeDay[dataKey])}</strong>
+          <small>{label}</small>
+        </div>}
       </div>
       <div className="admin-chart-dates">
         {[0, 7, 14, 21, 29].map((index) => (
-          <span key={index}>{new Date(`${points.days[index].key}T12:00:00`).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}</span>
+          <span key={index}>{new Date(`${chart.days[index].key}T12:00:00`).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}</span>
         ))}
       </div>
     </div>
@@ -172,8 +195,8 @@ export default function AdminDashboard({ user, onExit }: { user: AppUser; onExit
       });
       await load(true);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Не удалось изменить лимит досок");
       await load(true);
+      setError(nextError instanceof Error ? nextError.message : "Не удалось изменить лимит досок");
     } finally {
       setSavingUser("");
     }
@@ -192,6 +215,7 @@ export default function AdminDashboard({ user, onExit }: { user: AppUser; onExit
   const nav: Array<{ id: AdminTab; label: string; icon: typeof LayoutDashboard }> = [
     { id: "overview", label: "Обзор", icon: LayoutDashboard },
     { id: "users", label: "Пользователи", icon: UsersRound },
+    { id: "sources", label: "Источники трафика", icon: TrendingUp },
     { id: "limits", label: "Лимиты досок", icon: Files },
     { id: "content", label: "Контент", icon: FileText },
     { id: "events", label: "События", icon: Activity },
@@ -216,10 +240,9 @@ export default function AdminDashboard({ user, onExit }: { user: AppUser; onExit
     { label: "Завершил", value: Number(data.funnel.completed), icon: CheckCircle2 },
   ];
   const metrics = [
-    { label: "Сейчас на сайте", value: data.metrics.online, icon: UsersRound },
     { label: "Зарегистрировано", value: data.metrics.registered, icon: UserRound },
-    { label: "Новых за 7 дней", value: data.metrics.newUsers, icon: TrendingUp },
-    { label: "Среднее время", value: `${data.metrics.averageMinutes} мин`, icon: Clock3, raw: true },
+    { label: "Новых за 30 дней", value: data.metrics.newUsers, icon: TrendingUp },
+    { label: "Уникальных посетителей сегодня", value: data.metrics.visitorsToday, icon: UsersRound },
   ];
 
   return (
@@ -240,7 +263,7 @@ export default function AdminDashboard({ user, onExit }: { user: AppUser; onExit
 
       <main className="admin-main">
         <header className="admin-heading">
-          <div><h1>Админ-панель</h1><span><i /> Данные обновляются</span></div>
+          <div><h1>{nav.find((item) => item.id === tab)?.label}</h1><span><i /> {error ? "Обновление не удалось" : "Обновление каждые 30 секунд"}</span></div>
           {error && <p>{error}</p>}
         </header>
 
@@ -248,16 +271,21 @@ export default function AdminDashboard({ user, onExit }: { user: AppUser; onExit
           <section className="admin-metrics" aria-label="Основные показатели">
             {metrics.map((metric) => {
               const Icon = metric.icon;
-              return <article key={metric.label}><span><Icon /></span><div><small>{metric.label}</small><strong>{metric.raw ? metric.value : compactNumber(Number(metric.value))}</strong></div></article>;
+              return <article key={metric.label}><span><Icon /></span><div><small>{metric.label}</small><strong>{compactNumber(metric.value)}</strong></div></article>;
             })}
           </section>
         )}
 
         {(tab === "overview" || tab === "events") && (
-          <section className="admin-overview-grid">
-            <article className="admin-panel admin-activity-panel"><h2>Активность за 30 дней</h2><ActivityChart data={data.activity} /></article>
+          <>
+          <section className="admin-charts-grid">
+            <article className="admin-panel admin-activity-panel"><h2>Уникальные посетители</h2><p className="admin-data-note">Один пользователь учитывается один раз в день. Только при согласии на аналитику.</p><ActivityChart data={data.activity} dataKey="visits" label="Уникальные посетители" /></article>
+            <article className="admin-panel admin-activity-panel"><h2>Регистрации</h2><p className="admin-data-note">Новые профили по дням. Время московское.</p><ActivityChart data={data.activity} dataKey="registrations" label="Регистрации" /></article>
+          </section>
+          <section className="admin-overview-grid is-funnel-only">
             <article className="admin-panel admin-funnel">
-              <h2>Путь ученика</h2>
+              <h2>Путь ученика за 30 дней</h2>
+              <p className="admin-data-note">Только записанные сеансы аналитики. Прошлые посещения, которые не были записаны, восстановить нельзя.</p>
               <div>{funnelItems.map((item, index) => {
                 const Icon = item.icon;
                 const percent = data.funnel.opened ? Math.round((item.value / data.funnel.opened) * 1000) / 10 : 0;
@@ -265,7 +293,9 @@ export default function AdminDashboard({ user, onExit }: { user: AppUser; onExit
               })}</div>
             </article>
           </section>
+          </>
         )}
+        {tab === "sources" && <article className="admin-panel admin-sources"><h2>Откуда приходят люди</h2><p className="admin-data-note">Детализация за 30 дней по площадке, каналу, кампании и конкретному размещению.</p><div className="admin-source-table"><header><span>Площадка</span><span>Канал</span><span>Кампания</span><span>Размещение</span><span>Посетители</span><span>Регистрации</span></header>{data.sources.map((item) => <div key={`${item.source}-${item.medium}-${item.campaign}-${item.content}`}><strong>{item.source === "direct" ? "Прямые / не определено" : item.source}</strong><small>{item.medium || "—"}</small><span>{item.campaign || "—"}</span><span>{item.content || item.referrer_host || "—"}</span><b>{compactNumber(item.visitors)}</b><em>{compactNumber(item.registrations)}</em></div>)}</div></article>}
 
         <section className="admin-bottom-grid">
           {tab === "content" && (
@@ -282,25 +312,26 @@ export default function AdminDashboard({ user, onExit }: { user: AppUser; onExit
             </article>
           )}
           {(tab === "overview" || tab === "users" || tab === "limits") && (
-            <article className="admin-panel admin-users">
+            <article className={`admin-panel admin-users ${tab === "limits" ? "is-limits" : "is-students"}`}>
               <header>
-                <h2>Ученики</h2>
+                <h2>{tab === "limits" ? "Лимиты досок" : "Ученики"} · {filteredUsers.length}</h2>
                 <label><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Имя, email или username" /></label>
               </header>
+              {tab === "limits" && <p className="admin-data-note">Лимит ограничивает создание новых досок. Существующие доски при уменьшении лимита не удаляются.</p>}
               <div className="admin-user-table">
-                <div className="admin-user-head"><span>Ученик</span><span>Последний вход</span><span>Варианты</span><span>Средний балл</span><span>Доски</span><span>Лимит</span></div>
+                <div className="admin-user-head"><span>Ученик</span>{tab !== "limits" && <><span>Источник</span><span>Активность</span><span>Марафон</span><span>Варианты</span><span>Средний балл</span></>}<span>Доски</span>{tab === "limits" && <span>Лимит</span>}</div>
                 {filteredUsers.map((entry) => (
                   <div className="admin-user-row" key={entry.user_id}>
-                    <div className="admin-user-name"><span>{entry.avatar_emoji || "🙂"}</span><div><strong>{entry.display_name}</strong><small>@{entry.username}{entry.email ? ` · ${entry.email}` : ""}</small></div></div>
-                    <span data-label="Последний вход">{timeAgo(Number(entry.last_seen_at))}</span>
+                    <div className="admin-user-name"><span className="admin-user-avatar"><AvatarVisual value={entry.avatar_emoji || "🙂"} /></span><div><strong>{entry.display_name}</strong><small>@{entry.username}{entry.email ? ` · ${entry.email}` : ""}</small></div></div>
+                    {tab !== "limits" && <><span className="admin-user-source" data-label="Источник"><strong>{entry.acquisition_source ? (entry.acquisition_source === "direct" ? "Прямой" : entry.acquisition_source) : "Не определён"}</strong>{entry.acquisition_campaign && <small>{entry.acquisition_campaign}</small>}</span><span data-label="Активность">{timeAgo(Number(entry.last_seen_at))}</span><span className="admin-user-marathon" data-label="Марафон"><strong>{marathonTime(Number(entry.marathon_seconds))}</strong>{Boolean(entry.marathon_online) && <small>Сейчас в марафоне</small>}</span>
                     <span data-label="Варианты">{Number(entry.variants)}</span>
-                    <span data-label="Средний балл">{Number(entry.average_score) || "—"}</span>
+                    <span data-label="Средний балл">{entry.variants ? Number(entry.average_score) : "—"}</span></>}
                     <span data-label="Доски">{Number(entry.board_count)}</span>
-                    <div className="admin-board-limit" data-label="Лимит">
+                    {tab === "limits" && <div className="admin-board-limit" data-label="Лимит">
                       <button disabled={savingUser === entry.user_id || entry.board_limit <= 0} onClick={() => void setBoardLimit(entry, entry.board_limit - 1)} aria-label={`Уменьшить лимит для ${entry.display_name}`}>−</button>
                       <input key={`${entry.user_id}-${entry.board_limit}`} type="number" min="0" max="100" defaultValue={entry.board_limit} disabled={savingUser === entry.user_id} onBlur={(event) => void setBoardLimit(entry, Number(event.target.value))} aria-label={`Лимит досок для ${entry.display_name}`} />
                       <button disabled={savingUser === entry.user_id || entry.board_limit >= 100} onClick={() => void setBoardLimit(entry, entry.board_limit + 1)} aria-label={`Увеличить лимит для ${entry.display_name}`}>+</button>
-                    </div>
+                    </div>}
                   </div>
                 ))}
                 {!filteredUsers.length && <p className="admin-empty">По этому фильтру учеников пока нет.</p>}

@@ -9,11 +9,28 @@ services:
       - "127.0.0.1:3000:3000"
     volumes:
       - ./data:/app/data
+      - ./public:/app/public
+  kege-sync:
+    build:
+      context: .
+      target: kege-sync
+    profiles: ["tools"]
+    volumes:
+      - ./public:/app/public
+  realtime:
+    build:
+      context: .
+      target: realtime
+    restart: unless-stopped
+    env_file: ${ENV_FILE:-.env}
+    depends_on:
+      - egege
   caddy:
     image: caddy:2.10-alpine
     restart: unless-stopped
     depends_on:
       - egege
+      - realtime
     environment:
       DOMAIN: ${DOMAIN}
     ports:

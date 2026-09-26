@@ -35,10 +35,10 @@ for (const name of await readdir(variantsDirectory)) {
     replaced += 1;
     return {
       ...task,
-      number: canonical.number,
+      number: task.number,
       html: canonical.html,
-      answer: canonical.answer,
-      table: canonical.table,
+      answer: task.answer ?? canonical.answer,
+      table: task.table ?? canonical.table,
       files: canonical.files,
     };
   });

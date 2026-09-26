@@ -2,6 +2,7 @@
 
 import { Hand, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { reconcileTypingInput } from "@/lib/typing-progress";
 
 type TrainerMode = "python" | "russian" | "english";
 type RussianDuration = 30 | 60 | 90 | 120;
@@ -1070,14 +1071,11 @@ export default function TypingTrainer({
     }
 
     if (nextValue.length > typed.length) {
-      const added = nextValue.slice(typed.length);
-      const counted = added.slice(0, charactersToCount ?? added.length);
-      let addedMistakes = 0;
-      Array.from(counted).forEach((character, index) => {
-        if (character !== target[typed.length + index]) addedMistakes += 1;
-      });
-      setKeystrokes((current) => current + counted.length);
-      setMistakes((current) => current + addedMistakes);
+      const countedLength = charactersToCount ?? nextValue.length - typed.length;
+      const reconciled = reconcileTypingInput(typed, nextValue, target);
+      nextValue = reconciled.value;
+      setKeystrokes((current) => current + Math.min(reconciled.keystrokes, countedLength));
+      setMistakes((current) => current + Math.min(reconciled.mistakes, countedLength));
       startTimer();
     }
     setTyped(nextValue);
@@ -1121,7 +1119,6 @@ export default function TypingTrainer({
     <div className={`typing-trainer ${focused ? "is-focused" : ""} ${completed ? "is-complete" : ""}`}>
       <section className="trainer-hero">
         <div className="trainer-heading">
-          <h1>Печатаем код</h1>
           <div className="trainer-controls-row">
             <div className="trainer-modes" aria-label="Режим тренировки">
               {MODE_OPTIONS.map((option) => (
@@ -1181,7 +1178,6 @@ export default function TypingTrainer({
 
       <section className={`trainer-stage ${focused ? "is-focused" : ""} ${completed ? "is-complete" : ""}`}>
         <div className="trainer-stage-toolbar">
-          <span>{isLanguageMode ? `Случайный текст · ${russianDuration} секунд` : `Случайное упражнение · ${EXERCISES.python.length} вариантов`}</span>
           <div>
             {best > 0 && (
               <span className="trainer-best">
@@ -1207,6 +1203,10 @@ export default function TypingTrainer({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onKeyDown={(event) => {
+            if (event.repeat) {
+              event.preventDefault();
+              return;
+            }
             if (event.key === "Enter" && !completed) {
               event.preventDefault();
               const cursorIndex = typed.length;
@@ -1257,7 +1257,7 @@ export default function TypingTrainer({
               <p className="eyebrow">Результат</p>
               <h2>{isLanguageMode ? "Время вышло!" : "Код набран!"}</h2>
               <p>{isNewBest ? "Новый лучший темп — отличная работа." : "Точность важнее спешки. Попробуйте ещё раз."}</p>
-              {xpMessage && <p className="trainer-xp-message">{xpMessage}{dailyXp !== null ? ` · сегодня ${dailyXp}/100 XP` : ""}</p>}
+              {xpMessage && <p className="trainer-xp-message">{xpMessage}{dailyXp !== null ? ` · сегодня ${dailyXp}/50 XP` : ""}</p>}
             </div>
             <div className="trainer-result-stats">
               <span className="trainer-result-speed">

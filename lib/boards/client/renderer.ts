@@ -1,6 +1,7 @@
 import type { BoardBackground, BoardObject, CodePayload, FilePayload, ImagePayload, LinePayload, ShapePayload, StrokePayload, TaskPayload, TextPayload } from "../types";
-import { outlinePath, strokeOutline } from "./pen-engine";
+import { outlinePath, StrokeRenderCache } from "./pen-engine";
 import { selectionHandles } from "./selection";
+import { highlightCode } from "./code-highlighting";
 import { wrapTextLines } from "./text-layout";
 import type { BoardViewport } from "./viewport";
 
@@ -13,9 +14,11 @@ type RenderOptions = {
   selectedId?: string;
   selectedIds?: string[];
   pixelRatio?: number;
+  presorted?: boolean;
 };
 
 const imageCache = new Map<string, HTMLImageElement>();
+const strokeRenderCache = new StrokeRenderCache<Path2D>();
 
 function cachedImage(src: string) {
   let image = imageCache.get(src);
@@ -83,23 +86,37 @@ export function paintBackground(context: CanvasRenderingContext2D, options: Rend
 }
 
 function paintCode(context: CanvasRenderingContext2D, payload: CodePayload) {
-  context.fillStyle = "#211f1b";
-  context.beginPath(); context.roundRect(payload.x, payload.y, payload.width, payload.height, 12); context.fill();
+  context.fillStyle = "#1e1f22";
+  context.fillRect(payload.x, payload.y, payload.width, payload.height);
   context.strokeStyle = "#39362f"; context.lineWidth = 1;
-  context.beginPath(); context.roundRect(payload.x + .5, payload.y + .5, payload.width - 1, payload.height - 1, 11.5); context.stroke();
-  context.fillStyle = "#302d27"; context.fillRect(payload.x + 1, payload.y + 1, payload.width - 2, 37);
-  context.fillStyle = "#d7f57c"; context.font = '700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  context.fillText(payload.language.toUpperCase(), payload.x + 16, payload.y + 24);
-  const copyX = payload.x + payload.width - 31; const copyY = payload.y + 11;
-  context.fillStyle = "#b9b2a5"; context.fillRect(copyX + 4, copyY, 10, 10); context.fillStyle = "#211f1b"; context.fillRect(copyX + 2, copyY + 6, 12, 12); context.fillStyle = "#b9b2a5"; context.fillRect(copyX, copyY + 4, 10, 10);
-  context.font = '14px "SFMono-Regular", Consolas, "Liberation Mono", monospace';
-  const lines = payload.code.split("\n").slice(0, Math.max(1, Math.floor((payload.height - 56) / 21)));
+  context.strokeRect(payload.x + .5, payload.y + .5, payload.width - 1, payload.height - 1);
+  context.fillStyle = "#302d27"; context.fillRect(payload.x + 1, payload.y + 1, payload.width - 2, 47);
+  context.fillStyle = "#bcbec4"; context.font = '700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  context.fillText(payload.language.toUpperCase(), payload.x + 16, payload.y + 29);
+  const fontScale = payload.fontScale ?? 1;
+  const lineHeight = 21 * fontScale;
+  context.font = `${14 * fontScale}px "SFMono-Regular", Consolas, "Liberation Mono", monospace`;
+  const lines = highlightCode(payload.code, payload.language);
+  context.save();
+  context.beginPath(); context.rect(payload.x + 8, payload.y + 49, payload.width - 16, payload.height - 57); context.clip();
+  const characterWidth = context.measureText(" ").width;
   lines.forEach((line, index) => {
-    context.fillStyle = "#756e63"; context.textAlign = "right"; context.fillText(String(index + 1), payload.x + 38, payload.y + 60 + index * 21);
+    const baseline = payload.y + 70 + index * lineHeight;
+    if (baseline > payload.y + payload.height) return;
+    context.fillStyle = "#7a7e85"; context.textAlign = "right"; context.fillText(String(index + 1), payload.x + 38, baseline);
     context.textAlign = "left";
-    context.fillStyle = /^\s*(#|\/\/)/.test(line) ? "#8c8579" : /\b(for|while|if|else|def|class|return|in|range|print|const|let|function)\b/.test(line) ? "#d7f57c" : "#f5f0e4";
-    context.fillText(line.slice(0, Math.floor((payload.width - 58) / 8.2)), payload.x + 50, payload.y + 60 + index * 21);
+    context.save(); context.beginPath(); context.rect(payload.x + 50, payload.y + 49, payload.width - 66, payload.height - 57); context.clip();
+    let left = payload.x + 50; let column = 0;
+    for (const segment of line) {
+      const text = segment.text;
+      for (const part of text.split(/(\t)/)) {
+        if (part === "\t") { const spaces = 4 - column % 4; left += characterWidth * spaces; column += spaces; }
+        else { context.fillStyle = segment.color; context.fillText(part, left, baseline); left += context.measureText(part).width; column += part.length; }
+      }
+    }
+    context.restore();
   });
+  context.restore();
 }
 
 function clippedTextLines(context: CanvasRenderingContext2D, text: string, width: number, maxLines: number) {
@@ -153,7 +170,7 @@ export function paintObject(context: CanvasRenderingContext2D, object: BoardObje
   if (object.kind === "stroke") {
     const payload = object.payload as StrokePayload;
     context.fillStyle = payload.color;
-    context.fill(outlinePath(strokeOutline(payload.points, payload.size)));
+    context.fill(strokeRenderCache.get(payload.points, payload.size, outlinePath));
     return;
   }
   if (object.kind === "text") {
@@ -227,7 +244,7 @@ export function paintObject(context: CanvasRenderingContext2D, object: BoardObje
 
 export function paintObjects(context: CanvasRenderingContext2D, objects: Iterable<BoardObject>, options: RenderOptions) {
   const ratio = options.pixelRatio ?? 1;
-  const orderedObjects = Array.from(objects).sort((a, b) => a.zIndex - b.zIndex || a.createdAt - b.createdAt);
+  const orderedObjects = options.presorted ? Array.from(objects) : Array.from(objects).sort((a, b) => a.zIndex - b.zIndex || a.createdAt - b.createdAt);
   context.setTransform(options.viewport.zoom * ratio, 0, 0, options.viewport.zoom * ratio, options.viewport.x * ratio, options.viewport.y * ratio);
   for (const object of orderedObjects) if (visible(object, options)) paintObject(context, object, options.backgroundColor);
   const selectedObjects = orderedObjects.filter((object) => options.selectedIds?.includes(object.id) || object.id === options.selectedId);

@@ -167,7 +167,7 @@ function cleanObjectPayload(kind: BoardObjectKind, value: unknown) {
       ? input.language as CodeLanguage
       : "python";
     return {
-      payload: { code: String(input.code ?? "").slice(0, MAX_CODE_LENGTH), language, x, y, width, height },
+      payload: { code: String(input.code ?? "").slice(0, MAX_CODE_LENGTH), language, fontScale: Math.max(.7, Math.min(10, finite(input.fontScale, 1))), x, y, width, height },
       bounds: boundsFromRect(x, y, width, height),
     };
   }
@@ -177,7 +177,13 @@ function cleanObjectPayload(kind: BoardObjectKind, value: unknown) {
     const images = Array.isArray(input.images) ? input.images
       .filter((src): src is string => typeof src === "string" && (src.startsWith("/materials/") || /^https:\/\/(?:www\.)?kompege\.ru\/images\//i.test(src)))
       .slice(0, 8).map((src) => src.slice(0, 1000)) : [];
-    return { payload: { taskId: String(input.taskId ?? "").slice(0, 32), number: Math.max(1, Math.min(27, Math.floor(finite(input.number, 1)))), note: String(input.note ?? "").slice(0, 200), text: String(input.text ?? "").slice(0, MAX_TEXT_LENGTH), html: String(input.html ?? "").slice(0, 120_000), images, answer: String(input.answer ?? "").slice(0, MAX_TEXT_LENGTH), fontScale: Math.max(.7, Math.min(2.4, finite(input.fontScale, 1))), x, y, width, height }, bounds: boundsFromRect(x, y, width, height) };
+    const files = Array.isArray(input.files) ? input.files.flatMap((file) => {
+      if (!file || typeof file !== "object") return [];
+      const candidate = file as Record<string, unknown>; const href = String(candidate.href ?? "").trim();
+      if (!href.startsWith("/api/task-file?") && !href.startsWith("/api/teacher-files?")) return [];
+      return [{ name: String(candidate.name ?? "Файл").slice(0, 180), href: href.slice(0, 2000), meta: String(candidate.meta ?? "Файл к заданию").slice(0, 120) }];
+    }).slice(0, 8) : [];
+    return { payload: { taskId: String(input.taskId ?? "").slice(0, 32), number: Math.max(1, Math.min(127, Math.floor(finite(input.number, 1)))), note: String(input.note ?? "").slice(0, 200), text: String(input.text ?? "").slice(0, MAX_TEXT_LENGTH), html: String(input.html ?? "").slice(0, 120_000), images, files, answer: String(input.answer ?? "").slice(0, MAX_TEXT_LENGTH), fontScale: Math.max(.7, Math.min(10, finite(input.fontScale, 1))), x, y, width, height }, bounds: boundsFromRect(x, y, width, height) };
   }
   if (kind === "file") {
     const x = coordinate(input.x); const y = coordinate(input.y);

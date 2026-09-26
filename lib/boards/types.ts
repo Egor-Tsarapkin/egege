@@ -94,6 +94,7 @@ export type ImagePayload = {
 export type CodeLanguage = "python" | "cpp" | "javascript" | "pascal";
 
 export type CodePayload = {
+  fontScale?: number;
   code: string;
   language: CodeLanguage;
   x: number;
@@ -104,6 +105,7 @@ export type CodePayload = {
 
 export type TaskPayload = {
   taskId: string; number: number; note: string; text: string; html?: string; images?: string[];
+  files?: Array<{ name: string; href: string; meta?: string }>;
   answer?: string; fontScale?: number;
   x: number; y: number; width: number; height: number;
 };

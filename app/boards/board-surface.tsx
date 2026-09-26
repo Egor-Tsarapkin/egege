@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowRight, ArrowUp, Bold, ChevronsDown, ChevronsUp, Circle, CircleHelp, Code2, Copy, Download, Eraser, Eye, Grid2X2, Hand,
-  ImagePlus, Italic, Layers, Magnet, Maximize2, Minus, MousePointer2, PenLine, Plus, Redo2, Search, Square, Star, Type, Undo2, Upload, X,
+  AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowRight, ArrowUp, Bold, Check, ChevronsDown, ChevronsUp, Circle, CircleHelp, Code2, Copy, Download, Eraser, Eye, Grid2X2, Hand,
+  ImagePlus, Italic, Layers, Magnet, Map as MapIcon, Maximize2, Minus, MousePointer2, PenLine, Plus, Redo2, Search, Square, Star, Type, Undo2, Upload, X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import RichHtml from "@/app/rich-html";
@@ -17,7 +17,8 @@ import { BoardCollaboration, type RemoteCursor, type RemoteStroke } from "@/lib/
 import { eraserCanHit, eraserHitsObject, eraserPointHitsPath, type EraserMode } from "@/lib/boards/client/eraser";
 import { PenEngine, outlinePath, strokeOutline } from "@/lib/boards/client/pen-engine";
 import { BoardPersistence } from "@/lib/boards/client/persistence";
-import { codeCopyButtonAt } from "@/lib/boards/client/code-block";
+import { BoardObjectStore } from "@/lib/boards/client/object-store";
+import { loadBoardHistory, saveBoardHistory, type BoardHistoryRecord } from "@/lib/boards/client/history-persistence";
 import { paintBackground, paintObjects } from "@/lib/boards/client/renderer";
 import { hitSelectionHandle, objectHitTest, objectIntersectsSelectionBox, resizeFromHandle, selectionAfterToolChange, type SelectionHandle } from "@/lib/boards/client/selection";
 import { snapBounds, type AlignmentGuides } from "@/lib/boards/client/guides";
@@ -25,12 +26,13 @@ import { recognizeHeldStroke, resizeRecognizedShape, type RecognizedShape } from
 import { constrainedShapePoint } from "@/lib/boards/client/geometry";
 import { shiftTextFormats } from "@/lib/boards/client/text-formatting";
 import { wrapTextLines } from "@/lib/boards/client/text-layout";
-import { fitBounds, screenToWorld, worldToScreen, zoomAt, type BoardViewport } from "@/lib/boards/client/viewport";
+import { fitBounds, screenToWorld, worldToScreen, zoomAt, wheelZoomFactor, MIN_ZOOM, MAX_ZOOM, type BoardViewport } from "@/lib/boards/client/viewport";
+import { taskDownloadHref, taskDownloadName } from "@/lib/task-download";
 
 type ShapeTool = "rectangle" | "ellipse" | "star";
 type Tool = "select" | "pan" | "pen" | "eraser" | "text" | ShapeTool | "line" | "arrow" | "code";
 type SaveState = "saved" | "saving" | "offline";
-type HistoryEntry = { undo: () => void; redo: () => void };
+type HistoryEntry = { record: BoardHistoryRecord; undo: () => void; redo: () => void };
 type TextStyleValues = {
   color: string;
   fontFamily: "sans" | "mono" | "pribambas";
@@ -58,13 +60,24 @@ const BRAND_DARK = "#171613";
 const COLORS = [BRAND_DARK, BRAND_LIGHT, "#2f6fed", "#de3c4b", "#1a936f", "#8b5cf6", "#f08c2e"];
 const TEXT_STYLE_STORAGE_KEY = "egege-board-text-style-v1";
 const SNAP_STORAGE_KEY = "egege-board-snap-v1";
+const PEN_SIZE_STORAGE_KEY = "egege-board-pen-size-v1";
 const VIEWPORT_STORAGE_PREFIX = "egege-board-viewport-v1:";
+const RICH_OBJECT_KINDS = new Set<BoardObjectKind>(["task", "code"]);
 const DEFAULT_TEXT_STYLE: TextStyleValues = { color: BRAND_DARK, fontFamily: "sans", fontSize: 28, fontWeight: 500, fontStyle: "normal", textAlign: "left" };
 
 function textFontFamily(fontFamily: TextStyleValues["fontFamily"]) {
   return fontFamily === "pribambas" ? '"Pribambas", cursive'
     : fontFamily === "mono" ? '"SFMono-Regular", Consolas, "Liberation Mono", monospace'
       : '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+}
+
+function viewportBounds(viewport: BoardViewport, width: number, height: number, overscan = 0): BoardBounds {
+  return {
+    minX: (-viewport.x - overscan) / viewport.zoom,
+    minY: (-viewport.y - overscan) / viewport.zoom,
+    maxX: (width - viewport.x + overscan) / viewport.zoom,
+    maxY: (height - viewport.y + overscan) / viewport.zoom,
+  };
 }
 
 function autoTextSize(text: string, values: TextStyleValues) {
@@ -95,13 +108,35 @@ function formattedTextPreview(text: string, formats: NonNullable<TextPayload["fo
   });
 }
 
+async function imageResponseAsPng(responsePromise: Promise<Response>) {
+  const response = await responsePromise;
+  if (!response.ok) throw new Error("image-fetch-failed");
+  const source = await response.blob();
+  if (source.type === "image/png") return source;
+  const bitmap = await createImageBitmap(source);
+  try {
+    const canvas = document.createElement("canvas"); canvas.width = bitmap.width; canvas.height = bitmap.height;
+    const context = canvas.getContext("2d"); if (!context) throw new Error("image-conversion-failed");
+    context.drawImage(bitmap, 0, 0);
+    return await new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("image-conversion-failed")), "image/png"));
+  } finally { bitmap.close(); }
+}
+
 function TextFormattingToolbar({ values, onChange, className = "" }: { values: TextStyleValues; onChange: (patch: Partial<TextStyleValues>) => void; className?: string }) {
-  const fontSize = Math.max(10, Math.min(160, Math.round(values.fontSize)));
-  return <div className={`board-text-formatting ${className}`} role="toolbar" aria-label="Форматирование текста" onPointerDown={(event) => event.stopPropagation()}>
+  const fontSize = Math.max(1, Math.min(160, Math.round(values.fontSize)));
+  const [fontSizeInput, setFontSizeInput] = useState(String(fontSize));
+  const fontSizeFocused = useRef(false);
+  useEffect(() => { if (!fontSizeFocused.current) setFontSizeInput(String(fontSize)); }, [fontSize]);
+  const confirmFontSize = () => {
+    const parsed = Number(fontSizeInput);
+    const next = fontSizeInput.trim() && Number.isFinite(parsed) ? Math.max(1, Math.min(160, Math.round(parsed))) : 10;
+    setFontSizeInput(String(next)); onChange({ fontSize: next });
+  };
+  return <div className={`board-text-formatting ${className}`} role="toolbar" aria-label="Форматирование текста" onPointerDown={(event) => { event.stopPropagation(); if ((event.target as HTMLElement).closest("button")) event.preventDefault(); }}>
     <select value={values.fontFamily} onChange={(event) => onChange({ fontFamily: event.target.value as TextStyleValues["fontFamily"] })} aria-label="Шрифт">
       <option value="sans">Sans</option><option value="mono">Mono</option><option value="pribambas">Pribambas</option>
     </select>
-    <div className="board-text-size"><button type="button" onClick={() => onChange({ fontSize: Math.max(10, fontSize - 2) })} aria-label="Уменьшить текст"><Minus /></button><input type="number" min="10" max="160" value={fontSize} onChange={(event) => onChange({ fontSize: Math.max(10, Math.min(160, Number(event.target.value) || 10)) })} aria-label="Размер текста" /><button type="button" onClick={() => onChange({ fontSize: Math.min(160, fontSize + 2) })} aria-label="Увеличить текст"><Plus /></button></div>
+    <div className="board-text-size"><button type="button" onClick={() => onChange({ fontSize: Math.max(1, fontSize - 2) })} aria-label="Уменьшить текст"><Minus /></button><input type="number" min="1" max="160" value={fontSizeInput} onFocus={() => { fontSizeFocused.current = true; }} onChange={(event) => { const next = event.target.value; setFontSizeInput(next); const parsed = Number(next); if (next.trim() && Number.isFinite(parsed) && parsed >= 1 && parsed <= 160) onChange({ fontSize: Math.round(parsed) }); }} onBlur={() => { fontSizeFocused.current = false; confirmFontSize(); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); } }} aria-label="Размер текста" /><button type="button" onClick={() => onChange({ fontSize: Math.min(160, fontSize + 2) })} aria-label="Увеличить текст"><Plus /></button></div>
     <button type="button" className={values.fontWeight === 700 ? "is-active" : ""} onClick={() => onChange({ fontWeight: values.fontWeight === 700 ? 500 : 700 })} aria-label="Жирный"><Bold /></button>
     <button type="button" className={values.fontStyle === "italic" ? "is-active" : ""} onClick={() => onChange({ fontStyle: values.fontStyle === "italic" ? "normal" : "italic" })} aria-label="Курсив"><Italic /></button>
     <i />
@@ -176,7 +211,7 @@ export default function BoardSurface({
   const liveRef = useRef<HTMLCanvasElement | null>(null);
   const taskLayerRef = useRef<HTMLDivElement | null>(null);
   const cursorLayerRef = useRef<HTMLDivElement | null>(null);
-  const objectsRef = useRef(new Map<string, BoardObject>());
+  const objectsRef = useRef(new BoardObjectStore());
   const viewportRef = useRef<BoardViewport>({ x: 0, y: 0, zoom: 1 });
   const sizeRef = useRef({ width: 0, height: 0, ratio: 1 });
   const boardAppearanceRef = useRef({ backgroundType: board.backgroundType, backgroundColor: board.backgroundColor });
@@ -196,9 +231,12 @@ export default function BoardSurface({
   const cursorFrame = useRef(0);
   const lastCursorSentAt = useRef(0);
   const renderFrame = useRef(0);
+  const viewportSaveTimer = useRef(0);
+  const scheduledViewportSignature = useRef("");
   const spacePressed = useRef(false);
   const undoStack = useRef<HistoryEntry[]>([]);
   const redoStack = useRef<HistoryEntry[]>([]);
+  const clientIdRef = useRef("");
   const clipboardObjects = useRef<BoardObject[]>([]);
   const lastPointerScreen = useRef<{ x: number; y: number } | null>(null);
   const selectedIdsRef = useRef(new Set<string>());
@@ -221,11 +259,24 @@ export default function BoardSurface({
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(""), 5300);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+  const [copiedCodeId, setCopiedCodeId] = useState("");
+  const copiedCodeTimer = useRef(0);
+  const [minimapOpen, setMinimapOpen] = useState(false);
+  const minimapRef = useRef<HTMLCanvasElement>(null);
+  const minimapViewportRef = useRef<BoardViewport>({ x: 0, y: 0, zoom: 1 });
+  const minimapDragRef = useRef<BoardViewport | null>(null);
   const [zoomLabel, setZoomLabel] = useState(100);
   const [selectedId, setSelectedId] = useState("");
   const [selectedIds, setSelectedIdsState] = useState<string[]>([]);
   const [taskTextSelectionId, setTaskTextSelectionId] = useState("");
   const [objectRevision, setObjectRevision] = useState(0);
+  const [visibleRichObjectIds, setVisibleRichObjectIds] = useState<string[]>([]);
+  const visibleRichSignature = useRef("");
   const [marquee, setMarquee] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [alignmentGuides, setAlignmentGuides] = useState<AlignmentGuides>({});
   const [snapEnabled, setSnapEnabled] = useState(true);
@@ -245,25 +296,47 @@ export default function BoardSurface({
   const autoSelectedTextObject = useRef("");
   const canEdit = permission === "edit" && !phoneReadOnly;
   const viewportStorageKey = `${VIEWPORT_STORAGE_PREFIX}${board.id}`;
+  const persistViewport = useCallback(() => {
+    window.clearTimeout(viewportSaveTimer.current);
+    try { window.localStorage.setItem(viewportStorageKey, JSON.stringify(viewportRef.current)); } catch { /* Доска работает без localStorage. */ }
+  }, [viewportStorageKey]);
+  const scheduleViewportPersistence = useCallback(() => {
+    const viewport = viewportRef.current;
+    const signature = `${viewport.x}:${viewport.y}:${viewport.zoom}`;
+    if (signature === scheduledViewportSignature.current) return;
+    scheduledViewportSignature.current = signature;
+    window.clearTimeout(viewportSaveTimer.current);
+    viewportSaveTimer.current = window.setTimeout(persistViewport, 140);
+  }, [persistViewport]);
 
   boardAppearanceRef.current = { backgroundType: board.backgroundType, backgroundColor: board.backgroundColor };
 
   useEffect(() => {
     setSnapEnabled(window.localStorage.getItem(SNAP_STORAGE_KEY) !== "off");
+    const storedPenSize = window.localStorage.getItem(PEN_SIZE_STORAGE_KEY);
+    const savedPenSize = Number(storedPenSize);
+    if (storedPenSize !== null && Number.isFinite(savedPenSize)) setPenSize(Math.max(2, Math.min(24, savedPenSize)));
   }, []);
+
+  useEffect(() => () => window.clearTimeout(copiedCodeTimer.current), []);
 
   useEffect(() => {
     try {
       const saved = JSON.parse(window.localStorage.getItem(viewportStorageKey) || "null") as Partial<BoardViewport> | null;
       if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) && Number.isFinite(saved.zoom)) {
-        viewportRef.current = { x: Number(saved.x), y: Number(saved.y), zoom: Math.max(.08, Math.min(8, Number(saved.zoom))) };
+        viewportRef.current = { x: Number(saved.x), y: Number(saved.y), zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Number(saved.zoom))) };
         setZoomLabel(Math.round(viewportRef.current.zoom * 100));
       }
     } catch { /* Повреждённая локальная позиция не мешает открыть доску. */ }
+    const onVisibilityChange = () => { if (document.visibilityState === "hidden") persistViewport(); };
+    window.addEventListener("pagehide", persistViewport);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
-      try { window.localStorage.setItem(viewportStorageKey, JSON.stringify(viewportRef.current)); } catch { /* Доска работает без localStorage. */ }
+      window.removeEventListener("pagehide", persistViewport);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      persistViewport();
     };
-  }, [viewportStorageKey]);
+  }, [persistViewport, viewportStorageKey]);
 
   useEffect(() => {
     if (editorDraft?.kind !== "text" || !editorDraft.objectId) { autoSelectedTextObject.current = ""; return; }
@@ -284,7 +357,7 @@ export default function BoardSurface({
       setTextDefaults({
         color: typeof saved.color === "string" && /^#[a-f\d]{6}$/i.test(saved.color) ? saved.color : board.backgroundColor === BRAND_DARK ? BRAND_LIGHT : BRAND_DARK,
         fontFamily: saved.fontFamily === "mono" || saved.fontFamily === "pribambas" ? saved.fontFamily : "sans",
-        fontSize: Math.max(10, Math.min(160, Number(saved.fontSize) || DEFAULT_TEXT_STYLE.fontSize)),
+        fontSize: Math.max(1, Math.min(160, Number(saved.fontSize) || DEFAULT_TEXT_STYLE.fontSize)),
         fontWeight: saved.fontWeight === 700 ? 700 : 500,
         fontStyle: saved.fontStyle === "italic" ? "italic" : "normal",
         textAlign: saved.textAlign === "center" || saved.textAlign === "right" ? saved.textAlign : "left",
@@ -300,6 +373,7 @@ export default function BoardSurface({
   }, [board.backgroundColor]);
 
   const scheduleRender = useCallback((includeCommitted = true) => {
+    scheduleViewportPersistence();
     window.cancelAnimationFrame(renderFrame.current);
     renderFrame.current = window.requestAnimationFrame(() => {
       const size = sizeRef.current;
@@ -309,6 +383,11 @@ export default function BoardSurface({
         ...size, viewport, background: appearance.backgroundType, backgroundColor: appearance.backgroundColor,
         selectedId: selectedRef.current, selectedIds: Array.from(selectedIdsRef.current), pixelRatio: size.ratio,
       };
+      const nextRichObjectIds = objectsRef.current.visible(viewportBounds(viewport, size.width, size.height, 320), RICH_OBJECT_KINDS).map((object) => object.id);
+      const nextRichSignature = nextRichObjectIds.join("\0");
+      if (nextRichSignature !== visibleRichSignature.current) {
+        visibleRichSignature.current = nextRichSignature; setVisibleRichObjectIds(nextRichObjectIds);
+      }
       const background = backgroundRef.current?.getContext("2d");
       if (background) paintBackground(background, options);
       if (includeCommitted) {
@@ -316,13 +395,47 @@ export default function BoardSurface({
         if (committed) {
           committed.setTransform(1, 0, 0, 1, 0, 0);
           committed.clearRect(0, 0, committed.canvas.width, committed.canvas.height);
-          paintObjects(committed, objectsRef.current.values(), options);
+          paintObjects(committed, objectsRef.current.visible(viewportBounds(viewport, size.width, size.height)), { ...options, presorted: true });
         }
+      }
+      const minimap = minimapRef.current?.getContext("2d");
+      if (minimap) {
+        const width = 240; const height = 160;
+        const visible = { minX: -viewport.x / viewport.zoom, minY: -viewport.y / viewport.zoom,
+          maxX: (size.width - viewport.x) / viewport.zoom, maxY: (size.height - viewport.y) / viewport.zoom };
+        const content = objectBounds(objectsRef.current.values()) ?? visible;
+        const bounds = { minX: Math.min(content.minX, visible.minX), minY: Math.min(content.minY, visible.minY),
+          maxX: Math.max(content.maxX, visible.maxX), maxY: Math.max(content.maxY, visible.maxY) };
+        const scale = Math.min((width - 24) / Math.max(1, bounds.maxX - bounds.minX), (height - 24) / Math.max(1, bounds.maxY - bounds.minY));
+        const mapViewport = minimapDragRef.current ?? { x: width / 2 - (bounds.minX + bounds.maxX) / 2 * scale,
+          y: height / 2 - (bounds.minY + bounds.maxY) / 2 * scale, zoom: scale };
+        minimapViewportRef.current = mapViewport;
+        minimap.setTransform(1, 0, 0, 1, 0, 0);
+        minimap.clearRect(0, 0, width * 2, height * 2);
+        minimap.fillStyle = appearance.backgroundColor; minimap.fillRect(0, 0, width * 2, height * 2);
+        const mapObjects = objectsRef.current.sorted().map((object) => object.kind === "task"
+          ? { ...object, payload: { ...object.payload, html: "" } } as BoardObject : object);
+        paintObjects(minimap, mapObjects, { ...options, width, height, viewport: mapViewport, selectedId: undefined, selectedIds: [], pixelRatio: 2, presorted: true });
+        minimap.setTransform(2, 0, 0, 2, 0, 0);
+        const left = visible.minX * mapViewport.zoom + mapViewport.x; const top = visible.minY * mapViewport.zoom + mapViewport.y;
+        const viewWidth = (visible.maxX - visible.minX) * mapViewport.zoom; const viewHeight = (visible.maxY - visible.minY) * mapViewport.zoom;
+        minimap.fillStyle = "rgba(47,111,237,.12)"; minimap.fillRect(left, top, viewWidth, viewHeight);
+        minimap.strokeStyle = "#2f6fed"; minimap.lineWidth = 1.5; minimap.strokeRect(left, top, viewWidth, viewHeight);
       }
       syncTaskDom();
       syncRemoteCursorDom();
     });
-  }, []);
+  }, [scheduleViewportPersistence]);
+
+  useEffect(() => { if (minimapOpen) scheduleRender(); }, [minimapOpen, scheduleRender]);
+
+  function navigateMinimap(event: React.PointerEvent<HTMLCanvasElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const point = screenToWorld({ x: (event.clientX - rect.left) * 240 / rect.width, y: (event.clientY - rect.top) * 160 / rect.height }, minimapDragRef.current ?? minimapViewportRef.current);
+    const viewport = viewportRef.current; const size = sizeRef.current;
+    viewportRef.current = { ...viewport, x: size.width / 2 - point.x * viewport.zoom, y: size.height / 2 - point.y * viewport.zoom };
+    scheduleRender();
+  }
 
   const paintLiveStroke = useCallback(() => {
     const canvas = liveRef.current; if (!canvas) return;
@@ -405,7 +518,7 @@ export default function BoardSurface({
       const pageScale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? Math.max(1, sizeRef.current.height) : 1;
       const deltaX = event.deltaX * pageScale; const deltaY = event.deltaY * pageScale;
       if (event.ctrlKey || event.metaKey) {
-        viewportRef.current = zoomAt(viewportRef.current, point, Math.exp(-deltaY * .008));
+        viewportRef.current = zoomAt(viewportRef.current, point, wheelZoomFactor(deltaY, event.shiftKey));
         setZoomLabel(Math.round(viewportRef.current.zoom * 100));
       } else {
         viewportRef.current = {
@@ -449,12 +562,16 @@ export default function BoardSurface({
     const storedClientId = window.sessionStorage.getItem("egege-board-client-id") ?? "";
     const clientId = /^cli_[a-f0-9]{24}$/.test(storedClientId) ? storedClientId : `cli_${randomHex(12)}`;
     window.sessionStorage.setItem("egege-board-client-id", clientId);
+    clientIdRef.current = clientId;
     const persistence = new BoardPersistence(board.id, shareToken, clientId, (state, pending) => {
       setSaveState(state); setPendingCount(pending);
     });
     persistenceRef.current = persistence;
-    persistence.load().then(({ objects }) => {
-      objectsRef.current = new Map(objects.map((object) => [object.id, object]));
+    Promise.all([persistence.load(), loadBoardHistory(board.id, clientId).catch(() => ({ undo: [], redo: [] }))]).then(([{ objects }, history]) => {
+      objectsRef.current = new BoardObjectStore(objects);
+      undoStack.current = history.undo.map(historyEntry);
+      redoStack.current = history.redo.map(historyEntry);
+      updateHistory(false);
       setLoading(false); scheduleRender(); void hydrateExistingTaskImages(objects);
     }).catch((error) => { setLoading(false); setMessage(error instanceof Error ? error.message : "Не удалось загрузить доску"); });
     const online = () => { setSaveState("saving"); void persistence.flush(); };
@@ -502,10 +619,10 @@ export default function BoardSurface({
     if (!valid.includes(taskTextSelectionId)) setTaskTextSelectionId("");
   }
   function syncTaskDom() {
-    const layer = taskLayerRef.current; if (!layer) return; const viewport = viewportRef.current;
-    for (const node of layer.querySelectorAll<HTMLElement>("[data-board-task-id]")) {
-      const object = objectsRef.current.get(node.dataset.boardTaskId ?? ""); if (!object || object.kind !== "task") continue;
-      const payload = object.payload as TaskPayload; node.style.width = `${payload.width}px`; node.style.height = `${payload.height}px`;
+    const layer = shellRef.current; if (!layer) return; const viewport = viewportRef.current;
+    for (const node of layer.querySelectorAll<HTMLElement>("[data-board-task-id], [data-board-code-id]")) {
+      const object = objectsRef.current.get(node.dataset.boardTaskId ?? node.dataset.boardCodeId ?? ""); if (!object || (object.kind !== "task" && object.kind !== "code")) continue;
+      const payload = object.payload as TaskPayload | CodePayload; node.style.width = `${payload.width}px`; node.style.height = `${object.kind === "code" ? 48 : payload.height}px`;
       node.style.setProperty("--board-task-font-scale", String(payload.fontScale ?? 1));
       node.style.transform = `translate(${payload.x * viewport.zoom + viewport.x}px, ${payload.y * viewport.zoom + viewport.y}px) scale(${viewport.zoom})`;
     }
@@ -524,7 +641,26 @@ export default function BoardSurface({
     if (nextSelection !== selectedRef.current) setSelection(nextSelection);
     setTool(nextTool);
   }
-  function updateHistory() { setHistoryState({ undo: undoStack.current.length, redo: redoStack.current.length }); }
+  function changePenSize(next: number) {
+    const value = Math.max(2, Math.min(24, next)); setPenSize(value);
+    try { window.localStorage.setItem(PEN_SIZE_STORAGE_KEY, String(value)); } catch { /* Перо работает без localStorage. */ }
+  }
+  function historyEntry(record: BoardHistoryRecord): HistoryEntry {
+    if (record.kind === "create") return {
+      record, undo: () => applyDelete(record.object.id, false), redo: () => applyCreate(cloneObject(record.object), false),
+    };
+    if (record.kind === "update") return {
+      record, undo: () => applyUpdate(record.after, cloneObject(record.before), false), redo: () => applyUpdate(record.before, cloneObject(record.after), false),
+    };
+    return { record, undo: () => applyCreate(cloneObject(record.object), false), redo: () => applyDelete(record.object.id, false) };
+  }
+  function updateHistory(save = true) {
+    undoStack.current = undoStack.current.slice(-40); redoStack.current = redoStack.current.slice(-40);
+    setHistoryState({ undo: undoStack.current.length, redo: redoStack.current.length });
+    if (save && clientIdRef.current) void saveBoardHistory(board.id, clientIdRef.current, {
+      undo: undoStack.current.map((entry) => entry.record), redo: redoStack.current.map((entry) => entry.record),
+    }).catch(() => { /* Отмена продолжает работать в текущей вкладке без IndexedDB. */ });
+  }
   function submit(mutation: BoardMutation) { collaborationRef.current?.sendOperation(mutation); void persistenceRef.current?.submit(mutation); }
 
   function applyCreate(object: BoardObject, record = true) {
@@ -532,17 +668,17 @@ export default function BoardSurface({
     setObjectRevision((value) => value + 1);
     submit({ id: newOperationId(), type: "create", object });
     if (record) {
-      undoStack.current.push({ undo: () => applyDelete(object.id, false), redo: () => applyCreate(cloneObject(object), false) });
+      undoStack.current.push(historyEntry({ kind: "create", object: cloneObject(object) }));
       redoStack.current = []; updateHistory();
     }
   }
 
   function applyUpdate(before: BoardObject, after: BoardObject, record = true) {
     objectsRef.current.set(after.id, after); scheduleRender();
-    if (before.kind === "task" || after.kind === "task") setObjectRevision((value) => value + 1);
+    setObjectRevision((value) => value + 1);
     submit({ id: newOperationId(), type: "update", objectId: after.id, object: after });
     if (record) {
-      undoStack.current.push({ undo: () => applyUpdate(after, before, false), redo: () => applyUpdate(before, after, false) });
+      undoStack.current.push(historyEntry({ kind: "update", before: cloneObject(before), after: cloneObject(after) }));
       redoStack.current = []; updateHistory();
     }
   }
@@ -553,14 +689,14 @@ export default function BoardSurface({
     setObjectRevision((value) => value + 1);
     submit({ id: newOperationId(), type: "delete", objectId: id });
     if (record) {
-      undoStack.current.push({ undo: () => applyCreate(cloneObject(object), false), redo: () => applyDelete(id, false) });
+      undoStack.current.push(historyEntry({ kind: "delete", object: cloneObject(object) }));
       redoStack.current = []; updateHistory();
     }
   }
 
   function makeObject(kind: BoardObjectKind, payload: BoardObject["payload"], bounds: BoardBounds) {
     const now = Math.floor(Date.now() / 1000);
-    const zIndex = Math.max(0, ...Array.from(objectsRef.current.values(), (object) => object.zIndex)) + 1;
+    const zIndex = objectsRef.current.maxZIndex() + 1;
     return { id: newObjectId(), kind, version: 1, zIndex, ...bounds, payload, createdBy: participantName, createdAt: now, updatedAt: now } as BoardObject;
   }
 
@@ -596,12 +732,15 @@ export default function BoardSurface({
   function worldPoint(event: PointerEvent | React.PointerEvent) { return screenToWorld(localPoint(event), viewportRef.current); }
 
   function hitObject(x: number, y: number) {
-    return Array.from(objectsRef.current.values()).sort((a, b) => b.zIndex - a.zIndex || b.createdAt - a.createdAt).find((object) => objectHitTest(object, x, y, viewportRef.current.zoom));
+    const padding = 8 / Math.max(.05, viewportRef.current.zoom);
+    return objectsRef.current.topFirst({ minX: x - padding, minY: y - padding, maxX: x + padding, maxY: y + padding })
+      .find((object) => objectHitTest(object, x, y, viewportRef.current.zoom));
   }
 
   function eraseAt(x: number, y: number) {
     const radius = 14 / viewportRef.current.zoom;
-    const hit = Array.from(objectsRef.current.values()).sort((a, b) => b.zIndex - a.zIndex || b.createdAt - a.createdAt).find((object) => eraserCanHit(object, eraserMode) && eraserHitsObject(object, x, y, radius));
+    const hit = objectsRef.current.topFirst({ minX: x - radius, minY: y - radius, maxX: x + radius, maxY: y + radius })
+      .find((object) => eraserCanHit(object, eraserMode) && eraserHitsObject(object, x, y, radius));
     if (!hit) return;
     if (eraserMode === "object" || eraserMode === "stroke") { applyDelete(hit.id); return; }
     const payload = hit.payload as StrokePayload;
@@ -620,7 +759,8 @@ export default function BoardSurface({
 
   function eraseAreaPath(eraserPoints: Array<{ x: number; y: number }>) {
     const radius = 14 / viewportRef.current.zoom; if (!eraserPoints.length) return;
-    const strokes = Array.from(objectsRef.current.values()).filter((object) => object.kind === "stroke");
+    const xs = eraserPoints.map((point) => point.x); const ys = eraserPoints.map((point) => point.y);
+    const strokes = objectsRef.current.visible({ minX: Math.min(...xs) - radius, minY: Math.min(...ys) - radius, maxX: Math.max(...xs) + radius, maxY: Math.max(...ys) + radius }, new Set<BoardObjectKind>(["stroke"]));
     for (const stroke of strokes) {
       const payload = stroke.payload as StrokePayload;
       if (!payload.points.some((point) => eraserPointHitsPath(point, eraserPoints, radius))) continue;
@@ -697,6 +837,11 @@ export default function BoardSurface({
     const object = selectedRef.current ? objectsRef.current.get(selectedRef.current) : null;
     if (!object || object.kind !== "text") return;
     const before = cloneObject(object); const after = cloneObject(object); const payload = after.payload as TextPayload;
+    if (patch.fontSize !== undefined) {
+      const previousSize = Math.max(payload.fontSize, ...(payload.formats ?? []).map((format) => format.fontSize ?? 0));
+      const delta = patch.fontSize - previousSize;
+      payload.formats = (payload.formats ?? []).map((format) => format.fontSize === undefined ? format : { ...format, fontSize: Math.max(1, Math.min(160, format.fontSize + delta)) });
+    }
     Object.assign(payload, patch);
     const nextStyle: TextStyleValues = { color: payload.color, fontFamily: payload.fontFamily ?? "sans", fontSize: payload.fontSize, fontWeight: payload.fontWeight ?? 500, fontStyle: payload.fontStyle ?? "normal", textAlign: payload.textAlign ?? "left" };
     rememberTextStyle(nextStyle);
@@ -721,10 +866,20 @@ export default function BoardSurface({
   }
 
   function changeTaskFont(objectId: string, delta: number) {
-    const object = objectsRef.current.get(objectId); if (!object || object.kind !== "task") return;
-    const before = cloneObject(object); const after = cloneObject(object); const payload = after.payload as TaskPayload;
-    payload.fontScale = Math.max(.7, Math.min(2.4, Math.round(((payload.fontScale ?? 1) + delta) * 10) / 10));
+    if (!canEdit) return;
+    const object = objectsRef.current.get(objectId); if (!object || (object.kind !== "task" && object.kind !== "code")) return;
+    const before = cloneObject(object); const after = cloneObject(object); const payload = after.payload as TaskPayload | CodePayload;
+    payload.fontScale = Math.max(.7, Math.min(10, Math.round(((payload.fontScale ?? 1) + delta) * 10) / 10));
     applyUpdate(before, after);
+  }
+
+  async function copyCode(object: BoardObject) {
+    try {
+      await navigator.clipboard.writeText((object.payload as CodePayload).code);
+      setCopiedCodeId(object.id); setMessage("Код скопирован");
+      window.clearTimeout(copiedCodeTimer.current);
+      copiedCodeTimer.current = window.setTimeout(() => setCopiedCodeId(""), 2000);
+    } catch { setMessage("Не удалось скопировать код"); }
   }
 
   function toggleTaskAnswer(objectId: string) {
@@ -769,23 +924,24 @@ export default function BoardSurface({
   async function insertTask() {
     const id = taskSearch.trim(); if (!id || taskSearching) return; setTaskSearching(true);
     try {
-      const response = await fetch(`/api/boards/tasks?id=${encodeURIComponent(id)}`); const body = await response.json() as { task?: { id: string; number: number; note: string; text: string; html: string; images: string[]; answer: string }; error?: string };
+      const response = await fetch(`/api/boards/tasks?id=${encodeURIComponent(id)}`); const body = await response.json() as { task?: { id: string; number: number; note: string; text: string; html: string; images: string[]; files: Array<{ name: string; href: string; meta?: string }>; answer: string }; error?: string };
       if (!response.ok || !body.task) throw new Error(body.error || "Задание не найдено");
-      const width = 720; const lineCount = Math.max(6, Math.ceil(body.task.text.length / 86)); const imageHeight = Math.min(360, (body.task.images?.length ?? 0) * 240); const tableHeight = /<table\b/i.test(body.task.html) ? 260 : 0; const height = Math.min(1080, 100 + lineCount * 23 + imageHeight + tableHeight); const size = sizeRef.current; const world = screenToWorld({ x: size.width / 2 - width / 2, y: size.height / 2 - Math.min(height, size.height - 120) / 2 }, viewportRef.current);
-      const object = createObject("task", { taskId: body.task.id, number: body.task.number, note: body.task.note, text: body.task.text, html: body.task.html, images: body.task.images ?? [], answer: body.task.answer, fontScale: 1, x: world.x, y: world.y, width, height }, { minX: world.x, minY: world.y, maxX: world.x + width, maxY: world.y + height });
+      const width = 720; const lineCount = Math.max(6, Math.ceil(body.task.text.length / 86)); const imageHeight = Math.min(360, (body.task.images?.length ?? 0) * 240); const tableHeight = /<table\b/i.test(body.task.html) ? 260 : 0; const fileHeight = body.task.files?.length ? 82 : 0; const height = Math.min(1080, 100 + lineCount * 23 + imageHeight + tableHeight + fileHeight); const size = sizeRef.current; const world = screenToWorld({ x: size.width / 2 - width / 2, y: size.height / 2 - Math.min(height, size.height - 120) / 2 }, viewportRef.current);
+      const object = createObject("task", { taskId: body.task.id, number: body.task.number, note: body.task.note, text: body.task.text, html: body.task.html, images: body.task.images ?? [], files: body.task.files ?? [], answer: body.task.answer, fontScale: 1, x: world.x, y: world.y, width, height }, { minX: world.x, minY: world.y, maxX: world.x + width, maxY: world.y + height });
       setSelection(object.id); setTool("select"); setTaskSearch(""); setTaskSearchOpen(false);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Задание не найдено"); } finally { setTaskSearching(false); }
   }
 
   async function hydrateExistingTaskImages(objects: BoardObject[]) {
     if (permission !== "edit") return;
-    const tasks = objects.filter((object) => object.kind === "task" && (!(object.payload as TaskPayload).html || !(object.payload as TaskPayload).images?.length || !(object.payload as TaskPayload).answer || !(object.payload as TaskPayload).fontScale));
+    const tasks = objects.filter((object) => object.kind === "task" && (!(object.payload as TaskPayload).html || !(object.payload as TaskPayload).images?.length || !(object.payload as TaskPayload).answer || !(object.payload as TaskPayload).fontScale || (object.payload as TaskPayload).files === undefined));
     await Promise.all(tasks.map(async (object) => {
       try {
-        const payload = object.payload as TaskPayload; const response = await fetch(`/api/boards/tasks?id=${encodeURIComponent(payload.taskId)}`);
-        const body = await response.json() as { task?: { html?: string; images?: string[]; answer?: string } }; if (!response.ok || !body.task) return;
+        const payload = object.payload as TaskPayload; const response = await fetch(`/api/boards/tasks?id=${encodeURIComponent(payload.taskId)}&number=${payload.number}`);
+        const body = await response.json() as { task?: { html?: string; images?: string[]; files?: Array<{ name: string; href: string; meta?: string }>; answer?: string } }; if (!response.ok || !body.task) return;
         const current = objectsRef.current.get(object.id); if (!current || current.version !== object.version) return;
-        const after = cloneObject(current); const taskPayload = after.payload as TaskPayload; taskPayload.html = body.task.html ?? taskPayload.html; taskPayload.images = body.task.images ?? taskPayload.images; taskPayload.answer = body.task.answer ?? taskPayload.answer; taskPayload.fontScale ??= 1;
+        const after = cloneObject(current); const taskPayload = after.payload as TaskPayload; const needsFileSpace = taskPayload.files === undefined && Boolean(body.task.files?.length); taskPayload.html = body.task.html ?? taskPayload.html; taskPayload.images = body.task.images ?? taskPayload.images; taskPayload.files = body.task.files ?? taskPayload.files ?? []; taskPayload.answer = body.task.answer ?? taskPayload.answer; taskPayload.fontScale ??= 1;
+        if (needsFileSpace) { taskPayload.height = Math.min(8000, taskPayload.height + 82); after.maxY = taskPayload.y + taskPayload.height; }
         if (taskPayload.html && /<table\b/i.test(taskPayload.html) && taskPayload.height < 600) { taskPayload.height = 600; after.maxY = taskPayload.y + taskPayload.height; }
         applyUpdate(current, after, false);
       } catch { /* Старая карточка остаётся доступной, даже если изображение временно не загрузилось. */ }
@@ -819,12 +975,6 @@ export default function BoardSurface({
       return;
     }
     const point = localPoint(event); const world = worldPoint(event);
-    const orderedTargets = Array.from(objectsRef.current.values()).sort((a, b) => b.zIndex - a.zIndex);
-    const copyTarget = orderedTargets.find((object) => codeCopyButtonAt(object, world.x, world.y));
-    if (copyTarget?.kind === "code") {
-      void navigator.clipboard.writeText((copyTarget.payload as CodePayload).code).then(() => setMessage("Код скопирован"));
-      setSelection(copyTarget.id); event.preventDefault(); return;
-    }
     if (backgroundOpen) setBackgroundOpen(false);
     if (tool !== "select" && selectedRef.current) setSelection("");
     const pan = tool === "pan" || spacePressed.current || event.button === 1 || event.button === 2;
@@ -905,9 +1055,10 @@ export default function BoardSurface({
         paintLiveStroke(); event.preventDefault(); return;
       }
       recognizedShape.current = null; recognizedBaseShape.current = null; recognizedAtPoint.current = null;
-      const events = typeof event.nativeEvent.getCoalescedEvents === "function" ? event.nativeEvent.getCoalescedEvents() : [event.nativeEvent];
+      const coalesced = event.nativeEvent.getCoalescedEvents?.() ?? [];
+      const events = coalesced.length ? coalesced : [event.nativeEvent];
       for (const sample of events) {
-        const point = worldPoint(sample); penEngine.current.add({ ...point, pressure: sample.pressure, time: sample.timeStamp, pointerType: sample.pointerType });
+        const point = worldPoint(sample); penEngine.current.add({ ...point, pressure: sample.pressure, time: sample.timeStamp, pointerType: sample.pointerType }, viewportRef.current.zoom);
       }
       const points = penEngine.current.value();
       if (points.length - lastStrokePointSent.current >= 3) {
@@ -923,7 +1074,10 @@ export default function BoardSurface({
         const movedBounds = objectBounds(session.originals.map((object) => translated(object, dx, dy)));
         if (movedBounds) {
           const movingIds = new Set(session.originals.map((object) => object.id));
-          const snapped = snapBounds(movedBounds, Array.from(objectsRef.current.values()).filter((object) => !movingIds.has(object.id)), 8 / viewportRef.current.zoom);
+          const snapThreshold = 8 / viewportRef.current.zoom;
+          const nearby = objectsRef.current.visible({ minX: movedBounds.minX - snapThreshold, minY: movedBounds.minY - snapThreshold, maxX: movedBounds.maxX + snapThreshold, maxY: movedBounds.maxY + snapThreshold })
+            .filter((object) => !movingIds.has(object.id));
+          const snapped = snapBounds(movedBounds, nearby, snapThreshold);
           dx += snapped.dx; dy += snapped.dy; setAlignmentGuides(snapped.guides);
         }
       } else setAlignmentGuides({});
@@ -932,7 +1086,7 @@ export default function BoardSurface({
       const point = localPoint(event); const world = worldPoint(event); session.currentX = world.x; session.currentY = world.y;
       const minX = Math.min(session.startX, world.x); const minY = Math.min(session.startY, world.y); const maxX = Math.max(session.startX, world.x); const maxY = Math.max(session.startY, world.y);
       const selectionBounds = { minX, minY, maxX, maxY };
-      const hits = Array.from(objectsRef.current.values()).filter((object) => objectIntersectsSelectionBox(object, selectionBounds)).map((object) => object.id);
+      const hits = objectsRef.current.visible(selectionBounds).filter((object) => objectIntersectsSelectionBox(object, selectionBounds)).map((object) => object.id);
       setSelections(session.additive ? [...session.initialIds, ...hits] : hits);
       const start = worldToScreen({ x: session.startX, y: session.startY }, viewportRef.current); setMarquee({ left: Math.min(start.x, point.x), top: Math.min(start.y, point.y), width: Math.abs(point.x - start.x), height: Math.abs(point.y - start.y) });
     } else if (session.type === "text") {
@@ -1002,7 +1156,7 @@ export default function BoardSurface({
       if (!object || tooSmall) {
         objectsRef.current.delete(session.objectId); scheduleRender();
       } else {
-        applyCreate(object); setSelection(object.id); setTool("select");
+        applyCreate(object); setSelection("");
       }
     }
     pointerSession.current = null;
@@ -1029,10 +1183,8 @@ export default function BoardSurface({
       try {
         if (single?.kind === "image" && "ClipboardItem" in window) {
           const source = (single.payload as { src: string }).src;
-          const response = await fetch(`${source}${shareToken ? `?share=${encodeURIComponent(shareToken)}` : ""}`);
-          if (!response.ok) throw new Error("image-fetch-failed");
-          const blob = await response.blob();
-          await navigator.clipboard.write([new ClipboardItem({ [blob.type || "image/png"]: blob })]);
+          const png = imageResponseAsPng(fetch(`${source}${shareToken ? `?share=${encodeURIComponent(shareToken)}` : ""}`));
+          await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
           setMessage("Изображение скопировано");
           return;
         }
@@ -1114,10 +1266,13 @@ export default function BoardSurface({
     ? objectsRef.current.get(selectedId)!.payload as FilePayload
     : null;
   const selectedTextValues: TextStyleValues | null = selectedText ? {
-    color: selectedText.color, fontFamily: selectedText.fontFamily ?? "sans", fontSize: selectedText.fontSize,
+    color: selectedText.color, fontFamily: selectedText.fontFamily ?? "sans", fontSize: Math.max(selectedText.fontSize, ...(selectedText.formats ?? []).map((format) => format.fontSize ?? 0)),
     fontWeight: selectedText.fontWeight ?? 500, fontStyle: selectedText.fontStyle ?? "normal", textAlign: selectedText.textAlign ?? "left",
   } : null;
   const textDraft = editorDraft?.kind === "text" ? editorDraft : null;
+  const draftSelectionStart = textEditorRef.current?.selectionStart ?? 0;
+  const draftSelectionEnd = textEditorRef.current?.selectionEnd ?? 0;
+  const draftSelectionFormat = textDraft && draftSelectionStart !== draftSelectionEnd ? [...textDraft.formats].reverse().find((format) => format.start <= draftSelectionStart && format.end >= draftSelectionEnd && format.fontSize) : undefined;
   const measuredTextDraft = textDraft ? autoTextSize(textDraft.value || "Введите текст", textDraft) : null;
   const textDraftWidth = textDraft ? textDraft.autoWidth ? measuredTextDraft!.width : textDraft.width : 0;
   const textDraftHeight = textDraft ? textDraft.autoWidth ? measuredTextDraft!.height : Math.max(textDraft.height, Math.max(1, textDraft.value.split("\n").length) * textDraft.fontSize * 1.3) : 0;
@@ -1129,7 +1284,9 @@ export default function BoardSurface({
     width: textDraftWidth * viewportRef.current.zoom,
     height: textDraftHeight * viewportRef.current.zoom,
   } : null;
-  const taskObjects = Array.from(objectsRef.current.values()).filter((object) => object.kind === "task" && Boolean((object.payload as TaskPayload).html)).sort((a, b) => a.zIndex - b.zIndex);
+  const visibleRichObjects = visibleRichObjectIds.map((id) => objectsRef.current.get(id)).filter((object): object is BoardObject => Boolean(object));
+  const taskObjects = visibleRichObjects.filter((object) => object.kind === "task" && Boolean((object.payload as TaskPayload).html));
+  const codeObjects = visibleRichObjects.filter((object) => object.kind === "code");
   const ActiveShapeIcon = shapeTool === "ellipse" ? Circle : shapeTool === "star" ? Star : Square;
   void objectRevision;
 
@@ -1142,7 +1299,7 @@ export default function BoardSurface({
       <canvas ref={committedRef} className="board-canvas board-committed-canvas" />
       <canvas ref={liveRef} className="board-canvas board-live-canvas" />
       <div ref={taskLayerRef} className="board-task-rich-layer" data-theme={board.backgroundColor === BRAND_DARK ? "dark" : "light"}>
-        {taskObjects.map((object) => { const payload = object.payload as TaskPayload; const answerOpen = taskAnswersOpen.has(object.id); return <article className={`board-task-rich-card task-item ${answerOpen ? "is-answer-open" : ""} ${taskTextSelectionId === object.id ? "is-text-selecting" : ""}`} data-board-task-id={object.id} data-task-number={payload.number} key={`${object.id}:${object.version}:${objectRevision}`} onPointerDown={taskTextSelectionId === object.id ? (event) => event.stopPropagation() : undefined}>
+        {taskObjects.map((object) => { const payload = object.payload as TaskPayload; const answerOpen = taskAnswersOpen.has(object.id); return <article className={`board-task-rich-card task-item ${answerOpen ? "is-answer-open" : ""} ${taskTextSelectionId === object.id ? "is-text-selecting" : ""}`} data-board-task-id={object.id} data-task-number={payload.number} key={object.id} style={{ width: payload.width, height: payload.height, transform: `translate(${payload.x * viewportRef.current.zoom + viewportRef.current.x}px, ${payload.y * viewportRef.current.zoom + viewportRef.current.y}px) scale(${viewportRef.current.zoom})`, "--board-task-font-scale": payload.fontScale ?? 1 } as React.CSSProperties} onPointerDown={taskTextSelectionId === object.id ? (event) => event.stopPropagation() : undefined}>
           <div className="task-heading-row">
             <span className="task-number-badge">{payload.number}</span>
             <div><p className="task-primary-source">{payload.note || "База КЕГЭ"}</p><div className="task-meta"><span className="task-id">ID {payload.taskId}</span></div></div>
@@ -1153,9 +1310,25 @@ export default function BoardSurface({
             </div>
           </div>
           <RichHtml className="task-body task-html board-task-rich-html" html={payload.html ?? ""} />
+          {Boolean(payload.files?.length) && <div className="task-files board-task-files">
+            {payload.files?.map((file) => <a className="file-link" href={taskDownloadHref(file.href, file.name, payload.taskId)} download={taskDownloadName(file.name, payload.taskId)} title={file.name} onPointerDown={(event) => event.stopPropagation()} key={file.href}>
+              <span className="file-icon"><Download aria-hidden="true" /></span>
+              <span><b>{file.name}</b><small>{file.meta || "Файл к заданию"}</small></span>
+            </a>)}
+          </div>}
           {payload.answer && <><button className={`answer-toggle ${answerOpen ? "is-open" : ""}`} onPointerDown={(event) => event.stopPropagation()} onClick={() => toggleTaskAnswer(object.id)} aria-expanded={answerOpen}>{answerOpen ? "Скрыть ответ" : "Показать ответ"}</button>
           <div className={`answer-reveal ${answerOpen ? "is-open" : ""}`}><div><div className="answer-inner"><p className="answer-label">Ответ</p><p className="answer-value">{payload.answer.replace(/\\n/g, "\n")}</p></div></div></div></>}
         </article>; })}
+      </div>
+      <div className="board-code-header-layer">
+        {codeObjects.map((object) => { const payload = object.payload as CodePayload; return <div key={object.id} className="board-code-header" data-board-code-id={object.id} style={{ width: payload.width, transform: `translate(${payload.x * viewportRef.current.zoom + viewportRef.current.x}px, ${payload.y * viewportRef.current.zoom + viewportRef.current.y}px) scale(${viewportRef.current.zoom})` }}>
+          <div className="board-task-font-controls board-code-font-controls" onPointerDown={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()}>
+            <button disabled={!canEdit} onClick={() => changeTaskFont(object.id, -.1)} aria-label="Уменьшить шрифт кода"><Minus /></button>
+            <span>{Math.round((payload.fontScale ?? 1) * 100)}%</span>
+            <button disabled={!canEdit} onClick={() => changeTaskFont(object.id, .1)} aria-label="Увеличить шрифт кода"><Plus /></button>
+          </div>
+          <button className="board-code-copy" onPointerDown={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()} onClick={() => void copyCode(object)} aria-label="Копировать код" title="Копировать код">{copiedCodeId === object.id ? <Check /> : <Copy />}</button>
+        </div>; })}
       </div>
       <div ref={eraserCursorRef} className="board-eraser-cursor" aria-hidden="true" />
       {marquee && <div className="board-selection-marquee" style={marquee} aria-hidden="true" />}
@@ -1194,9 +1367,9 @@ export default function BoardSurface({
       {!editorDraft && selectedIds.length === 1 && selectedId && <div className="board-layer-actions" onPointerDown={(event) => event.stopPropagation()}><span><Layers />Слои</span><button onClick={() => moveLayer("back")} title="На задний план" aria-label="На задний план"><ChevronsDown /><small>В самый низ</small></button><button onClick={() => moveLayer("backward")} title="На слой ниже" aria-label="На слой ниже"><ArrowDown /><small>Ниже</small></button><button onClick={() => moveLayer("forward")} title="На слой выше" aria-label="На слой выше"><ArrowUp /><small>Выше</small></button><button onClick={() => moveLayer("front")} title="На передний план" aria-label="На передний план"><ChevronsUp /><small>В самый верх</small></button></div>}
       {pasteSuggestion && <div className="board-paste-suggestion" onPointerDown={(event) => event.stopPropagation()}><span>Похоже на код</span><button onClick={() => { addCode(pasteSuggestion.x, pasteSuggestion.y, pasteSuggestion.text); setPasteSuggestion(null); }}>Вставить как код</button><button onClick={() => { addText(pasteSuggestion.x, pasteSuggestion.y, pasteSuggestion.text); setPasteSuggestion(null); }}>Как текст</button></div>}
       {textDraft && textDraftScreen && <div className={`board-inline-text ${textDraft.autoWidth ? "is-auto-width" : ""} ${textDraftScreen.top < 110 ? "is-toolbar-below" : ""}`} style={{ left: textDraftScreen.left, top: textDraftScreen.top, width: textDraft.autoWidth ? Math.max(44, textDraftScreen.width) : Math.max(180, textDraftScreen.width), height: Math.max(44, textDraftScreen.height, textDraftPreviewHeight * viewportRef.current.zoom) }} onPointerDown={(event) => event.stopPropagation()} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) commitEditor(); }}>
-        <TextFormattingToolbar values={textDraft} onChange={updateTextDraftStyle} />
+        <TextFormattingToolbar values={{ ...textDraft, fontSize: draftSelectionFormat?.fontSize ?? textDraft.fontSize }} onChange={updateTextDraftStyle} />
         <div className="board-inline-text-preview" style={{ background: board.backgroundColor, color: textDraft.color, fontFamily: textDraft.fontFamily === "pribambas" ? '"Pribambas", cursive' : textDraft.fontFamily === "mono" ? "var(--font-geist-mono)" : "var(--font-geist-sans)", fontSize: textDraft.fontSize * viewportRef.current.zoom, fontStyle: textDraft.fontStyle, fontWeight: textDraft.fontWeight, lineHeight: `${textDraftLineSize * 1.3 * viewportRef.current.zoom}px`, textAlign: textDraft.textAlign, whiteSpace: textDraft.autoWidth ? "pre" : "pre-wrap" }} aria-hidden="true">{formattedTextPreview(textDraft.value, textDraft.formats, viewportRef.current.zoom)}</div>
-        <textarea ref={textEditorRef} autoFocus wrap={textDraft.autoWidth ? "off" : "soft"} value={textDraft.value} onChange={(event) => setEditorDraft((current) => current?.kind === "text" ? { ...current, value: event.target.value.slice(0, 20_000), formats: shiftTextFormats(current.value, event.target.value.slice(0, 20_000), current.formats) } : current)} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); setEditorDraft(null); } else if ((event.metaKey || event.ctrlKey) && event.key === "Enter") { event.preventDefault(); commitEditor(); } }} placeholder="Введите текст" aria-label="Текст на доске" style={{ background: "transparent", caretColor: textDraft.color, color: "transparent", fontFamily: textDraft.fontFamily === "pribambas" ? '"Pribambas", cursive' : textDraft.fontFamily === "mono" ? "var(--font-geist-mono)" : "var(--font-geist-sans)", fontSize: textDraft.fontSize * viewportRef.current.zoom, fontStyle: textDraft.fontStyle, fontWeight: textDraft.fontWeight, lineHeight: 1.3, textAlign: textDraft.textAlign }} />
+        <textarea ref={textEditorRef} onSelect={() => setSelectionRevision((value) => value + 1)} autoFocus wrap={textDraft.autoWidth ? "off" : "soft"} value={textDraft.value} onChange={(event) => setEditorDraft((current) => current?.kind === "text" ? { ...current, value: event.target.value.slice(0, 20_000), formats: shiftTextFormats(current.value, event.target.value.slice(0, 20_000), current.formats) } : current)} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); setEditorDraft(null); } else if ((event.metaKey || event.ctrlKey) && event.key === "Enter") { event.preventDefault(); commitEditor(); } }} placeholder="Введите текст" aria-label="Текст на доске" style={{ background: "transparent", caretColor: textDraft.color, color: "transparent", fontFamily: textDraft.fontFamily === "pribambas" ? '"Pribambas", cursive' : textDraft.fontFamily === "mono" ? "var(--font-geist-mono)" : "var(--font-geist-sans)", fontSize: textDraft.fontSize * viewportRef.current.zoom, fontStyle: textDraft.fontStyle, fontWeight: textDraft.fontWeight, lineHeight: 1.3, textAlign: textDraft.textAlign }} />
       </div>}
       {editorDraft?.kind === "code" && <div className="board-editor-layer" onPointerDown={(event) => event.stopPropagation()}><form className="board-object-editor" onSubmit={(event) => { event.preventDefault(); commitEditor(); }}><strong>{editorDraft.objectId ? "Изменить код" : "Добавить код"}</strong><select value={editorDraft.language} onChange={(event) => setEditorDraft((current) => current?.kind === "code" ? { ...current, language: event.target.value as CodePayload["language"] } : current)}><option value="python">Python</option><option value="cpp">C++</option><option value="javascript">JavaScript</option><option value="pascal">Pascal</option></select><textarea autoFocus value={editorDraft.value} onChange={(event) => setEditorDraft((current) => current?.kind === "code" ? { ...current, value: event.target.value } : current)} onKeyDown={(event) => { if (event.key !== "Enter" || event.metaKey || event.ctrlKey || event.altKey) return; event.preventDefault(); const textarea = event.currentTarget; const start = textarea.selectionStart; const end = textarea.selectionEnd; const insertion = indentationAfterEnter(editorDraft.value, start, editorDraft.language); const nextValue = `${editorDraft.value.slice(0, start)}${insertion}${editorDraft.value.slice(end)}`; setEditorDraft({ ...editorDraft, value: nextValue }); window.requestAnimationFrame(() => { textarea.selectionStart = textarea.selectionEnd = start + insertion.length; }); }} maxLength={50_000} placeholder={"for i in range(10):\n    print(i)"} /><div><button type="button" onClick={() => setEditorDraft(null)}>Отмена</button><button type="submit" disabled={!editorDraft.value.trim()}>{editorDraft.objectId ? "Сохранить" : "Добавить"}</button></div></form></div>}
       {backgroundOpen && owner && <div className="board-background-menu" onPointerDown={(event) => event.stopPropagation()} onPointerLeave={() => setBackgroundOpen(false)}>
@@ -1207,7 +1380,7 @@ export default function BoardSurface({
       </div>}
       {canEdit && (tool === "pen" || tool === "eraser" || tool === "rectangle" || tool === "ellipse" || tool === "star" || tool === "line" || tool === "arrow") && <div className="board-tool-options" onPointerDown={(event) => event.stopPropagation()}>
         {tool !== "eraser" && <div className="board-colors">{COLORS.map((item) => <button key={item} className={color === item ? "is-active" : ""} style={{ background: item }} onClick={() => setColor(item)} aria-label={`Цвет ${item}`} />)}</div>}
-        {tool === "pen" && <label><span>{penSize} px</span><input type="range" min="2" max="24" value={penSize} onChange={(event) => setPenSize(Number(event.target.value))} /></label>}
+        {tool === "pen" && <label><span>{penSize} px</span><input aria-label="Толщина пера" type="range" min="2" max="24" value={penSize} onChange={(event) => changePenSize(Number(event.target.value))} /></label>}
         {tool === "eraser" && <div className="board-segmented"><button className={eraserMode === "stroke" ? "is-active" : ""} onClick={() => setEraserMode("stroke")} title="Стереть целый рукописный штрих">Штрих</button><button className={eraserMode === "area" ? "is-active" : ""} onClick={() => setEraserMode("area")} title="Стереть часть рукописи">Часть линии</button><button className={eraserMode === "object" ? "is-active" : ""} onClick={() => setEraserMode("object")} title="Удалить изображение, фигуру, текст или код">Объекты</button></div>}
       </div>}
       {saveState !== "saved" && <div className={`board-save-state is-${saveState}`}>{saveState === "saving" ? `Сохраняем${pendingCount ? ` · ${pendingCount}` : ""}` : `Нет связи${pendingCount ? ` · ${pendingCount} в очереди` : ""}`}</div>}
@@ -1217,9 +1390,14 @@ export default function BoardSurface({
       </div>
       <div ref={cursorLayerRef} className="board-cursor-layer" aria-hidden="true">{Object.values(remoteCursors).map((cursor) => <span data-board-cursor-id={cursor.clientId} key={cursor.clientId}><MousePointer2 /><b>{cursor.name}</b></span>)}</div>
       <div className="board-history-controls" onPointerDown={(event) => event.stopPropagation()}><button onClick={undo} disabled={!historyState.undo || !canEdit} title="Отменить"><Undo2 /></button><button onClick={redo} disabled={!historyState.redo || !canEdit} title="Повторить"><Redo2 /></button><i /><button onClick={() => setTaskSearchOpen(true)} disabled={!canEdit} title="Вставить задание" aria-label="Найти задание"><Search /></button><button onClick={() => fileInputRef.current?.click()} disabled={!canEdit} title="Загрузить файл до 15 МБ" aria-label="Загрузить файл"><Upload /></button><button onClick={() => setHelpOpen(true)} title="Справка по доске" aria-label="Открыть справку"><CircleHelp /></button></div>
-      <div className="board-zoom-controls" onPointerDown={(event) => event.stopPropagation()}><button onClick={() => changeZoom(1 / 1.2)} aria-label="Уменьшить"><Minus /></button><button onClick={() => { const size = sizeRef.current; viewportRef.current = { x: size.width / 2, y: size.height / 2, zoom: 1 }; setZoomLabel(100); scheduleRender(); }}>{zoomLabel}%</button><button onClick={() => changeZoom(1.2)} aria-label="Увеличить"><Plus /></button><button onClick={fitContent} aria-label="Показать всё"><Maximize2 /></button></div>
+      {minimapOpen && <section id="board-minimap" className="board-minimap" aria-label="Миникарта доски" onPointerDown={(event) => event.stopPropagation()} onPointerMove={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()} onKeyDown={(event) => { if (event.key === "Escape") setMinimapOpen(false); }}>
+        <header><span>Миникарта</span><button onClick={fitContent} aria-label="Показать всё" title="Показать всё"><Maximize2 size={16} /></button><button onClick={() => setMinimapOpen(false)} aria-label="Закрыть миникарту"><X size={16} /></button></header>
+        <canvas ref={minimapRef} width={480} height={320} aria-label="Обзор доски. Нажмите, чтобы переместиться" onPointerDown={(event) => { event.preventDefault(); minimapDragRef.current = { ...minimapViewportRef.current }; event.currentTarget.setPointerCapture(event.pointerId); navigateMinimap(event); }} onPointerMove={(event) => { if (minimapDragRef.current) navigateMinimap(event); }} onPointerUp={(event) => { minimapDragRef.current = null; event.currentTarget.releasePointerCapture(event.pointerId); scheduleRender(); }} onPointerCancel={() => { minimapDragRef.current = null; scheduleRender(); }} />
+        <p>Нажмите на область, чтобы перейти</p>
+      </section>}
+      <div className="board-zoom-controls" onPointerDown={(event) => event.stopPropagation()}><button onClick={() => changeZoom(1 / 1.2)} aria-label="Уменьшить"><Minus /></button><button onClick={() => { const size = sizeRef.current; viewportRef.current = { x: size.width / 2, y: size.height / 2, zoom: 1 }; setZoomLabel(100); scheduleRender(); }}>{zoomLabel}%</button><button onClick={() => changeZoom(1.2)} aria-label="Увеличить"><Plus /></button><button onClick={() => setMinimapOpen((open) => !open)} className={minimapOpen ? "is-active" : ""} aria-label="Миникарта" title="Миникарта" aria-expanded={minimapOpen} aria-controls="board-minimap"><MapIcon /></button></div>
       {(permission === "view" || phoneReadOnly) && <div className="board-view-badge">{phoneReadOnly && permission === "edit" ? "На телефоне — режим просмотра" : "Режим просмотра"}</div>}
-      {message && <div className="board-toast is-error" onPointerDown={(event) => event.stopPropagation()}>{message}<button type="button" onClick={() => setMessage("")} aria-label="Закрыть уведомление"><X /></button></div>}
+      {message && <div key={message} className="board-toast is-error" role="status" onPointerDown={(event) => event.stopPropagation()}>{message}<button type="button" onClick={() => setMessage("")} aria-label="Закрыть уведомление"><X /></button></div>}
       {taskSearchOpen && <div className="board-task-search-layer" onPointerDown={(event) => { event.stopPropagation(); if (event.target === event.currentTarget) setTaskSearchOpen(false); }}><form className="board-task-search" onSubmit={(event) => { event.preventDefault(); void insertTask(); }}><button type="button" onClick={() => setTaskSearchOpen(false)} aria-label="Закрыть"><X /></button><span>База EGEGE</span><h2>Вставить задание</h2><p>Введите ID задания. Карточку можно двигать, менять её размер и копировать текст.</p><label><Search /><input autoFocus inputMode="numeric" value={taskSearch} onChange={(event) => setTaskSearch(event.target.value.replace(/\D/g, "").slice(0, 20))} placeholder="Например, 31359" /></label><button type="submit" disabled={!taskSearch || taskSearching}>{taskSearching ? "Ищем…" : "Найти и вставить"}</button><small>Enter — вставить</small></form></div>}
       {helpOpen && <BoardHelp onClose={() => setHelpOpen(false)} />}
       <span className="sr-only" aria-live="polite">{selectedId ? "Объект выбран" : ""}</span>

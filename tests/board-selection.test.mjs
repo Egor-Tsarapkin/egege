@@ -98,6 +98,13 @@ test("recognizes held pen strokes as editable geometry", () => {
     ...Array.from({ length: 7 }, (_, i) => ({ x: 0, y: 60 - i * 10 })),
   ];
   assert.equal(recognizeHeldStroke(rectangle)?.kind, "rectangle");
+  const roundedSquareWithGap = [
+    ...Array.from({ length: 9 }, (_, i) => ({ x: 18 + i * 10, y: 3 + (i % 2) })),
+    ...Array.from({ length: 9 }, (_, i) => ({ x: 101 + (i % 2), y: 12 + i * 10 })),
+    ...Array.from({ length: 9 }, (_, i) => ({ x: 92 - i * 10, y: 101 - (i % 2) })),
+    ...Array.from({ length: 8 }, (_, i) => ({ x: 3 + (i % 2), y: 92 - i * 10 })),
+  ];
+  assert.equal(recognizeHeldStroke(roundedSquareWithGap)?.kind, "rectangle");
 });
 
 test("keeps a recognized shape while held and only resizes it", () => {

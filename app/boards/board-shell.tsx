@@ -23,6 +23,11 @@ export default function BoardShell({ boardId }: { boardId: string }) {
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (!error) return;
+    const timer = window.setTimeout(() => setError(""), 5300);
+    return () => window.clearTimeout(timer);
+  }, [error]);
   const [guestName, setGuestName] = useState("");
   const [guestReady, setGuestReady] = useState(true);
   const [titleDraft, setTitleDraft] = useState("");
@@ -113,7 +118,7 @@ export default function BoardShell({ boardId }: { boardId: string }) {
       <BoardSurface board={access.board} permission={access.permission} owner={access.owner} shareToken={shareToken} participantName={guestName || "Участник"} onBackground={changeBackground} onRemoteBackground={receiveBackground} />
       {!guestReady && <div className="board-modal-layer"><form className="board-dialog" onSubmit={(event) => { event.preventDefault(); enterAsGuest(); }}><h2>Как вас зовут?</h2><p>Имя будет видно рядом с вашим курсором.</p><input autoFocus value={guestName} onChange={(event) => setGuestName(event.target.value)} maxLength={32} placeholder="Например, Анна" /><button className="boards-primary" type="submit" disabled={!guestName.trim()}>Войти на доску</button></form></div>}
       {shareOpen && <div className="board-modal-layer" onMouseDown={(event) => event.target === event.currentTarget && setShareOpen(false)}><section className="board-dialog board-share-dialog"><button className="board-dialog-close" onClick={() => setShareOpen(false)} aria-label="Закрыть"><X /></button><p className="boards-eyebrow">Доступ к доске</p><h2>Поделиться</h2><label><span>Все, у кого есть ссылка</span><select value={sharePermission} onChange={(event) => void changeShare(event.target.value as BoardPermission | "off")}><option value="off">Нет доступа</option><option value="view">Могут смотреть</option><option value="edit">Могут редактировать</option></select></label>{shareUrl ? <div className="board-share-copy"><input readOnly value={shareUrl} /><button onClick={async () => { await navigator.clipboard.writeText(shareUrl); setCopied(true); window.setTimeout(() => setCopied(false), 1800); }}>{copied ? <Check /> : <Copy />}{copied ? "Скопировано" : "Копировать"}</button></div> : sharePermission !== "off" && <button className="board-refresh-link" onClick={() => void changeShare(sharePermission)}>Создать новую ссылку</button>}<small>Новая ссылка отзывает предыдущую.</small></section></div>}
-      {error && <div className="board-toast is-error" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
+      {error && <div key={error} className="board-toast is-error" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
     </main>
   );
 }

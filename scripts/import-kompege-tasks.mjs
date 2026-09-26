@@ -215,7 +215,7 @@ async function downloadTaskFiles(files, taskId, number) {
       name: downloadName,
       href: downloadFiles && exists
         ? publicHref
-        : `/api/task-file?source=${encodeURIComponent(remoteUrl.href)}&name=${encodeURIComponent(downloadName)}`,
+        : `/api/task-file?source=${encodeURIComponent(remoteUrl.href)}&name=${encodeURIComponent(downloadName)}&taskId=${encodeURIComponent(taskId)}&fileIndex=${index}`,
       sourceUrl: remoteUrl.href,
       meta: "Файл к заданию",
     };
@@ -300,7 +300,8 @@ export async function importKompegeTasks() {
     }),
   );
 
-  const taskIndex = Object.fromEntries(tasks.map((task) => [task.id, task.number]));
+  // Synthetic game-part IDs must not overwrite real KEGE IDs (311 + 20 vs 31120).
+  const taskIndex = Object.fromEntries([...tasks.filter((task) => task.parentId), ...tasks.filter((task) => !task.parentId)].map((task) => [task.id, task.number]));
   const taskCounts = Object.fromEntries(
     outputNumbers.map((number) => {
       return [number, tasks.filter((task) => task.number === number).length];

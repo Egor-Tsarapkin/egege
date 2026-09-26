@@ -23,6 +23,11 @@ export function ensureAdminSchema() {
       started_at INTEGER NOT NULL,
       last_seen_at INTEGER NOT NULL,
       active_seconds INTEGER NOT NULL DEFAULT 0
+      ,source TEXT NOT NULL DEFAULT 'direct'
+      ,medium TEXT NOT NULL DEFAULT 'none'
+      ,campaign TEXT NOT NULL DEFAULT ''
+      ,content TEXT NOT NULL DEFAULT ''
+      ,referrer_host TEXT NOT NULL DEFAULT ''
     )`),
     db.prepare(`CREATE TABLE IF NOT EXISTS analytics_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,6 +66,22 @@ export function ensureAdminSchema() {
       terms_accepted_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS user_preferences (
+      user_id TEXT PRIMARY KEY,
+      preferences_json TEXT NOT NULL DEFAULT '{}',
+      updated_at INTEGER NOT NULL
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS marathon_progress (
+      user_id TEXT PRIMARY KEY,
+      progress_json TEXT NOT NULL DEFAULT '{}',
+      updated_at INTEGER NOT NULL
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS marathon_sessions (
+      session_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, started_at INTEGER NOT NULL,
+      last_seen_at INTEGER NOT NULL, active_seconds INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1
+    )`),
+    db.prepare("CREATE INDEX IF NOT EXISTS marathon_sessions_user_idx ON marathon_sessions(user_id, last_seen_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS analytics_sessions_seen_idx ON analytics_sessions(last_seen_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS analytics_events_type_created_idx ON analytics_events(event_type, created_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS exam_attempts_user_idx ON exam_attempts(user_id, created_at)"),
@@ -69,6 +90,12 @@ export function ensureAdminSchema() {
     const columns = await db.prepare("PRAGMA table_info(user_access)").all<{ name: string }>();
     if (!columns.results.some((column) => column.name === "board_limit")) {
       await db.prepare("ALTER TABLE user_access ADD COLUMN board_limit INTEGER NOT NULL DEFAULT 3").run();
+    }
+    const sessionColumns = await db.prepare("PRAGMA table_info(analytics_sessions)").all<{ name: string }>();
+    for (const [name, fallback] of [["source", "direct"], ["medium", "none"], ["campaign", ""], ["content", ""], ["referrer_host", ""]]) {
+      if (!sessionColumns.results.some((column) => column.name === name)) {
+        await db.prepare(`ALTER TABLE analytics_sessions ADD COLUMN ${name} TEXT NOT NULL DEFAULT '${fallback}'`).run();
+      }
     }
   }).catch((error: unknown) => {
     schemaReady = null;

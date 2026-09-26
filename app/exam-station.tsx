@@ -1,5 +1,8 @@
 "use client";
 
+import { examTestScore } from "@/lib/exam-score";
+import { normalizeAnswer } from "@/lib/answer-normalization";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
@@ -72,6 +75,7 @@ export type ExamAttempt = {
     correct: boolean;
     points: number;
     answer?: string;
+    correctAnswer?: string;
   }>;
 };
 
@@ -79,12 +83,7 @@ type Answers = Record<number, string[]>;
 
 const EXAM_DURATION_SECONDS = 3 * 60 * 60 + 55 * 60;
 const LEGACY_STORAGE_KEY = "egege-exam-25135392-v1";
-const SCORE_SCALE: Record<number, number> = {
-  0: 0, 1: 7, 2: 14, 3: 20, 4: 27, 5: 34, 6: 40, 7: 43, 8: 46,
-  9: 48, 10: 51, 11: 54, 12: 56, 13: 59, 14: 62, 15: 64, 16: 67,
-  17: 70, 18: 72, 19: 75, 20: 78, 21: 80, 22: 83, 23: 85, 24: 88,
-  25: 90, 26: 93, 27: 95, 28: 98, 29: 100,
-};
+
 
 function normalizeAnswers(value: unknown): Answers {
   if (!value || typeof value !== "object") return {};
@@ -152,13 +151,9 @@ function isAnswerFilled(values: string[] | undefined) {
   return Boolean(values?.some((value) => value.trim()));
 }
 
-function normalizeAnswer(values: string[] | string | undefined) {
-  const text = Array.isArray(values) ? values.join(" ") : values ?? "";
-  return text.toLowerCase().replace(/\s+/g, "");
-}
 
 function formatResultAnswer(value: string | undefined) {
-  return (value ?? "").replace(/\\n/g, "\n").replace(/\r/g, "").trim();
+  return (value ?? "").replace(/\\n/g, "\n").replace(/\r/g, "").split("\n").map((line) => line.trim()).filter(Boolean).join(" ").trim();
 }
 
 function getInputCount(task: ExamTask) {
@@ -314,10 +309,12 @@ export default function ExamStation({
   variant,
   onClose,
   onFinish,
+  reviewAttempt,
 }: {
   variant: ExamVariant;
   onClose: () => void;
   onFinish?: (attempt: ExamAttempt) => void;
+  reviewAttempt?: ExamAttempt | null;
 }) {
   const [currentNumber, setCurrentNumber] = useState(0);
   const [answers, setAnswers] = useState<Answers>(() => readExamDraft(variant.kim).answers);
@@ -326,41 +323,47 @@ export default function ExamStation({
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [finished, setFinished] = useState(false);
+  const [finished, setFinished] = useState(Boolean(reviewAttempt));
   const [navWindowStart, setNavWindowStart] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   const examTasks = useMemo(
     () => variant.tasks.map((task, index) => ({ ...task, slot: task.slot ?? index + 1 })),
     [variant.tasks],
   );
+  const taskLabel = (task: { slot?: number; number: number }) => {
+    const repeats = examTasks.filter((item) => item.number === task.number);
+    return repeats.length > 1 ? `${task.number}.${repeats.findIndex((item) => item.slot === task.slot) + 1}` : String(task.number);
+  };
   const taskCount = examTasks.length;
   const currentTask = examTasks.find((task) => task.slot === currentNumber) ?? null;
   const answeredCount = useMemo(
     () => examTasks.filter((task) => isAnswerFilled(answers[task.slot ?? 0])).length,
     [answers, examTasks],
   );
+  const shownAnsweredCount = reviewAttempt?.answeredCount ?? answeredCount;
   const resultRows = useMemo(() => examTasks.map((task) => {
     const slot = task.slot ?? 0;
+    const saved = reviewAttempt?.results?.find((row) => row.slot === slot);
     const userAnswer = answers[slot] ?? [];
-    const correct = Boolean(task.answer) &&
-      normalizeAnswer(userAnswer) === normalizeAnswer(task.answer);
+    const correct = saved?.correct ?? (Boolean(task.answer) &&
+      normalizeAnswer(userAnswer) === normalizeAnswer(task.answer));
     const maxPoints = task.number === 26 || task.number === 27 ? 2 : 1;
     return {
       task,
       slot,
-      userAnswer: formatResultAnswer(userAnswer.join("\n")),
-      correctAnswer: formatResultAnswer(task.answer),
+      userAnswer: saved ? formatResultAnswer(saved.answer) : formatResultAnswer(userAnswer.join(" ")),
+      correctAnswer: formatResultAnswer(saved?.correctAnswer ?? task.answer),
       correct,
-      points: correct ? maxPoints : 0,
+      points: saved?.points ?? (correct ? maxPoints : 0),
     };
-  }), [answers, examTasks]);
+  }), [answers, examTasks, reviewAttempt]);
   const primaryScore = resultRows.reduce((total, row) => total + row.points, 0);
   const maxPrimaryScore = resultRows.reduce((total, row) => total + (row.task.number >= 26 ? 2 : 1), 0);
-  const testScore = variant.custom
+  const testScore = reviewAttempt?.testScore ?? (variant.custom
     ? Math.round(primaryScore / Math.max(1, maxPrimaryScore) * 100)
-    : SCORE_SCALE[primaryScore] ?? 0;
-  const correctCount = resultRows.filter((row) => row.correct).length;
-  const durationSeconds = variant.noTime ? elapsedSeconds : EXAM_DURATION_SECONDS - secondsLeft;
+    : examTestScore(primaryScore));
+  const correctCount = reviewAttempt?.correctCount ?? resultRows.filter((row) => row.correct).length;
+  const durationSeconds = reviewAttempt?.durationSeconds ?? (variant.noTime ? elapsedSeconds : EXAM_DURATION_SECONDS - secondsLeft);
   const resultColumns = [
     resultRows.slice(0, Math.ceil(resultRows.length / 2)),
     resultRows.slice(Math.ceil(resultRows.length / 2)),
@@ -388,15 +391,16 @@ export default function ExamStation({
   }, []);
 
   useEffect(() => {
-    if (finished) return;
+    if (finished || reviewAttempt) return;
     const timer = window.setInterval(() => {
       if (variant.noTime) setElapsedSeconds((value) => value + 1);
       else setSecondsLeft((value) => Math.max(0, value - 1));
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [finished, variant.noTime]);
+  }, [finished, reviewAttempt, variant.noTime]);
 
   useEffect(() => {
+    if (reviewAttempt) return;
     try {
       window.localStorage.setItem(
         getStorageKey(variant.kim),
@@ -405,7 +409,7 @@ export default function ExamStation({
     } catch {
       // The exam remains usable if local storage is unavailable.
     }
-  }, [answers, drafts, secondsLeft, variant.kim]);
+  }, [answers, drafts, secondsLeft, variant.kim, reviewAttempt]);
 
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -471,7 +475,7 @@ export default function ExamStation({
         <main className="exam-result-card">
           <section className="exam-result-hero">
             <div className="exam-result-heading">
-              <p>Экзамен завершён</p>
+              <p>{reviewAttempt ? "Сохранённая попытка" : "Экзамен завершён"}</p>
               <h1>КИМ № {variant.kim}</h1>
               <span>Все ответы собраны в одной понятной сводке.</span>
             </div>
@@ -489,13 +493,17 @@ export default function ExamStation({
                 <span>верных ответов</span>
               </div>
               <div>
-                <strong>{answeredCount}<small>/{taskCount}</small></strong>
+                <strong>{shownAnsweredCount}<small>/{taskCount}</small></strong>
                 <span>ответов дано</span>
               </div>
             </div>
           </section>
 
           <section className="exam-result-table-wrap">
+            {reviewAttempt && !reviewAttempt.results?.length ? (
+              <p>Для этой старой попытки сохранился только общий результат.</p>
+            ) : (
+            <>
             <div className="exam-result-section-heading">
               <div>
                 <p>Подробная проверка</p>
@@ -520,7 +528,7 @@ export default function ExamStation({
                     const status = !userAnswer ? "is-empty" : correct ? "is-correct" : "is-wrong";
                     return (
                       <div className={`exam-result-row ${status}`} key={slot} role="row">
-                        <b><i />{slot}</b>
+                        <b><i />{taskLabel(task)}</b>
                         <span className="exam-result-points">{points} из {task.number >= 26 ? 2 : 1}</span>
                         <span className="exam-result-answer">{userAnswer || "Ответ не дан"}</span>
                         <span className="exam-result-answer">
@@ -532,17 +540,19 @@ export default function ExamStation({
                 </div>
               ))}
             </div>
+            </>
+            )}
           </section>
 
           <div className="exam-result-actions">
-            {!variant.oneAttempt && (
+            {!reviewAttempt && !variant.oneAttempt && (
               <button onClick={() => setFinished(false)}>
                 <ArrowLeft aria-hidden="true" />
                 Вернуться к варианту
               </button>
             )}
             <button className="is-primary" onClick={onClose}>
-              К списку вариантов
+              {reviewAttempt ? "К дашборду" : "К списку вариантов"}
               <ArrowRight aria-hidden="true" />
             </button>
           </div>
@@ -614,7 +624,7 @@ export default function ExamStation({
               aria-label={`Задание ${number}${isAnswerFilled(answers[slot]) ? ", ответ дан" : ""}`}
               key={slot}
             >
-              {number}
+              {taskLabel({ slot, number })}
             </button>
           ))}
         </div>
@@ -644,12 +654,13 @@ export default function ExamStation({
             <>
               <div className="exam-task-heading">
                 <div>
-                  <span>Задание {currentNumber} из {taskCount}</span>
+                  <span>Задание {taskLabel(currentTask)} · {currentNumber} из {taskCount}</span>
                   <h1>Задание № {currentTask.number}</h1>
                 </div>
-                {variant.sourceUrl
-                  ? <a href={variant.sourceUrl} target="_blank" rel="noreferrer">Источник: КЕГЭ</a>
-                  : <span className="exam-custom-source">ID {currentTask.id}</span>}
+                <div className="exam-task-identifiers">
+                  <span className="exam-task-id">ID {currentTask.id}</span>
+                  {variant.sourceUrl && <a href={variant.sourceUrl} target="_blank" rel="noreferrer">Источник: КЕГЭ</a>}
+                </div>
               </div>
               <RichHtml className={`exam-task-html ${currentTask.id.startsWith("0") ? "is-teacher-task" : ""}`} html={getExamTaskHtml(currentTask)} />
             </>
@@ -771,6 +782,7 @@ export default function ExamStation({
                         correct: row.correct,
                         points: row.points,
                         answer: row.userAnswer,
+                        correctAnswer: variant.hideAnswers ? undefined : row.correctAnswer,
                       })),
                     });
                   }}>

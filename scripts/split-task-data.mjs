@@ -22,7 +22,7 @@ export async function splitTaskData() {
     }),
   );
 
-  const taskIndex = Object.fromEntries(tasks.map((task) => [task.id, task.number]));
+  const taskIndex = Object.fromEntries([...tasks.filter((task) => task.parentId), ...tasks.filter((task) => !task.parentId)].map((task) => [task.id, task.number]));
   await writeFile(taskIndexUrl, `${JSON.stringify(taskIndex)}\n`);
 
   const variantTasks = tasks.filter((task) => variantTaskIds.has(task.id));

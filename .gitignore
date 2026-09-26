@@ -44,3 +44,18 @@ next-env.d.ts
 /outputs/
 /work/
 /import-cache/
+
+# Local release packages and design source collections
+/*.tar.gz
+/gifs/
+/qr-codes/
+/qr-egege-*.png
+
+# Private databases, credentials, and local backups
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.key
+*.p12
+/backups/

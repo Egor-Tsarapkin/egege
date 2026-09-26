@@ -9,7 +9,8 @@ const appearanceScript = `
   const themes = new Set(["dark", "light"]);
   const accents = new Set([
     "lime", "blue", "red", "pink", "beige", "orange", "purple", "cyan",
-    "yellow", "mint", "coral", "indigo", "violet", "teal", "matcha"
+    "yellow", "mint", "coral", "indigo", "violet", "teal", "matcha",
+    "crimson", "deepPurple", "goldApex"
   ]);
 
   try {

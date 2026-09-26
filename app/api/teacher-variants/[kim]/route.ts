@@ -1,3 +1,4 @@
+import { normalizeAnswer } from "@/lib/answer-normalization";
 import { env } from "cloudflare:workers";
 import taskIndex from "@/public/data/task-index.json";
 import { authenticatedUser, communityDb } from "@/lib/community-server";
@@ -116,10 +117,6 @@ async function loadVariantTasks(request: Request, variantId: number) {
     return teacherTask ?? (importedTask ? [importedTask] : []);
   });
   return { missing, tasks: tasks.map((task, index) => ({ ...task, slot: index + 1 })) };
-}
-
-function normalizeAnswer(value: unknown) {
-  return cleanText(value, 2_000).toLowerCase().replace(/\s+/g, "");
 }
 
 export async function GET(request: Request, context: RouteContext) {
